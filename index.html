@@ -92,10 +92,7 @@ textarea:focus{outline:none;border-color:var(--ink)}
 <body>
 <div id="stage"></div>
 
-<div class="mast">
-  <h1>Protolab</h1>
-  <p>click anywhere to plant something</p>
-</div>
+
 
 <div class="busy" id="busy">pressing</div>
 
@@ -150,6 +147,8 @@ textarea:focus{outline:none;border-color:var(--ink)}
   <h2>Sheet &amp; light <span onclick="togglePanel('settings')">×</span></h2>
   <div class="row"><label>Emboss depth <span class="val" id="v-emboss"></span></label>
     <input type="range" id="s-emboss" min="0.05" max="0.6" step="0.01" oninput="setGlobal('emboss',+this.value,true)"></div>
+  <div class="row"><label>Wordmark <span class="val" id="v-wordDepth"></span></label>
+    <input type="range" id="s-wordDepth" min="0" max="0.5" step="0.01" oninput="setGlobal('wordDepth',+this.value,true)"></div>
   <div class="row"><label>Lamp pool <span class="val" id="v-lightSize"></span></label>
     <input type="range" id="s-lightSize" min="200" max="2400" step="20" oninput="setGlobal('lightSize',+this.value)"></div>
   <div class="row"><label>Lamp height <span class="val" id="v-lightHeight"></span></label>
@@ -194,7 +193,7 @@ textarea:focus{outline:none;border-color:var(--ink)}
 
 const FIELD_SCALE = 0.62;
 let DW, DH, FW, FH;                       // display px, field px
-let F, Fbg, artCv, artCtx, shadowCv, shadowCtx, bgCv, bgCtx, grainPat;
+let F, artCv, artCtx, paperCv, paperCtx, grainPat, paperPix;
 let cov, hgt, colorMap, nrm, hMax = 1;
 let needShade = false, needBuild = false, ready = false;
 
@@ -202,7 +201,7 @@ let flowers = [];
 let selected = -1, dragging = false, dragDX = 0, dragDY = 0, movedWhileDown = false;
 
 let G = {
-  surface: 'blind', emboss: 0.34,
+  surface: 'blind', emboss: 0.34, wordDepth: 0.28,
   cSheet: '#e9e3d6', lampColor: '#fff6ec',
   lightSize: 1700, lightHeight: 340, ease: 0.045,
   grainAmt: 0.30, contrast: 0.88, steps: 0,
@@ -244,8 +243,9 @@ function hitTest(x, y){
 
 // ── the press ──────────────────────────────────────────────────
 function paintGround(){
-  Fbg.paper(bgCtx, G.cSheet, {seed: 909, amount: 8, vignette: 0.12});
-  Relief.toneCanvas(bgCtx, DW, DH, {shadow: G.toneShadow, high: G.toneHigh, amount: G.toneAmt*0.75});
+  F.paper(paperCtx, G.cSheet, {seed: 909, amount: 8, vignette: 0.10});
+  Relief.toneCanvas(paperCtx, FW, FH, {shadow: G.toneShadow, high: G.toneHigh, amount: G.toneAmt*0.75});
+  paperPix = paperCtx.getImageData(0,0,FW,FH).data;
 }
 
 function drawAll(ctx, mode){
@@ -261,52 +261,82 @@ function drawAll(ctx, mode){
   }
 }
 
+// the masthead, pressed into the sheet rather than set on top of it
+function drawWord(ctx){
+  const size = Math.min(DW, DH)*0.082*FIELD_SCALE;
+  const txt = 'PROTOLAB', tr = size*0.44;
+  ctx.save();
+  ctx.translate(FW/2, FH/2);
+  ctx.fillStyle = '#fff';
+  ctx.font = '400 ' + size + 'px Poppins, "Helvetica Neue", Helvetica, sans-serif';
+  ctx.textBaseline = 'middle';
+  let w = 0;
+  for(let i=0;i<txt.length;i++) w += ctx.measureText(txt[i]).width + (i < txt.length-1 ? tr : 0);
+  let x = -w/2;
+  for(let i=0;i<txt.length;i++){
+    ctx.fillText(txt[i], x, 0);
+    x += ctx.measureText(txt[i]).width + tr;
+  }
+  ctx.restore();
+}
+
+// The whole frame is one sheet of paper, lit by the lamp. Inked mode blends
+// the flowers' colour into it and stands them further off the surface; blind
+// mode leaves the colour alone and only presses. Either way the wordmark is
+// part of the paper, not sitting on it.
 function build(){
   for(let i=0;i<flowers.length;i++) flowers[i]._parts = Flora.grow(flowers[i]);
 
-  const blind = G.surface === 'blind';
-  const h0 = F.rasterLuma(ctx => drawAll(ctx, 'h'));
-  const col = F.rasterColor(ctx => drawAll(ctx, 'c'));
-  const n2 = FW*FH;
+  const fc  = F.rasterColor(ctx => drawAll(ctx, 'c'));
+  const h0  = F.rasterLuma(ctx => drawAll(ctx, 'h'));
+  const wd  = F.rasterLuma(drawWord);
+  const sm  = F.blur(h0, 2, 2);
+  const wsm = F.blur(wd, 2, 2);
+  const contact = F.blur(fc.cov, 16);
 
-  if(blind){
-    // No ink at all: the whole frame is the sheet, and every specimen is
-    // just a change in its height. Invisible until the light rakes it.
-    colorMap = null;
-    cov = new Float32Array(n2).fill(1);
-    const sm = F.blur(h0, 2, 2);
-    const surf = new Float32Array(n2);
-    hgt = new Float32Array(n2);
-    hMax = 1;
-    for(let y=0;y<FH;y++){
-      for(let x=0;x<FW;x++){
-        const i = y*FW + x;
-        const tooth = (noise(x*0.06, y*0.06) - 0.5)*0.022;   // paper grain, lit
-        const rel = sm[i]*col.cov[i];
-        surf[i] = 0.5 + rel*G.emboss + tooth;                // true height, for normals
-        hgt[i] = rel;                                        // relative, for occlusion
+  const n2 = FW*FH;
+  const ink = G.surface === 'ink';
+  const relAmt = ink ? 0.62 : G.emboss;
+  const depth  = ink ? 1 : 0.6;
+  const contactAmt = ink ? 0.45 : 0.12;
+
+  cov = new Float32Array(n2).fill(1);
+  colorMap = new Uint8ClampedArray(n2*3);
+  const surf = new Float32Array(n2);
+  hgt = new Float32Array(n2);
+  hMax = 1;
+
+  for(let y=0;y<FH;y++){
+    for(let x=0;x<FW;x++){
+      const i = y*FW + x, m = i*3, q = i*4;
+      const a = fc.cov[i];
+
+      let r = paperPix[q], g = paperPix[q+1], b = paperPix[q+2];
+      if(ink && a > 0.002){
+        r += (fc.colorMap[m]   - r)*a;
+        g += (fc.colorMap[m+1] - g)*a;
+        b += (fc.colorMap[m+2] - b)*a;
       }
+      colorMap[m] = r; colorMap[m+1] = g; colorMap[m+2] = b;
+
+      const rel   = sm[i]*a;
+      const word  = wsm[i];
+      const tooth = (noise(x*0.06, y*0.06) - 0.5)*0.022;
+
+      // true height, for normals
+      surf[i] = 0.5 + tooth + rel*relAmt - word*G.wordDepth;
+
+      // a separate occlusion field: paper is open, petal troughs and the
+      // wordmark's trench are not, and the ground darkens near anything
+      // standing off it
+      const onFlower = 1 - (0.70 - rel*0.78)*depth;
+      const onPaper  = 1 - contact[i]*contactAmt;
+      let ao = onPaper + (onFlower - onPaper)*a - word*0.22;
+      hgt[i] = ao > 0 ? ao : 0;
     }
-    nrm = F.normals(cov, surf, G.relief);
-    needShade = true;
-    return;
-  } else {
-    cov = col.cov;
-    colorMap = col.colorMap;
-    const sm = F.blur(h0, 2, 2);
-    hgt = new Float32Array(n2);
-    hMax = 0.0001;
-    for(let i=0;i<n2;i++){
-      const c = cov[i];
-      if(c <= 0.004){ hgt[i] = 0; continue; }
-      const h = sm[i]*c;
-      hgt[i] = h;
-      if(h > hMax) hMax = h;
-    }
-    F.shadow(shadowCtx, cov, 12, 0.55);
   }
 
-  nrm = F.normals(cov, hgt, G.relief);
+  nrm = F.normals(cov, surf, G.relief);
   needShade = true;
 }
 
@@ -317,8 +347,8 @@ function shade(){
     colorMap: colorMap, color: G.cSheet,
     light: {x: lampP.x*FIELD_SCALE, y: lampP.y*FIELD_SCALE,
             h: G.lightHeight*FIELD_SCALE, radius: G.lightSize*FIELD_SCALE, color: G.lampColor},
-    gloss: 0, ambient: blind ? 0.54 : 0.44, scatter: 0,
-    aoLo: blind ? 0.64 : 0.58, exposure: blind ? 0.94 : 1.10,
+    gloss: 0, ambient: blind ? 0.54 : 0.50, scatter: 0,
+    aoLo: blind ? 0.64 : 0.56, exposure: blind ? 0.94 : 1.00,
     wrap: 0.46, matte: true, contrast: G.contrast, steps: G.steps,
     tone: {shadow: G.toneShadow, high: G.toneHigh, amount: G.toneAmt}
   });
@@ -333,11 +363,9 @@ function setup(){
   FH = Math.round(DH*FIELD_SCALE);
   createCanvas(DW, DH).parent('stage');
 
-  F   = Relief.field(FW, FH);
-  Fbg = Relief.field(DW, DH);
-  artCv = Relief.makeCanvas(FW,FH);    artCtx    = artCv.getContext('2d');
-  shadowCv = Relief.makeCanvas(FW,FH); shadowCtx = shadowCv.getContext('2d');
-  bgCv = Relief.makeCanvas(DW,DH);     bgCtx     = bgCv.getContext('2d');
+  F = Relief.field(FW, FH);
+  artCv   = Relief.makeCanvas(FW,FH); artCtx   = artCv.getContext('2d');
+  paperCv = Relief.makeCanvas(FW,FH); paperCtx = paperCv.getContext('2d', {willReadFrequently:true});
   grainPat = artCtx.createPattern(Relief.grainTile(256, 4242, 30), 'repeat');
 
   lampT = {x: DW*0.30, y: DH*0.24};
@@ -355,7 +383,7 @@ function setup(){
   });
 
   const boot = () => {
-    if(!load()) scatter(6);
+    if(!restore()) scatter(6);
     paintGround();
     build();
     ready = true;
@@ -370,11 +398,9 @@ function windowResized(){
   FW = Math.round(DW*FIELD_SCALE);
   FH = Math.round(DH*FIELD_SCALE);
   resizeCanvas(DW, DH);
-  F   = Relief.field(FW, FH);
-  Fbg = Relief.field(DW, DH);
-  artCv = Relief.makeCanvas(FW,FH);    artCtx    = artCv.getContext('2d');
-  shadowCv = Relief.makeCanvas(FW,FH); shadowCtx = shadowCv.getContext('2d');
-  bgCv = Relief.makeCanvas(DW,DH);     bgCtx     = bgCv.getContext('2d');
+  F = Relief.field(FW, FH);
+  artCv   = Relief.makeCanvas(FW,FH); artCtx   = artCv.getContext('2d');
+  paperCv = Relief.makeCanvas(FW,FH); paperCtx = paperCv.getContext('2d', {willReadFrequently:true});
   grainPat = artCtx.createPattern(Relief.grainTile(256, 4242, 30), 'repeat');
   paintGround();
   build();
@@ -398,14 +424,6 @@ function draw(){
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'high';
   g.clearRect(0,0,DW,DH);
-  g.drawImage(bgCv,0,0);
-
-  if(G.surface !== 'blind'){
-    const sx = (DW/2 - lampP.x)*0.022, sy = (DH/2 - lampP.y)*0.022;
-    g.save(); g.globalAlpha = 0.24;
-    g.drawImage(shadowCv, sx, sy, DW, DH);
-    g.restore();
-  }
   g.drawImage(artCv, 0, 0, DW, DH);
 
   // selection: a hairline ring, nothing heavier
@@ -461,7 +479,7 @@ function mouseDragged(){
   return false;
 }
 function mouseReleased(){
-  if(dragging){ dragging = false; save(); return false; }
+  if(dragging){ dragging = false; persist(); return false; }
   if(!ready || !overStage()) return;
   if(hitTest(mouseX, mouseY) >= 0) return false;
   // empty ground — plant one
@@ -469,7 +487,7 @@ function mouseReleased(){
   selected = flowers.length - 1;
   showInspector();
   needBuild = true;
-  save();
+  persist();
   return false;
 }
 function keyPressed(){
@@ -497,7 +515,7 @@ function setSel(k, v){
   f[k] = v;
   const el = document.getElementById('v-'+k);
   if(el) el.textContent = (typeof v === 'number') ? v.toFixed(k==='open'||k==='rot'?2:0) : v;
-  needBuild = true; save();
+  needBuild = true; persist();
 }
 function setSelSpecies(v){
   const f = flowers[selected]; if(!f) return;
@@ -505,25 +523,25 @@ function setSelSpecies(v){
   const base = Flora.SPECIES[v];
   Object.keys(base).forEach(k => { f[k] = base[k]; });
   showInspector();
-  needBuild = true; save();
+  needBuild = true; persist();
 }
 function reseedSel(){
   const f = flowers[selected]; if(!f) return;
   f.seed = Math.floor(Math.random()*999999)+1;
-  needBuild = true; save();
+  needBuild = true; persist();
 }
 function sendToBack(){
   if(selected < 0) return;
   const f = flowers.splice(selected,1)[0];
   flowers.unshift(f);
   selected = 0;
-  needBuild = true; save();
+  needBuild = true; persist();
 }
 function deleteSel(){
   if(selected < 0) return;
   flowers.splice(selected,1);
   deselect();
-  needBuild = true; save();
+  needBuild = true; persist();
 }
 function buildPals(){
   const host = document.getElementById('i-pals');
@@ -535,7 +553,7 @@ function buildPals(){
     d.onclick = () => {
       const f = flowers[selected]; if(!f) return;
       f.cBase = pal[0]; f.cTip = pal[1]; f.cDisc = pal[2]; f.cLeaf = pal[3];
-      showInspector(); needBuild = true; save();
+      showInspector(); needBuild = true; persist();
     };
     host.appendChild(d);
   });
@@ -547,18 +565,18 @@ function setSurface(v){
   document.getElementById('b-ink').classList.toggle('on', v === 'ink');
   document.getElementById('b-blind').classList.toggle('on', v === 'blind');
   if(selected >= 0) showInspector();
-  if(ready){ needBuild = true; save(); }
+  if(ready){ needBuild = true; persist(); }
 }
 function setGlobal(k, v, reground){
   G[k] = v;
   const el = document.getElementById('v-'+k);
   if(el) el.textContent = (typeof v === 'number') ? (v < 2 ? v.toFixed(2) : v.toFixed(0)) : v;
   if(reground){ paintGround(); needBuild = true; } else { needShade = true; }
-  save();
+  persist();
 }
 function syncGlobalUI(){
   setSurface(G.surface);
-  ['emboss','lightSize','lightHeight','ease','grainAmt','contrast','steps','toneAmt'].forEach(k => {
+  ['emboss','wordDepth','lightSize','lightHeight','ease','grainAmt','contrast','steps','toneAmt'].forEach(k => {
     const el = document.getElementById('s-'+k);
     if(el){ el.value = G[k]; document.getElementById('v-'+k).textContent = (G[k] < 2 ? (+G[k]).toFixed(2) : (+G[k]).toFixed(0)); }
   });
@@ -574,7 +592,9 @@ function togglePanel(id){
 }
 function scatter(n){
   const rng = Relief.makeRng(Math.floor(Math.random()*999999)+1);
-  const pad = 90, barTop = DH - 110, mastBottom = 120;
+  const pad = 90, barTop = DH - 110;
+  // keep the wordmark's trench clear
+  const wx = Math.min(DW, DH)*0.082*4.9, wy = Math.min(DW, DH)*0.075;
   for(let i=0;i<n;i++){
     let f = null;
     // rejection-sample so specimens don't pile up or foul the furniture
@@ -583,7 +603,7 @@ function scatter(n){
       const rad = c.size*0.78;
       if(c.x - rad < 24 || c.x + rad > DW - 24) continue;
       if(c.y - rad < 24 || c.y + rad > barTop) continue;
-      if(c.y - rad < mastBottom && c.x - rad < 360) continue;
+      if(Math.abs(c.x - DW/2) < wx + rad*0.55 && Math.abs(c.y - DH/2) < wy + rad*0.55) continue;
       let clear = true;
       for(let j=0;j<flowers.length;j++){
         const o = flowers[j];
@@ -594,13 +614,13 @@ function scatter(n){
     }
     if(f) flowers.push(f);
   }
-  needBuild = true; save();
+  needBuild = true; persist();
 }
 function reseedAll(){
   flowers.forEach(f => { f.seed = Math.floor(Math.random()*999999)+1; });
-  needBuild = true; save();
+  needBuild = true; persist();
 }
-function clearAll(){ flowers = []; deselect(); needBuild = true; save(); }
+function clearAll(){ flowers = []; deselect(); needBuild = true; persist(); }
 function downloadPNG(){ saveCanvas('protolab', 'png'); }
 
 // ── state ──────────────────────────────────────────────────────
@@ -614,10 +634,10 @@ function stateObj(){
     })
   };
 }
-function save(){
+function persist(){   // NB: not save() — p5 owns that name, and it downloads
   try { localStorage.setItem(STORE, JSON.stringify(stateObj())); } catch(e){}
 }
-function load(){
+function restore(){
   try {
     const raw = localStorage.getItem(STORE);
     if(!raw) return false;
@@ -645,11 +665,11 @@ function applyState(){
     deselect();
   } else {                             // conditions only — from any study
     const KEYS = ['surface','emboss','cSheet','lampColor','lightSize','lightHeight',
-                  'ease','grainAmt','contrast','steps','toneShadow','toneHigh','toneAmt','relief'];
+                  'ease','grainAmt','contrast','steps','toneShadow','toneHigh','toneAmt','relief','wordDepth'];
     KEYS.forEach(k => { if(o[k] !== undefined) G[k] = o[k]; });
   }
   syncGlobalUI(); paintGround();
-  needBuild = true; save();
+  needBuild = true; persist();
 }
 
 document.getElementById('i-species').addEventListener('click', e => {
