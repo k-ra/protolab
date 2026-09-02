@@ -17,11 +17,10 @@
 <style>
 :root{--ink:#2f2a24;--soft:#8b857c;--line:rgba(47,42,36,.13);--panel:rgba(255,255,255,.95)}
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%}
-body{font-family:'Poppins',sans-serif;font-weight:300;color:var(--ink);background:#fbfaf7;overflow:hidden}
-#stage{position:fixed;inset:0}
-#stage canvas{display:block;width:100%;height:100%;cursor:default}
-#labels{position:fixed;inset:0;pointer-events:none;z-index:3}
+body{font-family:'Poppins',sans-serif;font-weight:300;color:var(--ink);background:#fbfaf7}
+#sheet{position:relative;width:100%}
+#stage canvas{display:block;cursor:default}
+#labels{position:absolute;inset:0;pointer-events:none;z-index:3}
 .cap{position:absolute;text-align:center;transform:translateX(-50%)}
 .cap b{display:block;font-size:10.5px;font-weight:400;letter-spacing:.19em;text-transform:uppercase}
 .cap i{display:block;font-family:'Lora',serif;font-style:italic;font-size:11.5px;color:var(--soft);margin-top:3px}
@@ -29,9 +28,8 @@ body{font-family:'Poppins',sans-serif;font-weight:300;color:var(--ink);backgroun
 .cap u{display:block;text-decoration:none;font-size:10.5px;color:var(--soft);margin-top:4px;
   font-family:'Lora',serif;font-style:italic;max-width:210px;margin-left:auto;margin-right:auto;line-height:1.45}
 
-.sheetmark{position:fixed;top:34px;left:40px;z-index:4;pointer-events:none}
-.sheetmark b{display:block;font-size:11px;font-weight:400;letter-spacing:.34em;text-transform:uppercase}
-.sheetmark i{display:block;font-family:'Lora',serif;font-style:italic;font-size:12px;color:var(--soft);margin-top:5px}
+.sheetmark{position:absolute;top:44px;left:50%;transform:translateX(-50%);z-index:4;pointer-events:none;text-align:center}
+.sheetmark b{display:block;font-size:12px;font-weight:400;letter-spacing:.38em;text-transform:uppercase}
 
 .bar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:8;
   display:flex;align-items:center;gap:4px;padding:6px;border-radius:999px;
@@ -73,10 +71,11 @@ textarea:focus{outline:none;border-color:var(--ink)}
 </style>
 </head>
 <body>
-<div id="stage"></div>
-<div id="labels"></div>
-
-<div class="sheetmark"><b>Clippings</b><i>one light, one ground — only the material changes</i></div>
+<div id="sheet">
+  <div id="stage"></div>
+  <div id="labels"></div>
+  <div class="sheetmark"><b>Clippings</b></div>
+</div>
 
 <div class="bar">
   <button class="plus" onclick="addPressing()" title="add a pressing">+</button>
@@ -108,10 +107,8 @@ textarea:focus{outline:none;border-color:var(--ink)}
   <h2>Notes <span onclick="togglePanel('notes')">×</span></h2>
   <div class="row"><label>About this sheet</label>
     <textarea id="sheet-note" rows="4" placeholder="what you're looking for" oninput="setSheetNote(this.value)"></textarea></div>
-  <div class="row"><label>Light <span class="val" id="v-lightAng"></span></label>
-    <input type="range" id="s-lightAng" min="0" max="360" step="2" oninput="setLight('ang',+this.value)"></div>
   <div class="row"><label>Rake <span class="val" id="v-lightHeight"></span></label>
-    <input type="range" id="s-lightHeight" min="60" max="900" step="10" oninput="setLight('h',+this.value)"></div>
+    <input type="range" id="s-lightHeight" min="60" max="900" step="10" oninput="showLight('h',+this.value)" onchange="setLight('h',+this.value)"></div>
   <div class="row"><label>Grain <span class="val" id="v-grainAmt"></span></label>
     <input type="range" id="s-grainAmt" min="0" max="0.5" step="0.02" oninput="setLight('grain',+this.value)"></div>
   <div class="row"><button class="wide" onclick="copyNotes()">Copy notes for Claude</button></div>
@@ -134,8 +131,14 @@ textarea:focus{outline:none;border-color:var(--ink)}
 
 const GROUND = '#fbfaf7';
 const CELL_W = 300, CELL_H = 300, CAP_H = 66;
+const TOP_PAD = 132, BOT_PAD = 130;
 
-let DW, DH, COLS;
+// Render at the display's real pixel density. A 1x buffer stretched over a
+// retina screen is what made this look pixelated — one canvas pixel covering
+// four device pixels. Nothing here relights at speed, so we can afford it.
+const SS = Math.min(window.devicePixelRatio || 1, 2);
+
+let DW, DH, PW, PH, COLS;
 let F, artCv, artCtx, grainPat;
 let cov, hgt, colorMap, matMap, nrm, hMax = 1;
 let needBuild = false, needShade = false, ready = false;
@@ -144,6 +147,8 @@ let items = [];
 let sheetNote = '';
 let selected = -1;
 let L = {ang: 214, h: 330, radius: 2200, grain: 0.22};
+let lampT = {x:0, y:0}, lampP = {x:0, y:0};
+let lampMoving = 0;
 
 const FORMS = ['seal','bloom','card'];
 const CONTENTS = ['die','flower'];
@@ -164,12 +169,27 @@ function newPressing(over){
     species: Flora.NAMES[Math.floor(rng()*Flora.NAMES.length)]
   }, over || {});
 }
+// which body shape a material takes when it's pressed
+const SHAPE_OF = {wax:'wax', slate:'wax', clay:'clay', plaster:'clay',
+                  paper:'paper', vellum:'paper', brass:'metal', pewter:'metal'};
+
 function specFor(it){
+  const M = Matter.get(it.material);
   if(it.form === 'bloom' || (it.form === 'card' && it.content === 'flower')){
-    return Flora.defaults({seed: it.seed, species: it.species, size: 92*it.scale, leaves: 0});
+    return Flora.defaults({
+      seed: it.seed, species: it.species, size: 92*it.scale, leaves: 0,
+      // the flower is made OF the material, so its palette comes from it
+      cBase: Flora.mixHex(M.color, '#000000', 0.22),
+      cTip:  Flora.mixHex(M.color, '#ffffff', 0.20),
+      cDisc: Flora.mixHex(M.color, '#000000', 0.34),
+      cLeaf: Flora.mixHex(M.color, '#000000', 0.10)
+    });
   }
-  return Press.defaults({seed: it.seed, substrate: 'wax', die: it.die, text: it.text,
-                         size: 92*it.scale, detail: 6, depth: it.depth, mode: 'deboss'});
+  return Press.defaults({
+    seed: it.seed, substrate: SHAPE_OF[it.material] || 'wax',
+    die: it.die, text: it.text, color: M.color,
+    size: 92*it.scale, detail: 6, depth: it.depth, mode: 'deboss'
+  });
 }
 
 // card body — a small sheet of the material, softly deckled
@@ -235,32 +255,40 @@ function pressingMask(ctx, it){
 }
 
 // ── layout ─────────────────────────────────────────────────────
+// the sheet is as tall as it needs to be, and the page scrolls
 function layout(){
   COLS = Math.max(1, Math.floor((DW - 80)/CELL_W));
   const rows = Math.ceil(items.length/COLS) || 1;
   const gridW = COLS*CELL_W, gridH = rows*(CELL_H + CAP_H);
   const ox = (DW - gridW)/2 + CELL_W/2;
-  const oy = Math.max(120, (DH - gridH)/2) + CELL_H/2;
+  const oy = TOP_PAD + CELL_H/2;
   items.forEach((it, i) => {
     it.x = ox + (i % COLS)*CELL_W;
     it.y = oy + Math.floor(i/COLS)*(CELL_H + CAP_H);
   });
+  return Math.max(window.innerHeight, TOP_PAD + gridH + BOT_PAD);
+}
+function reflow(){
+  const need = layout();
+  if(Math.abs(need - DH) > 1){ DH = need; allocate(); resizeCanvas(PW, PH); styleCanvas(); }
 }
 
 function build(){
-  layout();
+  reflow();
   items.forEach(it => {
     if(it.form === 'bloom') it._parts = Flora.grow(specFor(it));
   });
 
   const h0 = F.rasterLuma(ctx => {
+    ctx.scale(SS, SS);
     items.forEach(it => { ctx.save(); ctx.translate(it.x, it.y); pressingHeight(ctx, it); ctx.restore(); });
   });
   const mk = F.rasterColor(ctx => {
+    ctx.scale(SS, SS);
     items.forEach(it => { ctx.save(); ctx.translate(it.x, it.y); pressingMask(ctx, it); ctx.restore(); });
   });
-  const sm = F.blur(h0, 1, 2);                 // just enough to round an edge
-  const n2 = DW*DH;
+  const sm = F.blur(h0, Math.round(SS), 2);    // just enough to round an edge
+  const n2 = PW*PH;
 
   cov = new Float32Array(n2).fill(1);
   colorMap = new Uint8ClampedArray(n2*3);
@@ -286,17 +314,17 @@ function build(){
   const cellOf = new Int16Array(n2);
   cellOf.fill(-1);
   items.forEach((it, i) => {
-    const x0 = Math.max(0, Math.round(it.x - CELL_W/2)), x1 = Math.min(DW, Math.round(it.x + CELL_W/2));
-    const y0 = Math.max(0, Math.round(it.y - CELL_H/2)), y1 = Math.min(DH, Math.round(it.y + CELL_H/2));
+    const x0 = Math.max(0, Math.round((it.x - CELL_W/2)*SS)), x1 = Math.min(PW, Math.round((it.x + CELL_W/2)*SS));
+    const y0 = Math.max(0, Math.round((it.y - CELL_H/2)*SS)), y1 = Math.min(PH, Math.round((it.y + CELL_H/2)*SS));
     for(let y=y0;y<y1;y++){
-      const row = y*DW;
+      const row = y*PW;
       for(let x=x0;x<x1;x++) cellOf[row+x] = i;
     }
   });
 
-  for(let y=0;y<DH;y++){
-    for(let x=0;x<DW;x++){
-      const i = y*DW + x, m = i*3;
+  for(let y=0;y<PH;y++){
+    for(let x=0;x<PW;x++){
+      const i = y*PW + x, m = i*3;
       const a = mk.cov[i];
       const c = cellOf[i];
       const mi = (a > 0.5 && c >= 0) ? (idxOf[items[c].material] || 0) : 0;
@@ -308,26 +336,62 @@ function build(){
       colorMap[m+1] = gc[1] + (pc[1]-gc[1])*t;
       colorMap[m+2] = gc[2] + (pc[2]-gc[2])*t;
 
-      const tooth = (noise(x*0.09, y*0.09) - 0.5)*toothOf[mi];
+      const tooth = (noise(x*0.09/SS, y*0.09/SS) - 0.5)*toothOf[mi];
       const rel = sm[i]*a;
       surf[i] = 0.5 + tooth + rel*0.62*reliefOf[mi];
       const ao = (1 - (0.72 - rel*0.80)*(mi === 0 ? 0 : 1));
       hgt[i] = ao > 0 ? ao : 0;
     }
   }
-  nrm = F.normals(cov, surf, 46);              // crisp: steep normals, tiny blur
+  nrm = F.normals(cov, surf, 46*SS);           // crisp: steep normals, tiny blur
+  makeLo();
   needShade = true;
   renderLabels();
 }
 
 let materialsForShade = null;
-function shade(){
-  const a = L.ang*Math.PI/180;
-  F.shade(artCtx, {
-    cov: cov, hgt: hgt, hMax: hMax, nX: nrm.nX, nY: nrm.nY, nZ: nrm.nZ,
-    colorMap: colorMap, matMap: matMap, materials: materialsForShade,
-    light: {x: DW/2 + Math.cos(a)*DW*0.62, y: DH/2 + Math.sin(a)*DH*0.62,
-            h: L.h, radius: L.radius, color: '#fffaf2'},
+
+// While the lamp is moving we light a half-size copy of the field — a quarter
+// of the pixels — and upscale it. When it settles we light the real thing.
+// The buffers are downsampled once per build, so this costs nothing per frame.
+let lo = null;
+function makeLo(){
+  const lw = Math.max(2, Math.floor(PW/2)), lh = Math.max(2, Math.floor(PH/2));
+  const n = lw*lh;
+  const o = {W: lw, H: lh, F: Relief.field(lw, lh),
+             cov: new Float32Array(n).fill(1), hgt: new Float32Array(n),
+             nX: new Float32Array(n), nY: new Float32Array(n), nZ: new Float32Array(n),
+             colorMap: new Uint8ClampedArray(n*3), matMap: new Uint8Array(n)};
+  o.cv = Relief.makeCanvas(lw, lh); o.ctx = o.cv.getContext('2d');
+  for(let y=0;y<lh;y++){
+    for(let x=0;x<lw;x++){
+      const i = y*lw + x;
+      const a0 = (y*2)*PW + x*2, a1 = a0 + 1, a2 = a0 + PW, a3 = a2 + 1;
+      o.hgt[i] = (hgt[a0]+hgt[a1]+hgt[a2]+hgt[a3])*0.25;
+      o.nX[i]  = (nrm.nX[a0]+nrm.nX[a1]+nrm.nX[a2]+nrm.nX[a3])*0.25;
+      o.nY[i]  = (nrm.nY[a0]+nrm.nY[a1]+nrm.nY[a2]+nrm.nY[a3])*0.25;
+      o.nZ[i]  = (nrm.nZ[a0]+nrm.nZ[a1]+nrm.nZ[a2]+nrm.nZ[a3])*0.25;
+      o.matMap[i] = matMap[a0];
+      o.colorMap[i*3]   = colorMap[a0*3];
+      o.colorMap[i*3+1] = colorMap[a0*3+1];
+      o.colorMap[i*3+2] = colorMap[a0*3+2];
+    }
+  }
+  lo = o;
+}
+
+function shade(preview){
+  const k = preview ? 0.5 : 1;
+  const src = preview ? lo : null;
+  const field = preview ? lo.F : F;
+  const target = preview ? lo.ctx : artCtx;
+  field.shade(target, {
+    cov: preview ? lo.cov : cov, hgt: preview ? lo.hgt : hgt, hMax: hMax,
+    nX: preview ? lo.nX : nrm.nX, nY: preview ? lo.nY : nrm.nY, nZ: preview ? lo.nZ : nrm.nZ,
+    colorMap: preview ? lo.colorMap : colorMap,
+    matMap: preview ? lo.matMap : matMap, materials: materialsForShade,
+    light: {x: lampP.x*SS*k, y: lampP.y*SS*k,
+            h: L.h*SS*k, radius: L.radius*SS*k, color: '#fffaf2'},
     matte: true, contrast: 0.94, wrap: 0.42,
     tone: {shadow:'#2b2721', high:'#ffffff', amount: 0.10}
   });
@@ -335,19 +399,29 @@ function shade(){
 
 // ── p5 ─────────────────────────────────────────────────────────
 function allocate(){
-  F = Relief.field(DW, DH);
-  artCv = Relief.makeCanvas(DW, DH); artCtx = artCv.getContext('2d');
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS);
+  F = Relief.field(PW, PH);
+  artCv = Relief.makeCanvas(PW, PH); artCtx = artCv.getContext('2d');
   grainPat = artCtx.createPattern(Relief.grainTile(256, 4242, 26), 'repeat');
+}
+function styleCanvas(){
+  const c = document.querySelector('#stage canvas');
+  if(c){ c.style.width = DW + 'px'; c.style.height = DH + 'px'; }
+  document.getElementById('sheet').style.height = DH + 'px';
+  document.getElementById('labels').style.height = DH + 'px';
 }
 function setup(){
   pixelDensity(1);
-  DW = Math.max(720, windowWidth);
-  DH = Math.max(520, windowHeight);
-  createCanvas(DW, DH).parent('stage');
+  DW = Math.max(720, document.documentElement.clientWidth);
+  DH = Math.max(520, window.innerHeight);
   allocate();
+  createCanvas(PW, PH).parent('stage');
+  styleCanvas();
   noiseSeed(11);
   restore();
   buildChips(); syncUI();
+  lampT = {x: DW*0.28, y: DH*0.22};
+  lampP = {x: DW*0.28, y: DH*0.22};
   const boot = () => {
     if(!items.length) fillSet();
     else { build(); }
@@ -357,39 +431,54 @@ function setup(){
   else boot();
 }
 function windowResized(){
-  DW = Math.max(720, windowWidth);
-  DH = Math.max(520, windowHeight);
-  resizeCanvas(DW, DH);
-  allocate();
+  DW = Math.max(720, document.documentElement.clientWidth);
+  DH = Math.max(520, window.innerHeight);
+  allocate(); resizeCanvas(PW, PH); styleCanvas();
   if(ready) build();
 }
 function draw(){
   if(!ready) return;
   if(needBuild){ needBuild = false; build(); }
-  if(needShade){ shade(); needShade = false; }
+
+  // the lamp trails the cursor
+  const dx = lampT.x - lampP.x, dy = lampT.y - lampP.y;
+  if(Math.abs(dx) > 0.2 || Math.abs(dy) > 0.2){
+    lampP.x += dx*0.10; lampP.y += dy*0.10;
+    lampMoving = 14;                    // frames of grace before the crisp pass
+    needShade = true;
+  }
+  if(needShade){
+    if(lampMoving > 0){ shade(true); lampMoving--; needShade = lampMoving > 0; }
+    else { shade(false); needShade = false; }
+  }
   const g = drawingContext;
   g.setTransform(1,0,0,1,0,0);
   g.globalCompositeOperation = 'source-over';
   g.globalAlpha = 1;
-  g.clearRect(0,0,DW,DH);
-  g.drawImage(artCv, 0, 0);
+  g.clearRect(0,0,PW,PH);
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+  if(lampMoving > 0 && lo) g.drawImage(lo.cv, 0, 0, PW, PH);
+  else g.drawImage(artCv, 0, 0);
   if(selected >= 0 && items[selected]){
     const it = items[selected];
     g.save();
-    g.strokeStyle = 'rgba(47,42,36,0.28)'; g.lineWidth = 1; g.setLineDash([3,4]);
-    g.strokeRect(it.x - CELL_W/2 + 14, it.y - CELL_H/2 + 14, CELL_W - 28, CELL_H - 28);
+    g.strokeStyle = 'rgba(47,42,36,0.28)'; g.lineWidth = SS; g.setLineDash([3*SS,4*SS]);
+    g.strokeRect((it.x - CELL_W/2 + 14)*SS, (it.y - CELL_H/2 + 14)*SS, (CELL_W - 28)*SS, (CELL_H - 28)*SS);
     g.restore();
   }
   if(grainPat && L.grain > 0){
     g.save();
     g.globalCompositeOperation = 'overlay';
     g.globalAlpha = L.grain;
-    g.fillStyle = grainPat; g.fillRect(0,0,DW,DH);
+    g.fillStyle = grainPat; g.fillRect(0,0,PW,PH);
     g.restore();
   }
   g.globalCompositeOperation = 'source-over';
 }
 
+function mxCSS(){ return mouseX/SS; }
+function myCSS(){ return mouseY/SS; }
 function cellAt(x, y){
   for(let i=0;i<items.length;i++){
     const it = items[i];
@@ -398,20 +487,27 @@ function cellAt(x, y){
   return -1;
 }
 function overStage(){
-  if(mouseX < 0 || mouseY < 0 || mouseX > DW || mouseY > DH) return false;
-  const el = document.elementFromPoint(mouseX, mouseY);
-  return !el || el.tagName === 'CANVAS' || el.id === 'stage' || el.id === 'labels';
+  if(mouseX < 0 || mouseY < 0 || mouseX > PW || mouseY > PH) return false;
+  const el = document.elementFromPoint(winMouseX, winMouseY);   // viewport coords
+  return !el || el.tagName === 'CANVAS' || el.id === 'stage' ||
+         el.id === 'labels' || el.id === 'sheet' || el.className === 'cap';
 }
+function mouseMoved(){
+  if(mouseX >= 0 && mouseY >= 0 && mouseX <= PW && mouseY <= PH){
+    lampT.x = mxCSS(); lampT.y = myCSS();
+  }
+}
+function mouseDragged(){ mouseMoved(); }
 function mousePressed(){
   if(!ready || !overStage()) return;
-  const hit = cellAt(mouseX, mouseY);
+  const hit = cellAt(mxCSS(), myCSS());
   if(hit >= 0){ selected = hit; showInspector(); }
   else deselect();
   return false;
 }
 function doubleClicked(){
   if(!ready || !overStage()) return;
-  const hit = cellAt(mouseX, mouseY);
+  const hit = cellAt(mxCSS(), myCSS());
   if(hit >= 0){ selected = hit; openStudy(); }
   return false;
 }
@@ -503,7 +599,17 @@ function openStudy(){
   const it = items[selected]; if(!it) return;
   persist();
   const kind = (it.form === 'bloom' || (it.form === 'card' && it.content === 'flower')) ? 'flower' : 'press';
-  location.href = Hub.linkTo(kind, specFor(it), {from: 'clippings'});
+  const M = Matter.get(it.material);
+  // carry the sheet's conditions across so the study opens looking like the
+  // clipping it came from, not like the study's own defaults
+  const conditions = {
+    surface: 'ink', finish: 'matte', cSheet: GROUND, color: M.color,
+    lampColor: '#fffaf2', lightHeight: L.h, lightSize: 1400,
+    grainAmt: L.grain, contrast: 0.94, steps: 0,
+    toneShadow: '#2b2721', toneHigh: '#ffffff', toneAmt: 0.10,
+    substrate: SHAPE_OF[it.material] || 'wax'
+  };
+  location.href = Hub.linkTo(kind, specFor(it), {from: 'clippings', conditions: conditions});
 }
 
 // ── sheet ──────────────────────────────────────────────────────
@@ -543,9 +649,14 @@ function togglePanel(id){
   const el = document.getElementById(id);
   el.style.display = el.style.display === 'block' ? 'none' : 'block';
 }
+function showLight(k, v){
+  const idm = {h:'v-lightHeight', grain:'v-grainAmt'};
+  const el = document.getElementById(idm[k]);
+  if(el) el.textContent = v < 2 ? (+v).toFixed(2) : (+v).toFixed(0);
+}
 function setLight(k, v){
   L[k === 'ang' ? 'ang' : (k === 'h' ? 'h' : 'grain')] = v;
-  const idm = {ang:'v-lightAng', h:'v-lightHeight', grain:'v-grainAmt'};
+  const idm = {h:'v-lightHeight', grain:'v-grainAmt'};
   const el = document.getElementById(idm[k]);
   if(el) el.textContent = v < 2 ? (+v).toFixed(2) : (+v).toFixed(0);
   needShade = true; persist();
@@ -553,8 +664,6 @@ function setLight(k, v){
 function setSheetNote(v){ sheetNote = v; persist(); }
 function syncUI(){
   document.getElementById('sheet-note').value = sheetNote;
-  document.getElementById('s-lightAng').value = L.ang;
-  document.getElementById('v-lightAng').textContent = L.ang;
   document.getElementById('s-lightHeight').value = L.h;
   document.getElementById('v-lightHeight').textContent = L.h;
   document.getElementById('s-grainAmt').value = L.grain;
