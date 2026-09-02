@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sigil Pressure — Wax Seals</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/dies.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --anthropic-dark:#141413; --anthropic-light:#faf9f5; --anthropic-mid-gray:#b0aea5;
+  --anthropic-light-gray:#e8e6dc; --anthropic-orange:#d97757; --anthropic-blue:#6a9bcc; --anthropic-green:#788c5d;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--anthropic-light) 0%,#f5f3ee 100%);min-height:100vh;color:var(--anthropic-dark)}
+.container{display:flex;min-height:100vh;padding:20px;gap:20px}
+.sidebar{width:320px;flex-shrink:0;background:rgba(255,255,255,.95);backdrop-filter:blur(10px);padding:24px;border-radius:12px;box-shadow:0 10px 30px rgba(20,20,19,.1);overflow-y:auto;overflow-x:hidden;max-height:calc(100vh - 40px)}
+.sidebar h1{font-family:'Lora',serif;font-size:24px;font-weight:500;margin-bottom:8px}
+.sidebar .subtitle{color:var(--anthropic-mid-gray);font-size:14px;margin-bottom:28px;line-height:1.45}
+.control-section{margin-bottom:32px}
+.control-section h3{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.control-section h3::before{content:'•';color:var(--anthropic-orange);font-weight:bold}
+.seed-input{width:100%;background:var(--anthropic-light);padding:12px;border-radius:8px;font-family:'Courier New',monospace;font-size:14px;margin-bottom:12px;border:1px solid var(--anthropic-light-gray);text-align:center}
+.seed-input:focus{outline:none;border-color:var(--anthropic-orange);box-shadow:0 0 0 2px rgba(217,119,87,.1);background:#fff}
+.seed-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.regen-button{margin-bottom:0}
+.control-group{margin-bottom:20px}
+.control-group label{display:block;font-size:14px;font-weight:500;margin-bottom:8px}
+.slider-container{display:flex;align-items:center;gap:12px}
+.slider-container input[type=range]{flex:1;height:4px;background:var(--anthropic-light-gray);border-radius:2px;outline:none;-webkit-appearance:none}
+.slider-container input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--anthropic-orange);border-radius:50%;cursor:pointer;transition:all .2s ease}
+.slider-container input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.1);background:#c86641}
+.slider-container input[type=range]::-moz-range-thumb{width:16px;height:16px;background:var(--anthropic-orange);border-radius:50%;border:none;cursor:pointer}
+.value-display{font-family:'Courier New',monospace;font-size:12px;color:var(--anthropic-mid-gray);min-width:52px;text-align:right}
+.text-input{width:100%;background:var(--anthropic-light);padding:10px 12px;border-radius:8px;border:1px solid var(--anthropic-light-gray);font-family:'Lora',serif;font-size:16px;text-align:center;letter-spacing:.08em}
+.text-input:focus{outline:none;border-color:var(--anthropic-orange);background:#fff}
+.color-group{margin-bottom:16px}
+.color-group label{display:block;font-size:12px;color:var(--anthropic-mid-gray);margin-bottom:4px}
+.color-picker-container{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.color-picker-container input[type=color]{width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0}
+.color-value{font-family:'Courier New',monospace;font-size:12px;color:var(--anthropic-mid-gray)}
+.swatches{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.swatch{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.12);cursor:pointer;transition:transform .15s ease}
+.swatch:hover{transform:scale(1.15)}
+.button{background:var(--anthropic-orange);color:#fff;border:none;padding:10px 16px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s ease;width:100%;font-family:inherit}
+.button:hover{background:#c86641;transform:translateY(-1px)}
+.button:active{transform:translateY(0)}
+.button.secondary{background:var(--anthropic-blue)}
+.button.secondary:hover{background:#5a8bb8}
+.button.tertiary{background:var(--anthropic-green)}
+.button.tertiary:hover{background:#6b7b52}
+.button-row{display:flex;gap:8px;margin-bottom:8px}
+.button-row .button{flex:1}
+.hint{font-size:12px;color:var(--anthropic-mid-gray);line-height:1.5;margin-top:-8px;margin-bottom:20px}
+.canvas-area{flex:1;display:flex;align-items:center;justify-content:center;min-width:0}
+#canvas-container{width:100%;max-width:860px;border-radius:12px;overflow:hidden;box-shadow:0 20px 40px rgba(20,20,19,.1);background:#fff;cursor:crosshair}
+#canvas-container canvas{display:block;width:100%!important;height:auto!important}
+.loading{display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--anthropic-mid-gray);padding:120px 0}
+@media(max-width:600px){.container{flex-direction:column}.sidebar{width:100%;max-height:none}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="sidebar">
+    <h1>Sigil Pressure</h1>
+    <div class="subtitle">Wax modelled as a height field, then lit. Drag on the seal to move the candle. Click to press a fresh one.</div>
+
+    <div class="control-section">
+      <h3>Seed</h3>
+      <input type="number" id="seed-input" class="seed-input" value="12345" onchange="updateSeed()">
+      <div class="seed-controls">
+        <button class="button secondary" onclick="previousSeed()">← Prev</button>
+        <button class="button secondary" onclick="nextSeed()">Next →</button>
+      </div>
+      <button class="button tertiary regen-button" onclick="randomSeedAndUpdate()">↻ Random</button>
+    </div>
+
+    <div class="control-section">
+      <h3>Die</h3>
+      <div class="control-group">
+        <label>Name or initials <span style="color:var(--anthropic-mid-gray);font-weight:400">(blank = figure)</span></label>
+        <input type="text" id="initials" class="text-input" maxlength="24" value="M" oninput="updateInitials(this.value)">
+      </div>
+      <div class="control-group">
+        <label>Engraving detail</label>
+        <div class="slider-container">
+          <input type="range" id="detail" min="5" max="22" step="1" value="10" oninput="updateParam('detail',this.value)">
+          <span class="value-display" id="detail-value">10</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Emboss depth</label>
+        <div class="slider-container">
+          <input type="range" id="depth" min="0.2" max="2" step="0.05" value="1" oninput="updateParam('depth',this.value)">
+          <span class="value-display" id="depth-value">1</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Squeeze rim</label>
+        <div class="slider-container">
+          <input type="range" id="rim" min="0" max="2" step="0.05" value="1" oninput="updateParam('rim',this.value)">
+          <span class="value-display" id="rim-value">1</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>Pour</h3>
+      <div class="control-group">
+        <label>Spread</label>
+        <div class="slider-container">
+          <input type="range" id="spread" min="170" max="370" step="5" value="300" oninput="updateParam('spread',this.value)">
+          <span class="value-display" id="spread-value">300</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Edge irregularity</label>
+        <div class="slider-container">
+          <input type="range" id="irregularity" min="0" max="0.5" step="0.01" value="0.2" oninput="updateParam('irregularity',this.value)">
+          <span class="value-display" id="irregularity-value">0.2</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Drips</label>
+        <div class="slider-container">
+          <input type="range" id="drips" min="0" max="7" step="1" value="3" oninput="updateParam('drips',this.value)">
+          <span class="value-display" id="drips-value">3</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>Light &amp; surface</h3>
+      <div class="control-group">
+        <label>Gloss</label>
+        <div class="slider-container">
+          <input type="range" id="gloss" min="0" max="1" step="0.02" value="0.38" oninput="updateParam('gloss',this.value)">
+          <span class="value-display" id="gloss-value">0.38</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Relief</label>
+        <div class="slider-container">
+          <input type="range" id="relief" min="4" max="40" step="1" value="18" oninput="updateParam('relief',this.value)">
+          <span class="value-display" id="relief-value">18</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Grain</label>
+        <div class="slider-container">
+          <input type="range" id="grain" min="0" max="1.5" step="0.05" value="0.4" oninput="updateParam('grain',this.value)">
+          <span class="value-display" id="grain-value">0.4</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>Colours</h3>
+      <div class="color-group">
+        <label>Wax</label>
+        <div class="color-picker-container">
+          <input type="color" id="wax" value="#8f1d2b" oninput="updateColor('wax',this.value)">
+          <span class="color-value" id="wax-value">#8f1d2b</span>
+        </div>
+        <div class="swatches" id="wax-swatches"></div>
+      </div>
+      <div class="color-group">
+        <label>Paper</label>
+        <div class="color-picker-container">
+          <input type="color" id="paper" value="#ece5d8" oninput="updateColor('paper',this.value)">
+          <span class="color-value" id="paper-value">#ece5d8</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>Actions</h3>
+      <div class="button-row">
+        <button class="button" onclick="regenerate()">Regenerate</button>
+        <button class="button secondary" onclick="resetParameters()">Reset</button>
+      </div>
+      <button class="button tertiary" onclick="downloadPNG()">↓ Download PNG</button>
+    </div>
+  </div>
+
+  <div class="canvas-area">
+    <div id="canvas-container"><div class="loading">Melting wax…</div></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// SIGIL PRESSURE — wax simulated as a height field, then lit.
+// Pipeline per stamp:
+//   rasterise pour silhouette  →  coverage mask
+//   blur + power curve         →  cooling dome
+//   die mask                   →  flattened plateau
+//   ring band                  →  squeezed-out bead
+//   engraving mask (negative)  →  sunken motif
+//   perlin                     →  microtexture
+//   gradients                  →  normals   [computed once]
+//   Blinn-Phong + AO + scatter →  pixels    [recomputed on relight]
+// ═══════════════════════════════════════════════════════════════
+
+const N = 900, CX = N/2, CY = N/2, TWOPI = Math.PI*2;
+
+let params = {
+  seed: 12345,
+  spread: 300, irregularity: 0.20, drips: 3,
+  detail: 10, depth: 1.0, rim: 1.0,
+  gloss: 0.38, relief: 18, grain: 0.4,
+  initials: 'M',
+  wax: '#8f1d2b', paper: '#ece5d8'
+};
+const defaultParams = {...params};
+
+const WAX_SWATCHES = ['#8f1d2b','#5d1420','#c0392b','#d97757','#1f3b57','#20402f','#3b2f4a','#141413','#b08d3f','#7a6a5a'];
+
+let rnd, rc, rctx, sealCv, sealCtx, shadowCv, shadowCtx, bgCv, bgCtx;
+let cov, hgt, nX, nY, nZ, hMax = 1;
+let lampT = {x: CX - 160, y: CY - 190}, lampP = {x: CX - 160, y: CY - 190};
+const LAMP = {h: 250, radius: 540, ease: 0.045};
+let needShade = false, stampT = 0, ready = false;
+
+// ── seeded rng (xorshift32) ────────────────────────────────────
+function makeRng(seed){
+  let s = (seed>>>0) || 1;
+  return function(){
+    s ^= s<<13; s>>>=0;
+    s ^= s>>>17;
+    s ^= s<<5;  s>>>=0;
+    return s/4294967296;
+  };
+}
+const clampI = v => v<0 ? 0 : (v>=N ? N-1 : v);
+function hexRgb(h){
+  h = h.replace('#','');
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+}
+function makeCanvas(){
+  const c = document.createElement('canvas');
+  c.width = N; c.height = N;
+  return c;
+}
+
+// ── rasterise a shape into a Float32 coverage field ────────────
+function raster(fn){
+  rctx.setTransform(1,0,0,1,0,0);
+  rctx.clearRect(0,0,N,N);
+  rctx.fillStyle = '#fff'; rctx.strokeStyle = '#fff';
+  rctx.lineJoin = 'round'; rctx.lineCap = 'round';
+  fn(rctx);
+  const d = rctx.getImageData(0,0,N,N).data;
+  const out = new Float32Array(N*N);
+  for(let i=0,j=3;i<out.length;i++,j+=4) out[i] = d[j]/255;
+  return out;
+}
+
+// ── separable box blur, 3 passes ≈ gaussian ────────────────────
+function boxH(src,dst,r){
+  const inv = 1/(2*r+1);
+  for(let y=0;y<N;y++){
+    const o = y*N; let sum = 0;
+    for(let x=-r;x<=r;x++) sum += src[o+clampI(x)];
+    for(let x=0;x<N;x++){
+      dst[o+x] = sum*inv;
+      sum += src[o+clampI(x+r+1)] - src[o+clampI(x-r)];
+    }
+  }
+}
+function boxV(src,dst,r){
+  const inv = 1/(2*r+1);
+  for(let x=0;x<N;x++){
+    let sum = 0;
+    for(let y=-r;y<=r;y++) sum += src[clampI(y)*N+x];
+    for(let y=0;y<N;y++){
+      dst[y*N+x] = sum*inv;
+      sum += src[clampI(y+r+1)*N+x] - src[clampI(y-r)*N+x];
+    }
+  }
+}
+function blur(src,r,passes){
+  passes = passes || 3;
+  if(r < 1) return Float32Array.from(src);
+  let a = Float32Array.from(src), b = new Float32Array(N*N);
+  for(let p=0;p<passes;p++){ boxH(a,b,r); boxV(b,a,r); }
+  return a;
+}
+
+// ── the pour ───────────────────────────────────────────────────
+const angDelta = (a,b) => Math.atan2(Math.sin(a-b), Math.cos(a-b));
+
+function pourPath(ctx, lobes, nOff, R){
+  const steps = 900;
+  ctx.beginPath();
+  for(let i=0;i<=steps;i++){
+    const t = i/steps*TWOPI, cn = Math.cos(t), sn = Math.sin(t);
+    let r = R * (1 + (noise(nOff + cn*1.35, nOff*0.7 + sn*1.35) - 0.5) * params.irregularity * 2.2);
+    for(let k=0;k<lobes.length;k++){
+      const L = lobes[k], d = angDelta(t, L.a);
+      r += R * L.h * Math.exp(-(d*d)/(2*L.w*L.w));
+    }
+    const x = CX + cn*r, y = CY + sn*r;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+}
+
+// ── the die ────────────────────────────────────────────────────
+function ring(ctx,r){ ctx.beginPath(); ctx.arc(0,0,r,0,TWOPI); ctx.stroke(); }
+
+function rosette(ctx,R){
+  const n = Math.max(5, Math.round(params.detail));
+  for(let i=0;i<n;i++){
+    ctx.save(); ctx.rotate(i/n*TWOPI);
+    ctx.beginPath();
+    ctx.moveTo(0,-R*0.13);
+    ctx.quadraticCurveTo(R*0.34,-R*0.40, R*0.88, 0);
+    ctx.quadraticCurveTo(R*0.34, R*0.40, 0, R*0.13);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  ctx.beginPath(); ctx.arc(0,0,R*0.19,0,TWOPI); ctx.fill();
+}
+
+function starburst(ctx,R){
+  const n = Math.max(5, Math.round(params.detail));
+  ctx.beginPath();
+  for(let i=0;i<n*2;i++){
+    const a = i/(n*2)*TWOPI - Math.PI/2;
+    const r = (i%2) ? R*0.33 : R*0.92;
+    const x = Math.cos(a)*r, y = Math.sin(a)*r;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.closePath(); ctx.fill();
+}
+
+function compass(ctx,R){
+  const n = Math.max(6, Math.round(params.detail))*2;
+  for(let i=0;i<n;i++){
+    const len = (i%2) ? R*0.54 : R*0.93;
+    const w = (i%2) ? R*0.030 : R*0.055;
+    ctx.save(); ctx.rotate(i/n*TWOPI);
+    ctx.beginPath();
+    ctx.moveTo(R*0.10,-w); ctx.lineTo(len,0); ctx.lineTo(R*0.10,w);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  ctx.beginPath(); ctx.arc(0,0,R*0.14,0,TWOPI); ctx.fill();
+}
+
+function laurel(ctx,R){
+  const n = Math.max(5, Math.round(params.detail*0.8));
+  for(let s=-1;s<=1;s+=2){
+    for(let i=0;i<n;i++){
+      const t = i/(n-1);
+      const a = Math.PI/2 + s*(0.28 + t*2.28);
+      const rr = R*0.88;
+      ctx.save();
+      ctx.translate(Math.cos(a)*rr, Math.sin(a)*rr);
+      ctx.rotate(a + s*0.55);
+      ctx.beginPath();
+      ctx.ellipse(0,0,R*0.145,R*0.052,0,0,TWOPI);
+      ctx.fill();
+      ctx.restore();
+    }
+    // stem
+    ctx.beginPath();
+    ctx.lineWidth = R*0.022;
+    for(let i=0;i<=40;i++){
+      const t = i/40;
+      const a = Math.PI/2 + s*(0.20 + t*2.42);
+      const x = Math.cos(a)*R*0.86, y = Math.sin(a)*R*0.86;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+}
+
+function drawDie(ctx, dieR, kind){
+  ctx.save();
+  ctx.translate(CX,CY);
+  ctx.lineWidth = dieR*0.030; ring(ctx, dieR*0.955);
+  ctx.lineWidth = dieR*0.015; ring(ctx, dieR*0.795);
+  const nb = Math.round(params.detail*2.4) + 16;
+  for(let i=0;i<nb;i++){
+    const a = i/nb*TWOPI;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a)*dieR*0.877, Math.sin(a)*dieR*0.877, dieR*0.021, 0, TWOPI);
+    ctx.fill();
+  }
+  const inner = dieR*0.70;
+  const txt = params.initials.trim().toUpperCase();
+  if(txt){
+    if(txt.length <= 3){
+      laurel(ctx, inner);
+    } else {
+      ctx.lineWidth = inner*0.020;
+      [-1,1].forEach(sd => {
+        ctx.beginPath();
+        ctx.moveTo(-inner*0.52, sd*inner*0.62); ctx.lineTo(inner*0.52, sd*inner*0.62);
+        ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, sd*inner*0.62, inner*0.045, 0, TWOPI); ctx.fill();
+      });
+    }
+    Dies.monogram(ctx, inner*(txt.length > 3 ? 0.96 : 1), txt);
+  } else {
+    if(kind===0) rosette(ctx, inner);
+    else if(kind===1) starburst(ctx, inner);
+    else compass(ctx, inner);
+  }
+  ctx.restore();
+}
+
+// ── build one impression ───────────────────────────────────────
+function buildSeal(){
+  rnd = makeRng(params.seed);
+  noiseSeed(params.seed);
+  const nOff = 40 + rnd()*400;
+  const R = params.spread;
+  const dieR = R*0.74;
+
+  const lobes = [];
+  const nl = 4 + Math.floor(rnd()*4);
+  for(let i=0;i<nl;i++) lobes.push({a: rnd()*TWOPI, w: 0.30+rnd()*0.55, h: 0.05+rnd()*0.11});
+  for(let i=0;i<params.drips;i++) lobes.push({a: Math.PI/2 + (rnd()-0.5)*2.0, w: 0.055+rnd()*0.075, h: 0.10+rnd()*0.30});
+  const kind = Math.floor(rnd()*3);
+
+  cov = raster(c => { pourPath(c, lobes, nOff, R); c.fill(); });
+
+  const dome    = blur(cov, Math.max(2, Math.round(R*0.075)));
+  const dieSoft = blur(raster(c => { c.beginPath(); c.arc(CX,CY,dieR,0,TWOPI); c.fill(); }), Math.max(2, Math.round(R*0.040)));
+  const motif   = blur(raster(c => drawDie(c, dieR, kind)), 3, 2);
+
+  hgt = new Float32Array(N*N);
+  const gs = 0.05, bandSig = R*0.045, bandR = dieR*1.02;
+  hMax = 0.0001;
+  for(let y=0;y<N;y++){
+    const dy = y - CY;
+    for(let x=0;x<N;x++){
+      const i = y*N + x, c = cov[i];
+      if(c <= 0.002){ hgt[i] = 0; continue; }
+      let d = dome[i]*1.45; if(d > 1) d = 1;
+      let h = Math.pow(d, 0.42);
+      const dm = dieSoft[i]*0.92;
+      h = h*(1-dm) + Math.min(h, 0.86)*dm;                       // die flattens the field
+      const dx = x - CX, dist = Math.sqrt(dx*dx + dy*dy);
+      const bd = dist - bandR;
+      h += Math.exp(-(bd*bd)/(2*bandSig*bandSig)) * 0.20 * params.rim * c;   // squeezed bead
+      h -= motif[i] * 0.34 * params.depth * dm;                  // engraving sinks
+      h += (noise(x*gs, y*gs, nOff) - 0.5) * 0.055 * params.grain;
+      h *= c;
+      hgt[i] = h;
+      if(h > hMax) hMax = h;
+    }
+  }
+
+  // normals
+  nX = new Float32Array(N*N); nY = new Float32Array(N*N); nZ = new Float32Array(N*N);
+  const st = params.relief;
+  for(let y=1;y<N-1;y++){
+    for(let x=1;x<N-1;x++){
+      const i = y*N + x;
+      if(cov[i] <= 0.004){ nZ[i] = 1; continue; }
+      const vx = -(hgt[i+1] - hgt[i-1]) * st;
+      const vy = -(hgt[i+N] - hgt[i-N]) * st;
+      const inv = 1/Math.sqrt(vx*vx + vy*vy + 1);
+      nX[i] = vx*inv; nY[i] = vy*inv; nZ[i] = inv;
+    }
+  }
+
+  // cast shadow
+  const sh = blur(cov, Math.max(2, Math.round(R*0.055)));
+  const sImg = shadowCtx.createImageData(N,N), sd = sImg.data;
+  for(let i=0;i<N*N;i++){
+    sd[i*4] = 46; sd[i*4+1] = 38; sd[i*4+2] = 30;
+    sd[i*4+3] = Math.min(255, sh[i]*255*0.92);
+  }
+  shadowCtx.putImageData(sImg,0,0);
+
+  needShade = true;
+}
+
+// ── lighting pass: a small point lamp, softly falling off ──────
+function shade(){
+  const img = sealCtx.createImageData(N,N), d = img.data;
+  const lpx = lampP.x, lpy = lampP.y, lph = LAMP.h, lph2 = lph*lph;
+  const invR2 = 1/(LAMP.radius*LAMP.radius);
+  const w = hexRgb(params.wax), wr = w[0], wg = w[1], wb = w[2];
+  const shin = 5 + params.gloss*32, spa = params.gloss*0.55;   // broad lobe, no pinpoint
+  const invH = 1/hMax, wrap = 0.40, invW = 1/(1+wrap);
+
+  for(let y=0;y<N;y++){
+    const dy = lpy - y, dy2 = dy*dy, row = y*N;
+    for(let x=0;x<N;x++){
+      const i = row + x, o = i*4;
+      const c = cov[i];
+      if(c <= 0.004){ d[o+3] = 0; continue; }
+
+      const dx = lpx - x;
+      const flat = dx*dx + dy2;
+      const inv = 1/Math.sqrt(flat + lph2);
+      const lx = dx*inv, ly = dy*inv, lz = lph*inv;
+      const atten = 1/(1 + flat*invR2);
+
+      const nx = nX[i], ny = nY[i], nz = nZ[i];
+      let diff = (nx*lx + ny*ly + nz*lz + wrap)*invW;
+      if(diff < 0) diff = 0;
+      diff *= atten;
+
+      let hx = lx, hy = ly, hz = lz + 1;
+      const hn = 1/Math.sqrt(hx*hx + hy*hy + hz*hz);
+      let sp = (nx*hx + ny*hy + nz*hz)*hn;
+      sp = sp > 0 ? Math.pow(sp, shin)*spa*atten : 0;
+      sp = sp/(1 + sp*0.8);
+
+      const ao = 0.44 + 0.56*Math.min(1, hgt[i]*invH*1.3);
+      const base = 0.24*ao, key = 0.76*diff*ao*1.55;
+      const sc = Math.pow(1 - nz, 2.4)*0.20*(0.35 + 0.65*atten);
+
+      let r = wr*(base + key + sc)      + sp*236;
+      let g = wg*(base + key*0.97 + sc*0.84) + sp*228;
+      let b = wb*(base + key*0.90 + sc*0.68) + sp*216;
+      d[o]   = r > 255 ? 255 : r;
+      d[o+1] = g > 255 ? 255 : g;
+      d[o+2] = b > 255 ? 255 : b;
+      d[o+3] = c*255;
+    }
+  }
+  sealCtx.putImageData(img,0,0);
+}
+
+// ── paper ──────────────────────────────────────────────────────
+function buildBackground(){
+  const pr = hexRgb(params.paper), fib = makeRng(777);
+  const img = bgCtx.createImageData(N,N), d = img.data;
+  for(let y=0;y<N;y++){
+    const dy = (y-CY)/N;
+    for(let x=0;x<N;x++){
+      const i = (y*N + x)*4;
+      const n = (noise(x*0.021 + 900, y*0.021 + 900) - 0.5)*18 + (fib()-0.5)*8;
+      const dx = (x-CX)/N;
+      const v = 1 - (dx*dx + dy*dy)*0.42;
+      d[i]   = Math.max(0, (pr[0]+n)*v);
+      d[i+1] = Math.max(0, (pr[1]+n)*v);
+      d[i+2] = Math.max(0, (pr[2]+n*0.85)*v);
+      d[i+3] = 255;
+    }
+  }
+  bgCtx.putImageData(img,0,0);
+}
+
+// ── p5 ─────────────────────────────────────────────────────────
+function setup(){
+  pixelDensity(1);
+  const cnv = createCanvas(N,N);
+  cnv.parent('canvas-container');
+  rc = makeCanvas();      rctx     = rc.getContext('2d', {willReadFrequently:true});
+  sealCv = makeCanvas();  sealCtx  = sealCv.getContext('2d');
+  shadowCv = makeCanvas();shadowCtx= shadowCv.getContext('2d');
+  bgCv = makeCanvas();    bgCtx    = bgCv.getContext('2d');
+  buildSwatches();
+  const boot = () => {
+    buildBackground();
+    buildSeal();
+    ready = true;
+    const l = document.querySelector('.loading');
+    if(l) l.style.display = 'none';
+  };
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(boot).catch(boot);
+  else boot();
+}
+
+function draw(){
+  if(!ready) return;
+  // the lamp trails the cursor rather than snapping to it
+  const mx = lampT.x - lampP.x, my = lampT.y - lampP.y;
+  if(Math.abs(mx) > 0.15 || Math.abs(my) > 0.15){
+    lampP.x += mx*LAMP.ease; lampP.y += my*LAMP.ease;
+    needShade = true;
+  }
+  if(needShade){ shade(); needShade = false; }
+
+  const g = drawingContext;
+  g.setTransform(1,0,0,1,0,0);
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+  g.clearRect(0,0,N,N);
+  g.drawImage(bgCv,0,0);
+
+  const sx = (CX - lampP.x)*0.075, sy = (CY - lampP.y)*0.075;
+  g.save(); g.globalAlpha = 0.62; g.drawImage(shadowCv, sx, sy); g.restore();
+
+  let s = 1, a = 1;
+  if(stampT > 0){
+    stampT = Math.max(0, stampT - 0.06);
+    const e = stampT*stampT;
+    s = 1 + e*0.11; a = 1 - e*0.9;
+  }
+  g.save();
+  g.globalAlpha = a;
+  g.translate(CX,CY); g.scale(s,s); g.translate(-CX,-CY);
+  g.drawImage(sealCv,0,0);
+  g.restore();
+
+  const grd = g.createRadialGradient(lampP.x, lampP.y, LAMP.radius*0.12, lampP.x, lampP.y, LAMP.radius*2.1);
+  grd.addColorStop(0,   'rgba(255,246,228,0.20)');
+  grd.addColorStop(0.42,'rgba(255,240,215,0.00)');
+  grd.addColorStop(1,   'rgba(24,19,14,0.20)');
+  g.save();
+  g.globalCompositeOperation = 'soft-light';
+  g.fillStyle = grd; g.fillRect(0,0,N,N);
+  g.restore();
+  g.globalCompositeOperation = 'source-over';
+}
+
+function overCanvas(){ return mouseX >= 0 && mouseY >= 0 && mouseX < width && mouseY < height; }
+function aimLight(){
+  if(!overCanvas()) return;
+  lampT.x = mouseX; lampT.y = mouseY;
+}
+function mouseMoved(){ aimLight(); }
+function mouseDragged(){ aimLight(); return false; }
+function mousePressed(){
+  if(!overCanvas() || !ready) return;
+  params.seed = params.seed + 1;
+  updateSeedDisplay();
+  buildSeal();
+  stampT = 1;
+  return false;
+}
+function touchMoved(){ aimLight(); return false; }
+
+// ── UI ─────────────────────────────────────────────────────────
+function regenerate(){ if(ready){ buildSeal(); stampT = 0.7; } }
+
+function updateParam(name, value){
+  params[name] = parseFloat(value);
+  document.getElementById(name + '-value').textContent = value;
+  if(ready) buildSeal();
+}
+function updateInitials(v){ params.initials = v; if(ready) buildSeal(); }
+function updateColor(name, v){
+  params[name] = v;
+  document.getElementById(name + '-value').textContent = v;
+  if(!ready) return;
+  if(name === 'paper') buildBackground(); else needShade = true;
+}
+function buildSwatches(){
+  const host = document.getElementById('wax-swatches');
+  WAX_SWATCHES.forEach(hex => {
+    const s = document.createElement('div');
+    s.className = 'swatch'; s.style.background = hex; s.title = hex;
+    s.onclick = () => {
+      document.getElementById('wax').value = hex;
+      updateColor('wax', hex);
+    };
+    host.appendChild(s);
+  });
+}
+function downloadPNG(){ saveCanvas('sigil-' + params.seed, 'png'); }
+
+function updateSeedDisplay(){ document.getElementById('seed-input').value = params.seed; }
+function updateSeed(){
+  const v = parseInt(document.getElementById('seed-input').value);
+  if(v && v > 0){ params.seed = v; buildSeal(); } else updateSeedDisplay();
+}
+function previousSeed(){ params.seed = Math.max(1, params.seed - 1); updateSeedDisplay(); buildSeal(); stampT = 0.7; }
+function nextSeed(){ params.seed += 1; updateSeedDisplay(); buildSeal(); stampT = 0.7; }
+function randomSeedAndUpdate(){ params.seed = Math.floor(Math.random()*999999)+1; updateSeedDisplay(); buildSeal(); stampT = 1; }
+
+function resetParameters(){
+  params = {...defaultParams};
+  ['spread','irregularity','drips','detail','depth','rim','gloss','relief','grain'].forEach(k => {
+    document.getElementById(k).value = params[k];
+    document.getElementById(k + '-value').textContent = params[k];
+  });
+  document.getElementById('initials').value = params.initials;
+  ['wax','paper'].forEach(k => {
+    document.getElementById(k).value = params[k];
+    document.getElementById(k + '-value').textContent = params[k];
+  });
+  updateSeedDisplay();
+  buildBackground();
+  buildSeal();
+}
+</script>
+</body>
+</html>

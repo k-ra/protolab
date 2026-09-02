@@ -1,39 +1,52 @@
 # PROTOLAB
 
-A sheet of paper you can plant things in.
+A sheet of paper you can plant things in — and the menu for everything else.
 
-Click anywhere to press a specimen into the page. Click one to select it and
-change what it is. Drag to move it. Move the mouse and a small lamp travels
-across the surface behind your cursor, because none of this is drawn — it's
-modelled as height and then lit.
+**[The sheet](./protolab/)** is the landing page and the navigation at once.
+Click bare paper to plant a bloom. Click a specimen to select it and change what
+it is. Drag to move it. **Double-click it to open the study that made it**, with
+its settings intact; edit there, hit *Save to hub*, and it comes back changed.
+Anything you like goes in the **Library**, which persists between visits.
 
-**Inked** gives you flowers as coloured objects sitting on paper.
-**Blind** removes the ink entirely: the whole frame becomes one sheet and every
-flower is nothing but a change in its height, invisible until the light rakes
-across it.
+Move the mouse and a small lamp travels across the surface behind your cursor,
+because none of this is drawn — it's modelled as height and then lit.
 
-Everything persists to `localStorage`, and **Settings → Copy** puts the whole
-arrangement on your clipboard as JSON. Paste one back in and hit Apply.
+**Inked** puts colour on the paper. **Blind** takes it all away: the frame
+becomes one sheet and every specimen is nothing but a change in its height,
+invisible until the light rakes across it.
 
----
+## The studies
+
+| | |
+|---|---|
+| [The Press](./press/) | wax · clay · paper · metal, pressed with a monogram, emblem, figure or stationery die |
+| [Specimen](./flowers/) | twelve species grown from a seed, inked or blind-embossed |
+| [Sigil Pressure](./wax-seal/) | the first one — a wax pour with its own pipeline |
 
 ## How it works
 
-Nothing here draws a picture of a flower. The pipeline is:
+Nothing draws a picture of anything. The pipeline is:
 
 ```
-rasterise petals with gradient fills   →  a height field
-gradients of that field                →  surface normals    (once)
-a small point lamp + soft materials    →  pixels             (every relight)
+rasterise with gradient fills   →  a height field
+gradients of that field         →  surface normals    (once)
+a small point lamp + materials  →  pixels             (every relight)
 ```
 
-Two details do most of the work:
+Three details do most of the work:
 
 **Petals are filled with a gradient along their axis** — high at the base,
-falling to the tip — so the bloom becomes a mound without anything drawing a
-dome. Cupped species lift the tip back up. Each petal is then stroked with a
-darker grey, which cuts a groove between overlapping petals; that crease is what
-makes a flat mask read as three-dimensional under raking light.
+falling to the tip — so a bloom becomes a mound without anything drawing a dome.
+Each petal is then stroked darker, cutting a groove between overlapping petals;
+that crease is what makes a flat mask read as three-dimensional under raking
+light. Seals use the same trick: a domed body, a flat plateau where the die
+landed, a lighter ring for the material squeezed out at its edge, and the motif
+painted darker.
+
+**The whole frame is one surface.** Specimens aren't sprites composited over a
+background — they're marks in a single shared height field, which is why the
+wordmark can be part of the paper and why the light falls across everything at
+once.
 
 **The relief field is computed at ~60% of display resolution and upscaled**,
 with film grain applied at full resolution on top. The grain hides the
@@ -54,13 +67,20 @@ sit at the end of the pass.
 | | |
 |---|---|
 | `lib/relief.js` | the height-field engine — raster, blur, normals, shade, grain, tone |
-| `lib/flora.js` | flower geometry: 12 species, grown from a seed, rendered as height or colour |
-| `index.html` | the page |
+| `lib/flora.js` | 12 flower species, grown from a seed, rendered as height or colour |
+| `lib/press.js` | a pressed seal, same contract as a flower |
+| `lib/dies.js` | the engraver's vocabulary — rings, beads, monograms, laurels, crests |
+| `lib/hub.js` | the library, and how presets travel between pages |
 | `PRESETS.md` | saved lighting and paper conditions |
 
-No build step and no dependencies beyond a vendored copy of p5.js, which is used
-only for `noise()`. Serve the folder rather than opening `index.html` over
-`file://` — the shared scripts need an origin.
+A specimen is `{kind, spec}` — `kind` picks the renderer, `spec` is what that
+renderer needs. The same shape is used on the canvas, in the library, and in the
+URL hash that carries a preset into a study and back. Adding a new material
+means writing one `stamp(ctx, spec, mode)` function.
+
+No build step, and no dependency beyond a vendored p5.js used only for
+`noise()`. Serve the folder rather than opening over `file://` — the shared
+scripts need an origin.
 
 ```bash
 npx serve .

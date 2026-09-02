@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Press — wax, clay, paper, metal</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<script src="../lib/dies.js"></script>
+<script src="../lib/flora.js"></script>
+<script src="../lib/press.js"></script>
+<script src="../lib/hub.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--anthropic-dark:#141413;--anthropic-light:#faf9f5;--anthropic-mid-gray:#b0aea5;--anthropic-light-gray:#e8e6dc;--anthropic-orange:#d97757;--anthropic-blue:#6a9bcc;--anthropic-green:#788c5d}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--anthropic-light) 0%,#f5f3ee 100%);min-height:100vh;color:var(--anthropic-dark)}
+.container{display:flex;min-height:100vh;padding:20px;gap:20px}
+.sidebar{width:320px;flex-shrink:0;background:rgba(255,255,255,.95);backdrop-filter:blur(10px);padding:24px;border-radius:12px;box-shadow:0 10px 30px rgba(20,20,19,.1);overflow-y:auto;max-height:calc(100vh - 40px)}
+.sidebar h1{font-family:'Lora',serif;font-size:24px;font-weight:500;margin-bottom:8px}
+.sidebar .subtitle{color:var(--anthropic-mid-gray);font-size:14px;margin-bottom:28px;line-height:1.45}
+.control-section{margin-bottom:30px}
+.control-section h3{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.control-section h3::before{content:'•';color:var(--anthropic-orange);font-weight:bold}
+.seed-input{width:100%;background:var(--anthropic-light);padding:12px;border-radius:8px;font-family:'Courier New',monospace;font-size:14px;margin-bottom:12px;border:1px solid var(--anthropic-light-gray);text-align:center}
+.seed-input:focus{outline:none;border-color:var(--anthropic-orange);box-shadow:0 0 0 2px rgba(217,119,87,.1);background:#fff}
+.seed-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.control-group{margin-bottom:18px}
+.control-group label{display:block;font-size:14px;font-weight:500;margin-bottom:8px}
+.slider-container{display:flex;align-items:center;gap:12px}
+.slider-container input[type=range]{flex:1;height:4px;background:var(--anthropic-light-gray);border-radius:2px;outline:none;-webkit-appearance:none}
+.slider-container input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--anthropic-orange);border-radius:50%;cursor:pointer;transition:all .2s ease}
+.slider-container input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.1);background:#c86641}
+.slider-container input[type=range]::-moz-range-thumb{width:16px;height:16px;background:var(--anthropic-orange);border-radius:50%;border:none;cursor:pointer}
+.value-display{font-family:'Courier New',monospace;font-size:12px;color:var(--anthropic-mid-gray);min-width:52px;text-align:right}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px}
+.seg button{padding:9px 6px;border:1px solid var(--anthropic-light-gray);background:#fff;border-radius:7px;font-family:inherit;font-size:13px;cursor:pointer;transition:all .18s ease;color:var(--anthropic-dark)}
+.seg button:hover{border-color:var(--anthropic-orange)}
+.seg button.on{background:var(--anthropic-dark);color:#fff;border-color:var(--anthropic-dark)}
+.text-input{width:100%;background:var(--anthropic-light);padding:10px 12px;border-radius:8px;border:1px solid var(--anthropic-light-gray);font-family:'Lora',serif;font-size:15px;text-align:center;letter-spacing:.06em;margin-bottom:8px}
+.text-input:focus{outline:none;border-color:var(--anthropic-orange);background:#fff}
+.color-picker-container{display:flex;align-items:center;gap:8px}
+.color-picker-container input[type=color]{width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0}
+.color-value{font-family:'Courier New',monospace;font-size:12px;color:var(--anthropic-mid-gray)}
+.swatches{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.palettes{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.pal{display:flex;border-radius:5px;overflow:hidden;cursor:pointer;border:1px solid rgba(0,0,0,.12);transition:transform .15s ease}
+.pal:hover{transform:scale(1.08)}
+.pal i{display:block;width:16px;height:20px}
+.swatch{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.12);cursor:pointer;transition:transform .15s ease}
+.swatch:hover{transform:scale(1.15)}
+.button{background:var(--anthropic-orange);color:#fff;border:none;padding:10px 16px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s ease;width:100%;font-family:inherit}
+.button:hover{background:#c86641;transform:translateY(-1px)}
+.button.secondary{background:var(--anthropic-blue)}.button.secondary:hover{background:#5a8bb8}
+.button.tertiary{background:var(--anthropic-green)}.button.tertiary:hover{background:#6b7b52}
+.button-row{display:flex;gap:8px;margin-bottom:8px}.button-row .button{flex:1}
+.canvas-area{flex:1;display:flex;align-items:center;justify-content:center;min-width:0}
+#canvas-container{width:100%;max-width:820px;border-radius:12px;overflow:hidden;box-shadow:0 20px 40px rgba(20,20,19,.1);background:#fff;cursor:crosshair}
+#canvas-container canvas{display:block;width:100%!important;height:auto!important}
+.loading{display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--anthropic-mid-gray);padding:120px 0}
+@media(max-width:600px){.container{flex-direction:column}.sidebar{width:100%;max-height:none}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="sidebar">
+    <h1>The Press</h1>
+    <div class="subtitle">One die, four materials. Move the mouse to carry the lamp across the surface — the light trails behind you. Click to press again.</div>
+
+    <div class="control-section">
+      <h3>Finish</h3>
+      <div class="seg" id="seg-finish">
+        <button data-v="matte">Matte</button>
+        <button data-v="antique">Antique</button>
+      </div>
+      <div class="control-group">
+        <label>Grain</label>
+        <div class="slider-container"><input type="range" id="grainAmt" min="0" max="0.6" step="0.02" value="0.3" oninput="updateLight('grainAmt',this.value)"><span class="value-display" id="grainAmt-value">0.3</span></div>
+      </div>
+      <div class="control-group">
+        <label>Contrast</label>
+        <div class="slider-container"><input type="range" id="contrast" min="0.35" max="1.2" step="0.02" value="0.88" oninput="updateLight('contrast',this.value)"><span class="value-display" id="contrast-value">0.88</span></div>
+      </div>
+      <div class="control-group">
+        <label>Bands <span style="color:var(--anthropic-mid-gray);font-weight:400">(0 = smooth)</span></label>
+        <div class="slider-container"><input type="range" id="steps" min="0" max="32" step="1" value="0" oninput="updateLight('steps',this.value)"><span class="value-display" id="steps-value">0</span></div>
+      </div>
+      <div class="control-group">
+        <label>Tone</label>
+        <div class="slider-container"><input type="range" id="toneAmt" min="0" max="1" step="0.02" value="0.34" oninput="updateTone('toneAmt',this.value)"><span class="value-display" id="toneAmt-value">0.34</span></div>
+      </div>
+      <div class="color-picker-container" style="margin-bottom:10px">
+        <input type="color" id="toneShadow" value="#2f2a24" oninput="updateTone('toneShadow',this.value)">
+        <input type="color" id="toneHigh" value="#f4efe6" oninput="updateTone('toneHigh',this.value)">
+        <span class="color-value">shadow / highlight</span>
+      </div>
+      <div class="palettes" id="tone-presets"></div>
+    </div>
+
+    <div class="control-section">
+      <h3>Material</h3>
+      <div class="seg" id="seg-substrate">
+        <button data-v="wax">Wax</button>
+        <button data-v="clay">Clay</button>
+        <button data-v="paper">Paper</button>
+        <button data-v="metal">Metal</button>
+      </div>
+      <div class="color-picker-container">
+        <input type="color" id="color" value="#c3877f" oninput="updateColor(this.value)">
+        <span class="color-value" id="color-value">#c3877f</span>
+      </div>
+      <div class="swatches" id="swatches"></div>
+    </div>
+
+    <div class="control-section">
+      <h3>Die</h3>
+      <div class="seg" id="seg-die">
+        <button data-v="monogram">Name</button>
+        <button data-v="crest">Emblem</button>
+        <button data-v="figure">Figure</button>
+        <button data-v="plate">Stationery</button>
+      </div>
+      <input type="text" id="text" class="text-input" maxlength="28" value="Kyra Mo" placeholder="name or initials" oninput="updateText('text',this.value)">
+      <input type="text" id="sub" class="text-input" maxlength="28" value="" placeholder="second line (optional)" oninput="updateText('sub',this.value)">
+      <div class="seg" id="seg-relief" style="grid-template-columns:1fr 1fr">
+        <button data-v="deboss">Debossed</button>
+        <button data-v="emboss">Embossed</button>
+      </div>
+      <div class="control-group">
+        <label>Detail</label>
+        <div class="slider-container"><input type="range" id="detail" min="4" max="22" step="1" value="6" oninput="updateParam('detail',this.value)"><span class="value-display" id="detail-value">6</span></div>
+      </div>
+      <div class="control-group">
+        <label>Depth</label>
+        <div class="slider-container"><input type="range" id="depth" min="0.1" max="2" step="0.05" value="0.6" oninput="updateParam('depth',this.value)"><span class="value-display" id="depth-value">0.6</span></div>
+      </div>
+      <div class="control-group">
+        <label>Bevel</label>
+        <div class="slider-container"><input type="range" id="bevel" min="1" max="12" step="1" value="3" oninput="updateParam('bevel',this.value)"><span class="value-display" id="bevel-value">3</span></div>
+      </div>
+      <div class="control-group">
+        <label>Displaced lip</label>
+        <div class="slider-container"><input type="range" id="lip" min="0" max="1.5" step="0.05" value="0.3" oninput="updateParam('lip',this.value)"><span class="value-display" id="lip-value">0.3</span></div>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>Body</h3>
+      <div class="control-group">
+        <label>Size</label>
+        <div class="slider-container"><input type="range" id="spread" min="160" max="350" step="5" value="280" oninput="updateParam('spread',this.value)"><span class="value-display" id="spread-value">280</span></div>
+      </div>
+      <div class="control-group">
+        <label>Edge irregularity</label>
+        <div class="slider-container"><input type="range" id="irregularity" min="0" max="0.5" step="0.01" value="0.2" oninput="updateParam('irregularity',this.value)"><span class="value-display" id="irregularity-value">0.2</span></div>
+      </div>
+      <div class="control-group">
+        <label>Drips / dents</label>
+        <div class="slider-container"><input type="range" id="drips" min="0" max="7" step="1" value="3" oninput="updateParam('drips',this.value)"><span class="value-display" id="drips-value">3</span></div>
+      </div>
+      <div class="control-group">
+        <label>Grain</label>
+        <div class="slider-container"><input type="range" id="grain" min="0" max="1.5" step="0.05" value="0.4" oninput="updateParam('grain',this.value)"><span class="value-display" id="grain-value">0.4</span></div>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>Lamp</h3>
+      <div class="control-group">
+        <label>Pool size</label>
+        <div class="slider-container"><input type="range" id="lightSize" min="120" max="1400" step="10" value="680" oninput="updateLight('lightSize',this.value)"><span class="value-display" id="lightSize-value">680</span></div>
+      </div>
+      <div class="control-group">
+        <label>Height</label>
+        <div class="slider-container"><input type="range" id="lightHeight" min="40" max="700" step="10" value="270" oninput="updateLight('lightHeight',this.value)"><span class="value-display" id="lightHeight-value">270</span></div>
+      </div>
+      <div class="control-group">
+        <label>Lamp colour</label>
+        <div class="color-picker-container">
+          <input type="color" id="lampColor" value="#fff6ec" oninput="updateLight2('lampColor',this.value)">
+          <span class="color-value" id="lampColor-value">#fff6ec</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Follow (lower = slower)</label>
+        <div class="slider-container"><input type="range" id="ease" min="0.01" max="0.3" step="0.005" value="0.045" oninput="updateLight('ease',this.value)"><span class="value-display" id="ease-value">0.045</span></div>
+      </div>
+      <div class="control-group">
+        <label>Gloss</label>
+        <div class="slider-container"><input type="range" id="gloss" min="0" max="1" step="0.02" value="0" oninput="updateLight('gloss',this.value)"><span class="value-display" id="gloss-value">0</span></div>
+      </div>
+      <div class="control-group">
+        <label>Relief</label>
+        <div class="slider-container"><input type="range" id="relief" min="4" max="44" step="1" value="22" oninput="updateParam('relief',this.value)"><span class="value-display" id="relief-value">22</span></div>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>Seed</h3>
+      <input type="number" id="seed-input" class="seed-input" value="12345" onchange="updateSeed()">
+      <div class="seed-controls">
+        <button class="button secondary" onclick="previousSeed()">← Prev</button>
+        <button class="button secondary" onclick="nextSeed()">Next →</button>
+      </div>
+      <button class="button tertiary" onclick="randomSeedAndUpdate()">↻ Random</button>
+    </div>
+
+    <div class="control-section" id="hub-actions" style="display:none">
+      <h3>Hub</h3>
+      <div class="button-row">
+        <button class="button" onclick="saveToHub()">Save to hub ↩</button>
+      </div>
+      <button class="button secondary" onclick="location.href = Hub.hubLink()">Back without saving</button>
+    </div>
+
+    <div class="control-section">
+      <h3>Actions</h3>
+      <div class="button-row">
+        <button class="button" onclick="regenerate()">Re-press</button>
+        <button class="button secondary" onclick="resetParameters()">Reset</button>
+      </div>
+      <button class="button tertiary" onclick="downloadPNG()">↓ Download PNG</button>
+    </div>
+  </div>
+
+  <div class="canvas-area"><div id="canvas-container"><div class="loading">Warming the press…</div></div></div>
+</div>
+
+<script>
+const N = 820, CX = N/2, CY = N/2, TWOPI = Math.PI*2;
+
+// ── material presets: each substrate is a different physics ────
+const MATERIALS = {
+  wax:   {color:'#8f1d2b', gloss:0.34, ambient:0.24, scatter:0.20, aoLo:0.44, env:false,
+          domeBlur:0.075, domePow:0.42, thick:1.00, flatten:0.92, lip:0.25, bevel:3,
+          motif:0.34, grain:0.055, rimBead:0.20, relief:18, sign:-1, exposure:1.55,
+          swatches:['#8f1d2b','#5d1420','#c0392b','#d97757','#1f3b57','#20402f','#3b2f4a','#141413']},
+  clay:  {color:'#b06a45', gloss:0.10, ambient:0.34, scatter:0.05, aoLo:0.48, env:false,
+          domeBlur:0.055, domePow:0.30, thick:0.90, flatten:0.75, lip:0.85, bevel:4,
+          motif:0.40, grain:0.10,  rimBead:0.05, relief:20, sign:-1, exposure:1.50,
+          swatches:['#b06a45','#c08a63','#9a5638','#7d5a4a','#d9b48f','#8a8272','#6d4534','#3f3a35']},
+  paper: {color:'#e9e2d3', gloss:0.06, ambient:0.44, scatter:0.03, aoLo:0.70, env:false,
+          domeBlur:0.020, domePow:0.60, thick:0.26, flatten:0.20, lip:0.35, bevel:3,
+          motif:0.24, grain:0.035, rimBead:0.00, relief:34, sign:+1, exposure:1.02,
+          swatches:['#efe9dd','#f6f3ec','#e8dfc9','#dfd8cb','#e6e8e3','#f0e2d8','#dcd3c4','#cfc7b6']},
+  metal: {color:'#c8a martial', gloss:0.55, ambient:0.20, scatter:0.00, aoLo:0.46, env:true,
+          domeBlur:0.030, domePow:0.35, thick:0.70, flatten:0.35, lip:0.10, bevel:2,
+          motif:0.30, grain:0.020, rimBead:0.34, relief:16, sign:+1, exposure:1.46,
+          swatches:['#c9a227','#b08d3f','#cdc7bd','#b9b3a6','#b06a3c','#8c6a4a','#6f7a72','#3c3f43']}
+};
+MATERIALS.metal.color = '#c9a227';
+
+// What "matte" actually changes, per material. Not a filter — a different
+// surface, a shallower press, a quieter palette, and flat light.
+const MATTE = {
+  wax:   {color:'#c3877f', gloss:0, ambient:0.42, scatter:0.00, aoLo:0.58, exposure:1.18, depth:0.95, bevel:3, lip:0.30, relief:22, detail:6},
+  clay:  {color:'#c9b3a1', gloss:0, ambient:0.46, scatter:0.00, aoLo:0.60, exposure:1.14, depth:1.00, bevel:3, lip:0.60, relief:24, detail:6},
+  paper: {color:'#e6e0d3', gloss:0, ambient:0.52, scatter:0.00, aoLo:0.70, exposure:1.02, depth:1.10, bevel:3, lip:0.30, relief:34, detail:6},
+  metal: {color:'#bdb7ab', gloss:0, ambient:0.44, scatter:0.00, aoLo:0.58, exposure:1.12, depth:0.90, bevel:2, lip:0.20, relief:20, detail:6}
+};
+const MATTE_SWATCHES = {
+  wax:   ['#c3877f','#b4695f','#d8b3ac','#8f7a74','#9aa08f','#c7b9a4','#6f6a63','#3a3a38'],
+  clay:  ['#c9b3a1','#c2a48f','#d8cbb8','#b09a8a','#a89c8c','#8c8073','#6e655c','#463f38'],
+  paper: ['#e6e0d3','#efeae0','#ddd6c6','#e3ded4','#d9d4c7','#e8e2d6','#cfc9bb','#c4bdae'],
+  metal: ['#bdb7ab','#cfc9bd','#a8a296','#b3a893','#9aa0a2','#8f9699','#7c7a72','#4a4844']
+};
+
+let params = {
+  seed: 12345, substrate: 'wax', die: 'monogram', mode: 'deboss',
+  finish: 'matte', grainAmt: 0.30, contrast: 0.88, steps: 0,
+  toneShadow: '#2f2a24', toneHigh: '#f4efe6', toneAmt: 0.34,
+  lampColor: '#fff6ec',
+  text: 'Kyra Mo', sub: '',
+  spread: 280, irregularity: 0.20, drips: 3,
+  detail: 6, depth: 0.95, bevel: 3, lip: 0.30,
+  grain: 0.4, relief: 22, gloss: 0,
+  lightSize: 680, lightHeight: 270, ease: 0.045,
+  color: '#c3877f'
+};
+const defaultParams = Object.assign({}, params);
+
+let F, sealCv, sealCtx, shadowCv, shadowCtx, bgCv, bgCtx;
+let cov, hgt, nrm, hMax = 1, rnd;
+let lampT = {x: CX - 150, y: CY - 170};
+let lampP = {x: CX - 150, y: CY - 170};
+let needShade = false, stampT = 0, ready = false;
+let grainPat = null;
+
+// ── substrate silhouettes ──────────────────────────────────────
+const angDelta = (a,b) => Math.atan2(Math.sin(a-b), Math.cos(a-b));
+
+function blobPath(ctx, lobes, nOff, R, wobble){
+  const steps = 900;
+  ctx.beginPath();
+  for(let i=0;i<=steps;i++){
+    const t = i/steps*TWOPI, cn = Math.cos(t), sn = Math.sin(t);
+    let r = R*(1 + (noise(nOff + cn*1.35, nOff*0.7 + sn*1.35) - 0.5)*wobble);
+    for(let k=0;k<lobes.length;k++){
+      const L = lobes[k], dd = angDelta(t, L.a);
+      r += R*L.h*Math.exp(-(dd*dd)/(2*L.w*L.w));
+    }
+    const x = CX + cn*r, y = CY + sn*r;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+}
+
+function deckleCard(ctx, nOff, R){
+  const w = Math.min(R*1.34, N*0.425), h = Math.min(R*0.94, N*0.305), steps = 260;
+  ctx.beginPath();
+  for(let i=0;i<=steps;i++){
+    const t = i/steps;
+    // walk the rectangle perimeter, nudging outward with noise (torn edge)
+    const per = t*(4);
+    let x, y, nxv, nyv;
+    if(per < 1){ x = -w + 2*w*per; y = -h; nxv = 0; nyv = -1; }
+    else if(per < 2){ x = w; y = -h + 2*h*(per-1); nxv = 1; nyv = 0; }
+    else if(per < 3){ x = w - 2*w*(per-2); y = h; nxv = 0; nyv = 1; }
+    else { x = -w; y = h - 2*h*(per-3); nxv = -1; nyv = 0; }
+    const n = (noise(nOff + t*26, nOff*0.5) - 0.5)*R*0.055 + (noise(nOff*2 + t*90) - 0.5)*R*0.016;
+    const px = CX + x + nxv*n, py = CY + y + nyv*n;
+    if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+  }
+  ctx.closePath();
+}
+
+function buildSubstrate(nOff, R){
+  const s = params.substrate;
+  if(s === 'metal') return F.raster(c => { c.beginPath(); c.arc(CX,CY,R,0,TWOPI); c.fill(); });
+  if(s === 'paper') return F.raster(c => { deckleCard(c, nOff, R); c.fill(); });
+
+  const lobes = [];
+  if(s === 'wax'){
+    const nl = 4 + Math.floor(rnd()*4);
+    for(let i=0;i<nl;i++) lobes.push({a: rnd()*TWOPI, w: 0.30+rnd()*0.55, h: 0.05+rnd()*0.11});
+    for(let i=0;i<params.drips;i++) lobes.push({a: Math.PI/2 + (rnd()-0.5)*2.0, w: 0.055+rnd()*0.075, h: 0.10+rnd()*0.30});
+    return F.raster(c => { blobPath(c, lobes, nOff, R, params.irregularity*2.2); c.fill(); });
+  }
+  // clay: a hand-formed pat — gentle swells and thumb dents
+  const nl = 3 + Math.floor(rnd()*3);
+  for(let i=0;i<nl;i++) lobes.push({a: rnd()*TWOPI, w: 0.55+rnd()*0.6, h: 0.03+rnd()*0.06});
+  for(let i=0;i<params.drips;i++) lobes.push({a: rnd()*TWOPI, w: 0.20+rnd()*0.22, h: -(0.04+rnd()*0.09)});
+  return F.raster(c => { blobPath(c, lobes, nOff, R, params.irregularity*1.1); c.fill(); });
+}
+
+// ── the die ────────────────────────────────────────────────────
+function drawDie(ctx, dieR, kind){
+  const D = params.detail;
+  ctx.save();
+  ctx.translate(CX,CY);
+  if(params.die === 'plate'){
+    Dies.stationery(ctx, dieR*2.5, dieR*1.5, {name: params.text || 'Kyra Mo', sub: params.sub, rules: true});
+    ctx.restore();
+    return;
+  }
+  if(params.finish === 'matte'){
+    Dies.ring(ctx, dieR*0.93, dieR*0.014);          // one hairline, nothing else
+  } else {
+    Dies.ring(ctx, dieR*0.955, dieR*0.030);
+    Dies.ring(ctx, dieR*0.795, dieR*0.015);
+    Dies.beadRing(ctx, dieR*0.877, Math.round(D*2.4)+16, dieR*0.021);
+  }
+  const inner = dieR*0.70;
+  if(params.die === 'crest'){
+    Dies.crest(ctx, inner, rnd, D);
+  } else if(params.die === 'figure'){
+    if(kind === 0) Dies.rosette(ctx, inner, D);
+    else if(kind === 1) Dies.starburst(ctx, inner, D);
+    else Dies.compass(ctx, inner, D);
+  } else {
+    const t = (params.text || '').trim();
+    if(params.finish === 'matte'){
+      /* nothing — the name alone */
+    } else if(t.length > 0 && t.length <= 3){
+      Dies.laurel(ctx, inner, Math.round(D*0.8));
+    } else {
+      ctx.lineWidth = inner*0.020;
+      [-1,1].forEach(sd => {
+        ctx.beginPath();
+        ctx.moveTo(-inner*0.52, sd*inner*0.62); ctx.lineTo(inner*0.52, sd*inner*0.62);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, sd*inner*0.62, inner*0.045, 0, TWOPI); ctx.fill();
+      });
+    }
+    Dies.monogram(ctx, inner*(t.length > 3 ? 0.96 : 1), t || 'M');
+    if(params.sub) Dies.ringText(ctx, dieR*0.885, params.sub, dieR*0.085, 2.1, true);
+  }
+  ctx.restore();
+}
+
+// ── press one impression ───────────────────────────────────────
+function buildPress(){
+  const M = finishOf(params.substrate);
+  rnd = Relief.makeRng(params.seed);
+  noiseSeed(params.seed);
+  const nOff = 40 + rnd()*400;
+  const R = params.spread;
+  const dieR = R*(params.substrate === 'paper' ? 0.76 : 0.74);
+  const kind = Math.floor(rnd()*3);
+
+  cov = buildSubstrate(nOff, R);
+
+  const dome    = F.blur(cov, Math.max(1, R*M.domeBlur));
+  const dieSoft = params.substrate === 'paper'
+    ? null
+    : F.blur(F.raster(c => { c.beginPath(); c.arc(CX,CY,dieR,0,TWOPI); c.fill(); }), Math.max(2, R*0.040));
+
+  const motifRaw = F.raster(c => drawDie(c, dieR, kind));
+  const motif    = F.blur(motifRaw, params.bevel, 2);
+  const motifWide= F.blur(motifRaw, params.bevel*3.4, 2);
+
+  const sign = params.mode === 'emboss' ? +1 : -1;
+  const gs = 0.05, bandSig = R*0.045, bandR = dieR*1.02;
+
+  hgt = new Float32Array(N*N);
+  hMax = 0.0001;
+  for(let y=0;y<N;y++){
+    const dy = y - CY;
+    for(let x=0;x<N;x++){
+      const i = y*N + x, c = cov[i];
+      if(c <= 0.002){ hgt[i] = 0; continue; }
+      let dv = dome[i]*1.45; if(dv > 1) dv = 1;
+      let h = Math.pow(dv, M.domePow)*M.thick;
+
+      const dm = dieSoft ? dieSoft[i]*M.flatten : M.flatten;
+      if(dieSoft) h = h*(1-dm) + Math.min(h, M.thick*0.86)*dm;    // the die flattens the field
+
+      if(M.rimBead > 0 && dieSoft){
+        const dx = x - CX, dist = Math.sqrt(dx*dx + dy*dy), bd = dist - bandR;
+        h += Math.exp(-(bd*bd)/(2*bandSig*bandSig))*M.rimBead*c;  // squeezed-out bead
+      }
+
+      const gate = dieSoft ? dm : 1;
+      h += sign*motif[i]*M.motif*params.depth*gate;               // the impression
+      const ridge = motifWide[i] - motif[i];                      // displaced material
+      if(ridge > 0) h += sign*(-1)*ridge*M.lip*params.lip*1.6*gate;
+
+      h += (noise(x*gs, y*gs, nOff) - 0.5)*M.grain*params.grain*2.2;
+      h *= c;
+      hgt[i] = h;
+      if(h > hMax) hMax = h;
+    }
+  }
+
+  nrm = F.normals(cov, hgt, params.relief);
+  F.shadow(shadowCtx, cov, Math.max(2, R*0.055), params.substrate === 'paper' ? 0.55 : 0.92);
+  needShade = true;
+}
+
+function finishOf(sub){
+  const M = MATERIALS[sub];
+  if(params.finish !== 'matte') return M;
+  return Object.assign({}, M, MATTE[sub]);
+}
+
+function shade(){
+  const M = finishOf(params.substrate);
+  const matte = params.finish === 'matte';
+  F.shade(sealCtx, {
+    cov: cov, hgt: hgt, hMax: hMax, nX: nrm.nX, nY: nrm.nY, nZ: nrm.nZ,
+    light: {x: lampP.x, y: lampP.y, h: params.lightHeight, radius: params.lightSize, color: params.lampColor},
+    color: params.color, gloss: matte ? 0 : params.gloss, ambient: M.ambient,
+    scatter: M.scatter, aoLo: M.aoLo, env: matte ? false : M.env, envLo: 0.52, envHi: 1.42,
+    exposure: M.exposure, matte: matte, contrast: params.contrast,
+    steps: params.steps,
+    tone: {shadow: params.toneShadow, high: params.toneHigh, amount: params.toneAmt}
+  });
+}
+
+// ── p5 ─────────────────────────────────────────────────────────
+// round trip with the hub. The study's own knobs map onto a Press spec:
+// `spread` is the seal's radius, everything else lines up by name.
+let hubTicket = null;
+const COND_KEYS = ['cSheet','lampColor','lightSize','lightHeight','ease','grainAmt',
+  'contrast','steps','toneShadow','toneHigh','toneAmt','finish','relief'];
+const SPEC_KEYS = ['seed','substrate','die','text','sub','detail','depth','rim','drips','irregularity','mode','color'];
+
+function specOf(){
+  const o = {size: params.spread};
+  SPEC_KEYS.forEach(k => { o[k] = params[k]; });
+  return o;
+}
+function applyTicket(t){
+  if(!t) return;
+  if(t.spec){
+    SPEC_KEYS.forEach(k => { if(t.spec[k] !== undefined) params[k] = t.spec[k]; });
+    if(t.spec.size !== undefined) params.spread = t.spec.size;
+  }
+  if(t.conditions) COND_KEYS.forEach(k => { if(t.conditions[k] !== undefined) params[k] = t.conditions[k]; });
+  SPEC_KEYS.concat(COND_KEYS, ['spread']).forEach(k => {
+    const el = document.getElementById(k);
+    if(!el) return;
+    el.value = params[k];
+    const v = document.getElementById(k+'-value');
+    if(v) v.textContent = params[k];
+  });
+  hubTicket = t;
+  document.getElementById('hub-actions').style.display = 'block';
+}
+function saveToHub(){
+  location.href = Hub.backToHub('press', specOf(), {
+    id: hubTicket ? hubTicket.id : undefined,
+    conditions: (function(){ const c = {}; COND_KEYS.forEach(k => { if(params[k] !== undefined) c[k] = params[k]; }); return c; })()
+  });
+}
+
+function setup(){
+  pixelDensity(1);
+  createCanvas(N,N).parent('canvas-container');
+  F = Relief.field(N);
+  sealCv = Relief.makeCanvas(N);   sealCtx   = sealCv.getContext('2d');
+  shadowCv = Relief.makeCanvas(N); shadowCtx = shadowCv.getContext('2d');
+  bgCv = Relief.makeCanvas(N);     bgCtx     = bgCv.getContext('2d');
+  applyTicket(Hub.takeHashPreset());
+  syncSegments(); buildSwatches(); buildTonePresets();
+  const boot = () => {
+    grainPat = sealCtx.createPattern(Relief.grainTile(256, 4242, 30), 'repeat');
+    paintGround();
+    buildPress();
+    ready = true;
+    const l = document.querySelector('.loading'); if(l) l.style.display = 'none';
+  };
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(boot).catch(boot);
+  else boot();
+}
+
+function paintGround(){
+  const matte = params.finish === 'matte';
+  F.paper(bgCtx, matte ? '#efece4' : '#e7e1d4',
+          {seed: 777, amount: matte ? 9 : 16, vignette: matte ? 0.14 : 0.38});
+  Relief.toneCanvas(bgCtx, N, {shadow: params.toneShadow, high: params.toneHigh, amount: params.toneAmt*0.75});
+}
+
+function setFinish(v){
+  params.finish = v;
+  const M = finishOf(params.substrate);
+  params.color = M.color; params.gloss = M.gloss; params.bevel = M.bevel;
+  params.relief = M.relief; params.depth = M.depth; params.lip = M.lip;
+  params.detail = M.detail === undefined ? params.detail : M.detail;
+  document.getElementById('color').value = M.color;
+  document.getElementById('color-value').textContent = M.color;
+  ['gloss','bevel','relief','depth','lip','detail'].forEach(k => {
+    const el = document.getElementById(k);
+    if(el){ el.value = params[k]; document.getElementById(k+'-value').textContent = params[k]; }
+  });
+  syncSegments(); buildSwatches(); paintGround();
+  if(ready) buildPress();
+}
+
+function draw(){
+  if(!ready) return;
+  // the lamp trails the cursor — slow, eased, never snapping
+  const e = params.ease;
+  const mx = lampT.x - lampP.x, my = lampT.y - lampP.y;
+  if(Math.abs(mx) > 0.15 || Math.abs(my) > 0.15){
+    lampP.x += mx*e; lampP.y += my*e;
+    needShade = true;
+  }
+  if(needShade){ shade(); needShade = false; }
+
+  const g = drawingContext;
+  g.setTransform(1,0,0,1,0,0);
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+  g.clearRect(0,0,N,N);
+  g.drawImage(bgCv,0,0);
+
+  // contact shadow, thrown away from the lamp
+  const matte = params.finish === 'matte';
+  const sx = (CX - lampP.x)*(matte ? 0.028 : 0.075), sy = (CY - lampP.y)*(matte ? 0.028 : 0.075);
+  g.save(); g.globalAlpha = matte ? 0.26 : 0.62; g.drawImage(shadowCv, sx, sy); g.restore();
+
+  let s = 1, a = 1;
+  if(stampT > 0){
+    stampT = Math.max(0, stampT - 0.06);
+    const q = stampT*stampT;
+    s = 1 + q*0.10; a = 1 - q*0.9;
+  }
+  g.save();
+  g.globalAlpha = a;
+  g.translate(CX,CY); g.scale(s,s); g.translate(-CX,-CY);
+  g.drawImage(sealCv,0,0);
+  g.restore();
+
+  // the pool of lamplight, over everything
+  const rad = params.lightSize;
+  const grd = g.createRadialGradient(lampP.x, lampP.y, rad*0.12, lampP.x, lampP.y, rad*2.1);
+  grd.addColorStop(0,   matte ? 'rgba(255,250,240,0.07)' : 'rgba(255,246,228,0.20)');
+  grd.addColorStop(0.42,'rgba(255,240,215,0.00)');
+  grd.addColorStop(1,   matte ? 'rgba(28,24,18,0.07)'    : 'rgba(24,19,14,0.20)');
+  g.save();
+  g.globalCompositeOperation = 'soft-light';
+  g.fillStyle = grd; g.fillRect(0,0,N,N);
+  g.restore();
+
+  if(grainPat && params.grainAmt > 0){
+    g.save();
+    g.globalCompositeOperation = 'overlay';
+    g.globalAlpha = params.grainAmt;
+    g.fillStyle = grainPat;
+    g.fillRect(0,0,N,N);
+    g.restore();
+  }
+  g.globalCompositeOperation = 'source-over';
+}
+
+function overCanvas(){ return mouseX >= 0 && mouseY >= 0 && mouseX < width && mouseY < height; }
+function aimLamp(){ if(overCanvas()){ lampT.x = mouseX; lampT.y = mouseY; } }
+function mouseMoved(){ aimLamp(); }
+function mouseDragged(){ aimLamp(); return false; }
+function touchMoved(){ aimLamp(); return false; }
+function mousePressed(){
+  if(!overCanvas() || !ready) return;
+  params.seed += 1; updateSeedDisplay(); buildPress(); stampT = 1;
+  return false;
+}
+
+// ── UI ─────────────────────────────────────────────────────────
+function regenerate(){ if(ready){ buildPress(); stampT = 0.7; } }
+function updateParam(k,v){
+  params[k] = parseFloat(v);
+  document.getElementById(k+'-value').textContent = v;
+  if(ready) buildPress();
+}
+function updateLight(k,v){
+  params[k] = parseFloat(v);
+  document.getElementById(k+'-value').textContent = v;
+  needShade = true;
+}
+function updateText(k,v){ params[k] = v; if(ready) buildPress(); }
+function updateLight2(k,v){
+  params[k] = v;
+  document.getElementById(k+'-value').textContent = v;
+  needShade = true;
+}
+function updateTone(k,v){
+  params[k] = (k === 'toneAmt') ? parseFloat(v) : v;
+  const el = document.getElementById(k+'-value');
+  if(el) el.textContent = v;
+  paintGround();
+  needShade = true;
+}
+
+const TONE_PRESETS = [
+  ['#2f2a24','#f4efe6'], ['#2b3038','#eef1f0'], ['#33291f','#f6ecdc'],
+  ['#2a2f2a','#eef0e8'], ['#332430','#f3ecef'], ['#1f1f1f','#f2f2f0']
+];
+function buildTonePresets(){
+  const host = document.getElementById('tone-presets');
+  if(!host) return;
+  host.innerHTML = '';
+  TONE_PRESETS.forEach(t => {
+    const d = document.createElement('div');
+    d.className = 'pal';
+    t.forEach(c => { const i = document.createElement('i'); i.style.background = c; d.appendChild(i); });
+    d.onclick = () => {
+      params.toneShadow = t[0]; params.toneHigh = t[1];
+      document.getElementById('toneShadow').value = t[0];
+      document.getElementById('toneHigh').value = t[1];
+      paintGround(); needShade = true;
+    };
+    host.appendChild(d);
+  });
+}
+function updateColor(v){
+  params.color = v;
+  document.getElementById('color-value').textContent = v;
+  needShade = true;
+}
+function setSubstrate(v){
+  params.substrate = v;
+  const M = finishOf(v);
+  params.color = M.color; params.gloss = M.gloss; params.bevel = M.bevel;
+  params.relief = M.relief; params.mode = M.sign > 0 ? 'emboss' : 'deboss';
+  document.getElementById('color').value = M.color;
+  document.getElementById('color-value').textContent = M.color;
+  ['gloss','bevel','relief'].forEach(k => {
+    document.getElementById(k).value = params[k];
+    document.getElementById(k+'-value').textContent = params[k];
+  });
+  ['depth','lip','detail'].forEach(k => {
+    if(M[k] !== undefined){
+      params[k] = M[k];
+      const el = document.getElementById(k);
+      if(el){ el.value = M[k]; document.getElementById(k+'-value').textContent = M[k]; }
+    }
+  });
+  syncSegments(); buildSwatches();
+  if(ready) buildPress();
+}
+function setDie(v){ params.die = v; syncSegments(); if(ready) buildPress(); }
+function setMode(v){ params.mode = v; syncSegments(); if(ready) buildPress(); }
+
+function syncSegments(){
+  const map = {'seg-substrate':params.substrate, 'seg-die':params.die, 'seg-relief':params.mode, 'seg-finish':params.finish};
+  Object.keys(map).forEach(id => {
+    document.querySelectorAll('#'+id+' button').forEach(b => {
+      b.classList.toggle('on', b.dataset.v === map[id]);
+    });
+  });
+}
+function buildSwatches(){
+  const host = document.getElementById('swatches');
+  host.innerHTML = '';
+  const list = params.finish === 'matte' ? MATTE_SWATCHES[params.substrate] : MATERIALS[params.substrate].swatches;
+  list.forEach(hex => {
+    const s = document.createElement('div');
+    s.className = 'swatch'; s.style.background = hex; s.title = hex;
+    s.onclick = () => { document.getElementById('color').value = hex; updateColor(hex); };
+    host.appendChild(s);
+  });
+}
+function downloadPNG(){ saveCanvas('press-' + params.substrate + '-' + params.seed, 'png'); }
+function updateSeedDisplay(){ document.getElementById('seed-input').value = params.seed; }
+function updateSeed(){
+  const v = parseInt(document.getElementById('seed-input').value);
+  if(v && v > 0){ params.seed = v; buildPress(); } else updateSeedDisplay();
+}
+function previousSeed(){ params.seed = Math.max(1, params.seed-1); updateSeedDisplay(); buildPress(); stampT = 0.7; }
+function nextSeed(){ params.seed += 1; updateSeedDisplay(); buildPress(); stampT = 0.7; }
+function randomSeedAndUpdate(){ params.seed = Math.floor(Math.random()*999999)+1; updateSeedDisplay(); buildPress(); stampT = 1; }
+function resetParameters(){
+  params = Object.assign({}, defaultParams);
+  ['spread','irregularity','drips','detail','depth','bevel','lip','grain','relief','gloss','lightSize','lightHeight','ease','grainAmt','contrast','steps','toneAmt'].forEach(k => {
+    document.getElementById(k).value = params[k];
+    document.getElementById(k+'-value').textContent = params[k];
+  });
+  document.getElementById('text').value = params.text;
+  document.getElementById('sub').value = params.sub;
+  document.getElementById('color').value = params.color;
+  document.getElementById('color-value').textContent = params.color;
+  syncSegments(); buildSwatches(); updateSeedDisplay();
+  buildPress();
+}
+
+document.getElementById('seg-finish').addEventListener('click', e => { if(e.target.dataset.v) setFinish(e.target.dataset.v); });
+document.getElementById('seg-substrate').addEventListener('click', e => { if(e.target.dataset.v) setSubstrate(e.target.dataset.v); });
+document.getElementById('seg-die').addEventListener('click', e => { if(e.target.dataset.v) setDie(e.target.dataset.v); });
+document.getElementById('seg-relief').addEventListener('click', e => { if(e.target.dataset.v) setMode(e.target.dataset.v); });
+</script>
+</body>
+</html>

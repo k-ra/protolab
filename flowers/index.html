@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Specimen — a lit botanical</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<script src="../lib/flora.js"></script>
+<script src="../lib/hub.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--anthropic-dark:#141413;--anthropic-light:#faf9f5;--anthropic-mid-gray:#b0aea5;--anthropic-light-gray:#e8e6dc;--anthropic-orange:#d97757;--anthropic-blue:#6a9bcc;--anthropic-green:#788c5d}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--anthropic-light) 0%,#f5f3ee 100%);min-height:100vh;color:var(--anthropic-dark)}
+.container{display:flex;min-height:100vh;padding:20px;gap:20px}
+.sidebar{width:320px;flex-shrink:0;background:rgba(255,255,255,.95);padding:24px;border-radius:12px;box-shadow:0 10px 30px rgba(20,20,19,.1);overflow-y:auto;max-height:calc(100vh - 40px)}
+.sidebar h1{font-family:'Lora',serif;font-size:24px;font-weight:500;margin-bottom:8px}
+.sidebar .subtitle{color:var(--anthropic-mid-gray);font-size:14px;margin-bottom:28px;line-height:1.45}
+.control-section{margin-bottom:30px}
+.control-section h3{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.control-section h3::before{content:'•';color:var(--anthropic-orange);font-weight:bold}
+.seed-input{width:100%;background:var(--anthropic-light);padding:12px;border-radius:8px;font-family:'Courier New',monospace;font-size:14px;margin-bottom:12px;border:1px solid var(--anthropic-light-gray);text-align:center}
+.seed-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.control-group{margin-bottom:18px}
+.control-group label{display:block;font-size:14px;font-weight:500;margin-bottom:8px}
+.slider-container{display:flex;align-items:center;gap:12px}
+.slider-container input[type=range]{flex:1;height:4px;background:var(--anthropic-light-gray);border-radius:2px;outline:none;-webkit-appearance:none}
+.slider-container input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--anthropic-orange);border-radius:50%;cursor:pointer}
+.slider-container input[type=range]::-moz-range-thumb{width:16px;height:16px;background:var(--anthropic-orange);border-radius:50%;border:none;cursor:pointer}
+.value-display{font-family:'Courier New',monospace;font-size:12px;color:var(--anthropic-mid-gray);min-width:52px;text-align:right}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px}
+.seg button{padding:9px 6px;border:1px solid var(--anthropic-light-gray);background:#fff;border-radius:7px;font-family:inherit;font-size:13px;cursor:pointer;transition:all .18s ease}
+.seg button:hover{border-color:var(--anthropic-orange)}
+.seg button.on{background:var(--anthropic-dark);color:#fff;border-color:var(--anthropic-dark)}
+.color-group{margin-bottom:14px}
+.color-group label{display:block;font-size:12px;color:var(--anthropic-mid-gray);margin-bottom:4px}
+.color-picker-container{display:flex;align-items:center;gap:8px}
+.color-picker-container input[type=color]{width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0}
+.color-value{font-family:'Courier New',monospace;font-size:12px;color:var(--anthropic-mid-gray)}
+.palettes{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.pal{display:flex;border-radius:6px;overflow:hidden;cursor:pointer;border:1px solid rgba(0,0,0,.12);transition:transform .15s ease}
+.pal:hover{transform:scale(1.08)}
+.pal i{display:block;width:14px;height:22px}
+.button{background:var(--anthropic-orange);color:#fff;border:none;padding:10px 16px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s ease;width:100%;font-family:inherit}
+.button:hover{background:#c86641;transform:translateY(-1px)}
+.button.secondary{background:var(--anthropic-blue)}.button.secondary:hover{background:#5a8bb8}
+.button.tertiary{background:var(--anthropic-green)}.button.tertiary:hover{background:#6b7b52}
+.button-row{display:flex;gap:8px;margin-bottom:8px}.button-row .button{flex:1}
+.canvas-area{flex:1;display:flex;align-items:center;justify-content:center;min-width:0}
+#canvas-container{width:100%;max-width:820px;border-radius:12px;overflow:hidden;box-shadow:0 20px 40px rgba(20,20,19,.1);background:#fff;cursor:crosshair}
+#canvas-container canvas{display:block;width:100%!important;height:auto!important}
+.loading{display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--anthropic-mid-gray);padding:120px 0}
+@media(max-width:600px){.container{flex-direction:column}.sidebar{width:100%;max-height:none}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="sidebar">
+    <h1>Specimen</h1>
+    <div class="subtitle">Petals built as a height field, not a drawing — so the same lamp that lit the wax lights the flower. Move the mouse; click for a new one.</div>
+
+    <div class="control-section">
+      <h3>Surface</h3>
+      <div class="seg" id="seg-surface">
+        <button data-v="ink">Inked</button>
+        <button data-v="blind">Blind emboss</button>
+      </div>
+      <div class="control-group" id="emboss-controls">
+        <label>Emboss depth</label>
+        <div class="slider-container"><input type="range" id="emboss" min="0.05" max="0.6" step="0.01" value="0.24" oninput="updateParam('emboss',this.value)"><span class="value-display" id="emboss-value">0.24</span></div>
+      </div>
+      <div class="seg" id="seg-press" style="grid-template-columns:1fr 1fr">
+        <button data-v="up">Raised</button>
+        <button data-v="down">Sunken</button>
+      </div>
+      <div class="color-group"><label>Sheet</label>
+        <div class="color-picker-container"><input type="color" id="cSheet" value="#e9e3d6" oninput="updateColor('cSheet',this.value)"><span class="color-value" id="cSheet-value">#e9e3d6</span></div></div>
+    </div>
+
+    <div class="control-section">
+      <h3>Finish</h3>
+      <div class="seg" id="seg-finish">
+        <button data-v="matte">Matte</button>
+        <button data-v="antique">Antique</button>
+      </div>
+      <div class="control-group">
+        <label>Grain</label>
+        <div class="slider-container"><input type="range" id="grainAmt" min="0" max="0.6" step="0.02" value="0.3" oninput="updateLight('grainAmt',this.value)"><span class="value-display" id="grainAmt-value">0.3</span></div>
+      </div>
+      <div class="control-group">
+        <label>Contrast</label>
+        <div class="slider-container"><input type="range" id="contrast" min="0.35" max="1.2" step="0.02" value="0.86" oninput="updateLight('contrast',this.value)"><span class="value-display" id="contrast-value">0.86</span></div>
+      </div>
+      <div class="control-group">
+        <label>Bands <span style="color:var(--anthropic-mid-gray);font-weight:400">(0 = smooth)</span></label>
+        <div class="slider-container"><input type="range" id="steps" min="0" max="32" step="1" value="0" oninput="updateLight('steps',this.value)"><span class="value-display" id="steps-value">0</span></div>
+      </div>
+      <div class="control-group">
+        <label>Tone</label>
+        <div class="slider-container"><input type="range" id="toneAmt" min="0" max="1" step="0.02" value="0.30" oninput="updateTone('toneAmt',this.value)"><span class="value-display" id="toneAmt-value">0.3</span></div>
+      </div>
+      <div class="color-picker-container" style="margin-bottom:10px">
+        <input type="color" id="toneShadow" value="#2f2a24" oninput="updateTone('toneShadow',this.value)">
+        <input type="color" id="toneHigh" value="#f4efe6" oninput="updateTone('toneHigh',this.value)">
+        <span class="color-value">shadow / highlight</span>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>Species</h3>
+      <div class="seg" id="seg-species"></div>
+      <div class="control-group">
+        <label>Petals per whorl</label>
+        <div class="slider-container"><input type="range" id="petals" min="4" max="26" step="1" value="13" oninput="updateParam('petals',this.value)"><span class="value-display" id="petals-value">13</span></div>
+      </div>
+      <div class="control-group">
+        <label>Whorls</label>
+        <div class="slider-container"><input type="range" id="whorls" min="1" max="8" step="1" value="4" oninput="updateParam('whorls',this.value)"><span class="value-display" id="whorls-value">4</span></div>
+      </div>
+      <div class="control-group">
+        <label>Petal length</label>
+        <div class="slider-container"><input type="range" id="petalLen" min="0.4" max="1.3" step="0.02" value="0.92" oninput="updateParam('petalLen',this.value)"><span class="value-display" id="petalLen-value">0.92</span></div>
+      </div>
+      <div class="control-group">
+        <label>Petal width</label>
+        <div class="slider-container"><input type="range" id="petalWid" min="0.08" max="0.75" step="0.01" value="0.30" oninput="updateParam('petalWid',this.value)"><span class="value-display" id="petalWid-value">0.3</span></div>
+      </div>
+      <div class="control-group">
+        <label>Tip</label>
+        <div class="slider-container"><input type="range" id="sharp" min="0.1" max="1.6" step="0.05" value="0.75" oninput="updateParam('sharp',this.value)"><span class="value-display" id="sharp-value">0.75</span></div>
+      </div>
+      <div class="control-group">
+        <label>Openness</label>
+        <div class="slider-container"><input type="range" id="open" min="0" max="1" step="0.02" value="0.4" oninput="updateParam('open',this.value)"><span class="value-display" id="open-value">0.4</span></div>
+      </div>
+      <div class="control-group">
+        <label>Disc size</label>
+        <div class="slider-container"><input type="range" id="disc" min="0.05" max="0.5" step="0.01" value="0.18" oninput="updateParam('disc',this.value)"><span class="value-display" id="disc-value">0.18</span></div>
+      </div>
+      <div class="control-group">
+        <label>Bloom size</label>
+        <div class="slider-container"><input type="range" id="size" min="140" max="330" step="5" value="250" oninput="updateParam('size',this.value)"><span class="value-display" id="size-value">250</span></div>
+      </div>
+      <div class="control-group">
+        <label>Leaves</label>
+        <div class="slider-container"><input type="range" id="leaves" min="0" max="7" step="1" value="4" oninput="updateParam('leaves',this.value)"><span class="value-display" id="leaves-value">4</span></div>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>Colour</h3>
+      <div class="color-group"><label>Petal base</label>
+        <div class="color-picker-container"><input type="color" id="cBase" value="#a8817c" oninput="updateColor('cBase',this.value)"><span class="color-value" id="cBase-value">#a8817c</span></div></div>
+      <div class="color-group"><label>Petal tip</label>
+        <div class="color-picker-container"><input type="color" id="cTip" value="#e7d5cb" oninput="updateColor('cTip',this.value)"><span class="color-value" id="cTip-value">#e7d5cb</span></div></div>
+      <div class="color-group"><label>Disc</label>
+        <div class="color-picker-container"><input type="color" id="cDisc" value="#7a6b5c" oninput="updateColor('cDisc',this.value)"><span class="color-value" id="cDisc-value">#7a6b5c</span></div></div>
+      <div class="color-group"><label>Foliage</label>
+        <div class="color-picker-container"><input type="color" id="cLeaf" value="#93a08c" oninput="updateColor('cLeaf',this.value)"><span class="color-value" id="cLeaf-value">#93a08c</span></div></div>
+      <div class="palettes" id="palettes"></div>
+    </div>
+
+    <div class="control-section">
+      <h3>Lamp</h3>
+      <div class="control-group">
+        <label>Pool size</label>
+        <div class="slider-container"><input type="range" id="lightSize" min="120" max="1400" step="10" value="700" oninput="updateLight('lightSize',this.value)"><span class="value-display" id="lightSize-value">700</span></div>
+      </div>
+      <div class="control-group">
+        <label>Height</label>
+        <div class="slider-container"><input type="range" id="lightHeight" min="40" max="700" step="10" value="280" oninput="updateLight('lightHeight',this.value)"><span class="value-display" id="lightHeight-value">280</span></div>
+      </div>
+      <div class="control-group">
+        <label>Lamp colour</label>
+        <div class="color-picker-container">
+          <input type="color" id="lampColor" value="#fff6ec" oninput="updateLight2('lampColor',this.value)">
+          <span class="color-value" id="lampColor-value">#fff6ec</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Follow (lower = slower)</label>
+        <div class="slider-container"><input type="range" id="ease" min="0.01" max="0.3" step="0.005" value="0.045" oninput="updateLight('ease',this.value)"><span class="value-display" id="ease-value">0.045</span></div>
+      </div>
+      <div class="control-group">
+        <label>Sheen</label>
+        <div class="slider-container"><input type="range" id="gloss" min="0" max="1" step="0.02" value="0" oninput="updateLight('gloss',this.value)"><span class="value-display" id="gloss-value">0</span></div>
+      </div>
+      <div class="control-group">
+        <label>Translucency</label>
+        <div class="slider-container"><input type="range" id="scatter" min="0" max="0.8" step="0.02" value="0.1" oninput="updateLight('scatter',this.value)"><span class="value-display" id="scatter-value">0.1</span></div>
+      </div>
+      <div class="control-group">
+        <label>Relief</label>
+        <div class="slider-container"><input type="range" id="relief" min="4" max="60" step="1" value="26" oninput="updateParam('relief',this.value)"><span class="value-display" id="relief-value">26</span></div>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>Seed</h3>
+      <input type="number" id="seed-input" class="seed-input" value="12345" onchange="updateSeed()">
+      <div class="seed-controls">
+        <button class="button secondary" onclick="previousSeed()">← Prev</button>
+        <button class="button secondary" onclick="nextSeed()">Next →</button>
+      </div>
+      <button class="button tertiary" onclick="randomSeedAndUpdate()">↻ Random</button>
+    </div>
+
+    <div class="control-section">
+      <h3>Actions</h3>
+      <div class="button-row">
+        <button class="button" onclick="regenerate()">Regrow</button>
+        <button class="button secondary" onclick="resetParameters()">Reset</button>
+      </div>
+      <button class="button tertiary" onclick="downloadPNG()">↓ Download PNG</button>
+    </div>
+
+    <div class="control-section" id="hub-actions" style="display:none">
+      <h3>Hub</h3>
+      <div class="button-row">
+        <button class="button" onclick="saveToHub()">Save to hub ↩</button>
+      </div>
+      <button class="button secondary" onclick="location.href = Hub.hubLink()">Back without saving</button>
+    </div>
+
+    <div class="control-section">
+      <h3>Settings</h3>
+      <div class="button-row">
+        <button class="button" onclick="copySettings()">Copy</button>
+        <button class="button secondary" onclick="applySettings()">Apply</button>
+      </div>
+      <textarea id="settings-box" class="text-input" rows="5" style="font-family:'Courier New',monospace;font-size:11px;text-align:left;resize:vertical;letter-spacing:0" placeholder="press Copy, then paste it to me"></textarea>
+      <div style="font-size:12px;color:var(--anthropic-mid-gray);line-height:1.5">Copy puts the whole state on your clipboard and in the box. Paste one back in and hit Apply.</div>
+    </div>
+  </div>
+  <div class="canvas-area"><div id="canvas-container"><div class="loading">Growing…</div></div></div>
+</div>
+
+<script>
+const N = 820, CX = N/2, CY = N/2, TWOPI = Math.PI*2;
+const GOLDEN = Math.PI*(3 - Math.sqrt(5));
+
+// species presets — each is a different flower architecture
+const SPECIES = Flora.SPECIES;
+
+const PALETTES = [
+  ['#a8817c','#e7d5cb','#7a6b5c','#93a08c'],
+  ['#9c8570','#e8ded0','#6f6355','#8e9a86'],
+  ['#8d8b96','#e2e0e4','#6a6670','#8d9490'],
+  ['#b09184','#efe4d9','#7b6a5e','#9aa392'],
+  ['#7d1f3d','#f0b7bd','#4a3510','#4f6141'],
+  ['#8a3a12','#f2c98a','#3d2a12','#5c6b45'],
+  ['#3c2f6b','#cbbde8','#3a3212','#4a5c48'],
+  ['#8f1d2b','#e8d5c0','#2f2a1c','#556247'],
+  ['#a8442f','#f6e0c2','#4d3a18','#6b7355'],
+  ['#20415c','#c9dfe8','#3a3a22','#46584a'],
+  ['#5d1420','#d98f7a','#33260f','#4c5a3c'],
+  ['#6b6f2a','#eae7bd','#3b3212','#5a6340']
+];
+
+let params = {
+  seed: 12345, species: 'aster',
+  petals: 13, whorls: 4, petalLen: 0.92, petalWid: 0.30, sharp: 0.75,
+  open: 0.40, disc: 0.18, size: 250, leaves: 4, relief: 26,
+  gloss: 0, scatter: 0.10, lightSize: 700, lightHeight: 280, ease: 0.045,
+  surface: 'ink', emboss: 0.24, press: 'up', cSheet: '#e9e3d6',
+  finish: 'matte', grainAmt: 0.30, contrast: 0.86, steps: 0,
+  toneShadow: '#2f2a24', toneHigh: '#f4efe6', toneAmt: 0.30,
+  lampColor: '#fff6ec',
+  cBase: '#a8817c', cTip: '#e7d5cb', cDisc: '#7a6b5c', cLeaf: '#93a08c'
+};
+const defaultParams = Object.assign({}, params);
+
+let F, artCv, artCtx, shadowCv, shadowCtx, bgCv, bgCtx;
+let cov, hgt, colorMap, nrm, hMax = 1;
+let lampT = {x: CX - 150, y: CY - 180}, lampP = {x: CX - 150, y: CY - 180};
+let needShade = false, growT = 0, ready = false;
+let grainPat = null;
+let parts = [];
+
+function specOf(){
+  return {
+    seed: params.seed, species: params.species, size: params.size, leaves: params.leaves,
+    petals: params.petals, whorls: params.whorls, petalLen: params.petalLen,
+    petalWid: params.petalWid, sharp: params.sharp, open: params.open, disc: params.disc,
+    shape: Flora.SPECIES[params.species].shape,
+    ruffle: Flora.SPECIES[params.species].ruffle,
+    cup: Flora.SPECIES[params.species].cup,
+    cBase: params.cBase, cTip: params.cTip, cDisc: params.cDisc, cLeaf: params.cLeaf
+  };
+}
+function growParts(){ parts = Flora.grow(specOf()); }
+function renderParts(ctx, mode){
+  ctx.save();
+  ctx.translate(CX, CY);
+  Flora.render(ctx, parts, specOf(), mode);
+  ctx.restore();
+}
+
+function build(){
+  noiseSeed(params.seed);
+  growParts();
+  const h0 = F.rasterLuma(ctx => renderParts(ctx, 'h'));
+  const blind = params.surface === 'blind';
+
+  if(blind){
+    // No ink. The whole frame IS the sheet, and the flower is a change in
+    // its height — invisible until the light rakes across it.
+    const col = F.rasterColor(ctx => renderParts(ctx, 'c'));
+    const mask = col.cov;
+    colorMap = null;
+    cov = new Float32Array(N*N).fill(1);
+    const sm = F.blur(h0, 3, 2);
+    const sign = params.press === 'down' ? -1 : 1;
+    hgt = new Float32Array(N*N);
+    hMax = 0.0001;
+    for(let i=0;i<N*N;i++){
+      const h = 0.5 + sign*sm[i]*mask[i]*params.emboss;
+      hgt[i] = h;
+      if(h > hMax) hMax = h;
+    }
+  } else {
+    const col = F.rasterColor(ctx => renderParts(ctx, 'c'));
+    cov = col.cov;
+    colorMap = col.colorMap;
+    const sm = F.blur(h0, 2, 2);
+    hgt = new Float32Array(N*N);
+    hMax = 0.0001;
+    for(let i=0;i<N*N;i++){
+      const c = cov[i];
+      if(c <= 0.004){ hgt[i] = 0; continue; }
+      const h = sm[i]*c;
+      hgt[i] = h;
+      if(h > hMax) hMax = h;
+    }
+  }
+
+  nrm = F.normals(cov, hgt, params.relief);
+  if(!blind) F.shadow(shadowCtx, cov, Math.max(2, params.size*0.06), 0.80);
+  needShade = true;
+}
+
+function shade(){
+  const matte = params.finish === 'matte';
+  const blind = params.surface === 'blind';
+  F.shade(artCtx, {
+    cov: cov, hgt: hgt, hMax: hMax, nX: nrm.nX, nY: nrm.nY, nZ: nrm.nZ,
+    colorMap: colorMap,
+    color: params.cSheet,
+    light: {x: lampP.x, y: lampP.y, h: params.lightHeight, radius: params.lightSize, color: params.lampColor},
+    gloss: blind ? 0 : (matte ? 0 : params.gloss),
+    ambient: blind ? 0.54 : (matte ? 0.44 : 0.32),
+    scatter: blind ? 0 : (matte ? Math.min(params.scatter, 0.12) : params.scatter),
+    aoLo: blind ? 0.74 : (matte ? 0.58 : 0.50),
+    exposure: blind ? 1.00 : (matte ? 1.16 : 1.45), wrap: 0.46,
+    matte: matte || blind, contrast: params.contrast, steps: params.steps,
+    tone: {shadow: params.toneShadow, high: params.toneHigh, amount: params.toneAmt}
+  });
+}
+
+// a preset handed over from the hub — spec, conditions, and which specimen
+// on the sheet this came from
+let hubTicket = null;
+const COND_KEYS = ['surface','emboss','cSheet','lampColor','lightSize','lightHeight',
+  'ease','grainAmt','contrast','steps','toneShadow','toneHigh','toneAmt','finish','relief'];
+
+function applyTicket(t){
+  if(!t) return;
+  if(t.spec) SHARE_KEYS.forEach(k => { if(t.spec[k] !== undefined) params[k] = t.spec[k]; });
+  if(t.conditions) COND_KEYS.forEach(k => { if(t.conditions[k] !== undefined) params[k] = t.conditions[k]; });
+  SHARE_KEYS.concat(COND_KEYS).forEach(k => {
+    const el = document.getElementById(k);
+    if(!el) return;
+    el.value = params[k];
+    const v = document.getElementById(k+'-value');
+    if(v) v.textContent = params[k];
+  });
+  hubTicket = t;
+  document.getElementById('hub-actions').style.display = 'block';
+}
+function saveToHub(){
+  location.href = Hub.backToHub('flower', specOf(), {
+    id: hubTicket ? hubTicket.id : undefined,
+    conditions: (function(){ const c = {}; COND_KEYS.forEach(k => { if(params[k] !== undefined) c[k] = params[k]; }); return c; })()
+  });
+}
+
+function setup(){
+  pixelDensity(1);
+  createCanvas(N,N).parent('canvas-container');
+  F = Relief.field(N);
+  artCv = Relief.makeCanvas(N);    artCtx    = artCv.getContext('2d');
+  shadowCv = Relief.makeCanvas(N); shadowCtx = shadowCv.getContext('2d');
+  bgCv = Relief.makeCanvas(N);     bgCtx     = bgCv.getContext('2d');
+  const sh = document.getElementById('seg-species');
+  Flora.NAMES.forEach(n => {
+    const b = document.createElement('button');
+    b.dataset.v = n;
+    b.textContent = n.charAt(0).toUpperCase() + n.slice(1);
+    sh.appendChild(b);
+  });
+  buildPalettes();
+  setSpecies(params.species);
+  applyTicket(Hub.takeHashPreset());
+  setSurface(params.surface);
+  grainPat = artCtx.createPattern(Relief.grainTile(256, 4242, 30), 'repeat');
+  paintGround();
+  build();
+  ready = true;
+  const l = document.querySelector('.loading'); if(l) l.style.display = 'none';
+}
+
+function paintGround(){
+  const matte = params.finish === 'matte';
+  const blind = params.surface === 'blind';
+  F.paper(bgCtx, blind ? params.cSheet : (matte ? '#efece4' : '#e9e3d5'),
+          {seed: 909, amount: blind ? 7 : (matte ? 9 : 15), vignette: blind ? 0.10 : (matte ? 0.14 : 0.36)});
+  Relief.toneCanvas(bgCtx, N, {shadow: params.toneShadow, high: params.toneHigh, amount: params.toneAmt*0.75});
+}
+function setSurface(v){
+  params.surface = v;
+  document.getElementById('emboss-controls').style.display = v === 'blind' ? '' : 'none';
+  document.getElementById('seg-press').style.display = v === 'blind' ? '' : 'none';
+  syncSegments();
+  if(ready) build();
+}
+function setPress(v){ params.press = v; syncSegments(); if(ready) build(); }
+
+const SHARE_KEYS = ['seed','species','petals','whorls','petalLen','petalWid','sharp','open','disc','size','leaves','relief','gloss','scatter','lightSize','lightHeight','ease','lampColor','finish','grainAmt','contrast','steps','toneShadow','toneHigh','toneAmt','cBase','cTip','cDisc','cLeaf','surface','emboss','press','cSheet'];
+function copySettings(){
+  const out = {};
+  SHARE_KEYS.forEach(k => { out[k] = params[k]; });
+  const txt = JSON.stringify(out, null, 1);
+  document.getElementById('settings-box').value = txt;
+  if(navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => {});
+}
+function applySettings(){
+  let o;
+  try { o = JSON.parse(document.getElementById('settings-box').value); }
+  catch(e){ document.getElementById('settings-box').value = 'could not read that — needs to be the JSON from Copy'; return; }
+  SHARE_KEYS.forEach(k => { if(o[k] !== undefined) params[k] = o[k]; });
+  SHARE_KEYS.forEach(k => {
+    const el = document.getElementById(k);
+    if(!el) return;
+    el.value = params[k];
+    const v = document.getElementById(k+'-value');
+    if(v) v.textContent = params[k];
+  });
+  setSurface(params.surface);
+  syncSegments(); paintGround(); updateSeedDisplay(); build();
+}
+
+function setFinish(v){
+  params.finish = v;
+  syncSegments(); paintGround();
+  needShade = true;
+}
+function updateLight2(k,v){
+  params[k] = v;
+  document.getElementById(k+'-value').textContent = v;
+  needShade = true;
+}
+function updateTone(k,v){
+  params[k] = (k === 'toneAmt') ? parseFloat(v) : v;
+  const el = document.getElementById(k+'-value');
+  if(el) el.textContent = v;
+  paintGround();
+  needShade = true;
+}
+
+function draw(){
+  if(!ready) return;
+  const e = params.ease;
+  const mx = lampT.x - lampP.x, my = lampT.y - lampP.y;
+  if(Math.abs(mx) > 0.15 || Math.abs(my) > 0.15){
+    lampP.x += mx*e; lampP.y += my*e;
+    needShade = true;
+  }
+  if(needShade){ shade(); needShade = false; }
+
+  const g = drawingContext;
+  g.setTransform(1,0,0,1,0,0);
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+  g.clearRect(0,0,N,N);
+  g.drawImage(bgCv,0,0);
+
+  const matte = params.finish === 'matte';
+  const blind = params.surface === 'blind';
+  if(!blind){
+    const sx = (CX - lampP.x)*(matte ? 0.025 : 0.06), sy = (CY - lampP.y)*(matte ? 0.025 : 0.06);
+    g.save(); g.globalAlpha = matte ? 0.22 : 0.50; g.drawImage(shadowCv, sx, sy); g.restore();
+  }
+
+  let s = 1, a = 1;
+  if(growT > 0){
+    growT = Math.max(0, growT - 0.045);
+    const q = growT*growT;
+    s = 1 - q*0.09; a = 1 - q*0.85;
+  }
+  g.save();
+  g.globalAlpha = a;
+  g.translate(CX,CY); g.scale(s,s); g.translate(-CX,-CY);
+  g.drawImage(artCv,0,0);
+  g.restore();
+
+  const rad = params.lightSize;
+  const grd = g.createRadialGradient(lampP.x, lampP.y, rad*0.12, lampP.x, lampP.y, rad*2.1);
+  grd.addColorStop(0,   matte ? 'rgba(255,250,240,0.06)' : 'rgba(255,246,228,0.18)');
+  grd.addColorStop(0.42,'rgba(255,240,215,0.00)');
+  grd.addColorStop(1,   matte ? 'rgba(28,24,18,0.06)'     : 'rgba(24,19,14,0.20)');
+  g.save();
+  g.globalCompositeOperation = 'soft-light';
+  g.fillStyle = grd; g.fillRect(0,0,N,N);
+  g.restore();
+
+  if(grainPat && params.grainAmt > 0){
+    g.save();
+    g.globalCompositeOperation = 'overlay';
+    g.globalAlpha = params.grainAmt;
+    g.fillStyle = grainPat;
+    g.fillRect(0,0,N,N);
+    g.restore();
+  }
+  g.globalCompositeOperation = 'source-over';
+}
+
+function overCanvas(){ return mouseX >= 0 && mouseY >= 0 && mouseX < width && mouseY < height; }
+function aimLamp(){ if(overCanvas()){ lampT.x = mouseX; lampT.y = mouseY; } }
+function mouseMoved(){ aimLamp(); }
+function mouseDragged(){ aimLamp(); return false; }
+function touchMoved(){ aimLamp(); return false; }
+function mousePressed(){
+  if(!overCanvas() || !ready) return;
+  params.seed += 1; updateSeedDisplay(); build(); growT = 1;
+  return false;
+}
+
+// ── UI ─────────────────────────────────────────────────────────
+function regenerate(){ if(ready){ build(); growT = 0.7; } }
+function updateParam(k,v){
+  params[k] = parseFloat(v);
+  document.getElementById(k+'-value').textContent = v;
+  if(ready) build();
+}
+function updateLight(k,v){
+  params[k] = parseFloat(v);
+  document.getElementById(k+'-value').textContent = v;
+  needShade = true;
+}
+function updateColor(k,v){
+  params[k] = v;
+  document.getElementById(k+'-value').textContent = v;
+  if(ready) build();
+}
+function setSpecies(v){
+  params.species = v;
+  const S = SPECIES[v];
+  Object.keys(S).forEach(k => {
+    if(k === 'shape') return;
+    params[k] = S[k];
+    const el = document.getElementById(k);
+    if(el){ el.value = S[k]; document.getElementById(k+'-value').textContent = S[k]; }
+  });
+  syncSegments();
+  if(ready) build();
+}
+function syncSegments(){
+  document.querySelectorAll('#seg-species button').forEach(b => b.classList.toggle('on', b.dataset.v === params.species));
+  document.querySelectorAll('#seg-finish button').forEach(b => b.classList.toggle('on', b.dataset.v === params.finish));
+  document.querySelectorAll('#seg-surface button').forEach(b => b.classList.toggle('on', b.dataset.v === params.surface));
+  document.querySelectorAll('#seg-press button').forEach(b => b.classList.toggle('on', b.dataset.v === params.press));
+}
+function buildPalettes(){
+  const host = document.getElementById('palettes');
+  host.innerHTML = '';
+  PALETTES.forEach(pal => {
+    const d = document.createElement('div');
+    d.className = 'pal';
+    pal.forEach(c => { const i = document.createElement('i'); i.style.background = c; d.appendChild(i); });
+    d.onclick = () => {
+      ['cBase','cTip','cDisc','cLeaf'].forEach((k,ix) => {
+        params[k] = pal[ix];
+        document.getElementById(k).value = pal[ix];
+        document.getElementById(k+'-value').textContent = pal[ix];
+      });
+      if(ready) build();
+    };
+    host.appendChild(d);
+  });
+}
+function downloadPNG(){ saveCanvas('specimen-' + params.species + '-' + params.seed, 'png'); }
+function updateSeedDisplay(){ document.getElementById('seed-input').value = params.seed; }
+function updateSeed(){
+  const v = parseInt(document.getElementById('seed-input').value);
+  if(v && v > 0){ params.seed = v; build(); } else updateSeedDisplay();
+}
+function previousSeed(){ params.seed = Math.max(1, params.seed-1); updateSeedDisplay(); build(); growT = 0.6; }
+function nextSeed(){ params.seed += 1; updateSeedDisplay(); build(); growT = 0.6; }
+function randomSeedAndUpdate(){ params.seed = Math.floor(Math.random()*999999)+1; updateSeedDisplay(); build(); growT = 1; }
+function resetParameters(){
+  params = Object.assign({}, defaultParams);
+  ['petals','whorls','petalLen','petalWid','sharp','open','disc','size','leaves','relief','gloss','scatter','lightSize','lightHeight','ease','grainAmt','contrast','steps','toneAmt'].forEach(k => {
+    document.getElementById(k).value = params[k];
+    document.getElementById(k+'-value').textContent = params[k];
+  });
+  ['cBase','cTip','cDisc','cLeaf'].forEach(k => {
+    document.getElementById(k).value = params[k];
+    document.getElementById(k+'-value').textContent = params[k];
+  });
+  syncSegments(); updateSeedDisplay(); build();
+}
+document.getElementById('seg-surface').addEventListener('click', e => { if(e.target.dataset.v) setSurface(e.target.dataset.v); });
+document.getElementById('seg-press').addEventListener('click', e => { if(e.target.dataset.v) setPress(e.target.dataset.v); });
+document.getElementById('seg-finish').addEventListener('click', e => { if(e.target.dataset.v) setFinish(e.target.dataset.v); });
+document.getElementById('seg-species').addEventListener('click', e => { if(e.target.dataset.v) setSpecies(e.target.dataset.v); });
+</script>
+</body>
+</html>
