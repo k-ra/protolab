@@ -15,6 +15,22 @@ because none of this is drawn — it's modelled as height and then lit.
 becomes one sheet and every specimen is nothing but a change in its height,
 invisible until the light rakes across it.
 
+## Clippings
+
+**[The clippings sheet](./canvas/)** is a swatch book, and a deliberately
+different thing from the landing page. One white ground, one fixed light, and
+*material* as the only variable — a wax seal on white, a brass bloom on white, a
+cotton-paper card with a flower pressed into it. It exists to compare effects
+side by side, so nothing about the background is allowed to move.
+
+That needed the engine to carry a **per-pixel material map**: `matMap` indexes
+into a list of light responses, so wax, brass, plaster and paper sit on one
+sheet under one lamp and each answers it differently. Material index 0 is the
+ground, given `ambient: 1` so the lamp cannot touch it — which is what keeps the
+white behind everything exactly one white.
+
+Every pressing takes a note, and the notes copy out as markdown.
+
 ## The studies
 
 | | |
@@ -70,7 +86,8 @@ sit at the end of the pass.
 | `lib/flora.js` | 12 flower species, grown from a seed, rendered as height or colour |
 | `lib/press.js` | a pressed seal, same contract as a flower |
 | `lib/dies.js` | the engraver's vocabulary — rings, beads, monograms, laurels, crests |
-| `lib/hub.js` | the library, and how presets travel between pages |
+| `lib/matter.js` | the material catalogue — colour, light response, relief character |
+| `lib/hub.js` | the collection, and how presets travel between pages |
 | `PRESETS.md` | saved lighting and paper conditions |
 
 A specimen is `{kind, spec}` — `kind` picks the renderer, `spec` is what that

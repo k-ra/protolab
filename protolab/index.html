@@ -73,26 +73,6 @@ textarea{width:100%;height:110px;border:1px solid var(--line);border-radius:8px;
 textarea:focus{outline:none;border-color:var(--ink)}
 .hint{font-size:11px;color:var(--soft);line-height:1.6;margin-top:9px}
 
-/* library drawer */
-#library{position:fixed;left:0;right:0;bottom:0;z-index:6;transform:translateY(102%);
-  transition:transform .34s cubic-bezier(.22,.7,.3,1);background:var(--panel);
-  border-top:1px solid var(--line);backdrop-filter:blur(14px);padding:20px 30px 96px;
-  box-shadow:0 -10px 40px rgba(47,42,36,.10)}
-#library.open{transform:translateY(0)}
-#library h2{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);
-  font-weight:400;margin-bottom:14px}
-.shelf{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;min-height:96px;align-items:flex-start}
-.card{flex:0 0 auto;width:112px;border:1px solid var(--line);border-radius:10px;padding:9px;
-  background:rgba(255,255,255,.55);cursor:pointer;transition:all .16s ease;position:relative}
-.card:hover{border-color:var(--ink);transform:translateY(-2px)}
-.card canvas{display:block;width:94px;height:60px;border-radius:6px}
-.card .nm{font-size:10.5px;letter-spacing:.06em;margin-top:7px;color:var(--soft);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card .rm{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;
-  background:var(--ink);color:#f6f3ee;font-size:11px;line-height:18px;text-align:center;
-  opacity:0;transition:opacity .16s ease}
-.card:hover .rm{opacity:1}
-.empty{font-size:12px;color:var(--soft);font-style:italic;font-family:'Lora',serif;padding:28px 0}
 </style>
 </head>
 <body>
@@ -107,7 +87,7 @@ textarea:focus{outline:none;border-color:var(--ink)}
   <button onclick="scatter(5)">Scatter</button>
   <button onclick="clearAll()">Clear</button>
   <div class="div"></div>
-  <button id="b-lib" onclick="toggleLibrary()">Library</button>
+  <button onclick="location.href = Hub.clippingsLink()">Clippings ↗</button>
   <button onclick="togglePanel('settings')">Sheet</button>
   <button onclick="downloadPNG()">PNG</button>
 </div>
@@ -118,7 +98,7 @@ textarea:focus{outline:none;border-color:var(--ink)}
   <div class="row"><button class="wide" onclick="reseedSel()">New seed</button></div>
   <div class="row"><button class="wide" onclick="sendToBack()">Send behind</button></div>
   <div class="row"><button class="wide solid" onclick="openStudy()">Open study ↗</button></div>
-  <div class="row"><button class="wide" onclick="favouriteSel()">Save to library</button></div>
+  <div class="row"><button class="wide" onclick="favouriteSel()">Press onto clippings ↗</button></div>
   <div class="row" style="margin-bottom:0"><button class="wide danger" onclick="deleteSel()">Remove</button></div>
 </div>
 
@@ -162,10 +142,7 @@ textarea:focus{outline:none;border-color:var(--ink)}
   </div>
 </div>
 
-<div id="library">
-  <h2>Library — click to plant</h2>
-  <div class="shelf" id="shelf"></div>
-</div>
+
 
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -177,7 +154,7 @@ textarea:focus{outline:none;border-color:var(--ink)}
 // and its spec travels, in the URL, into the study that made it.
 // ═══════════════════════════════════════════════════════════════
 
-const FIELD_SCALE = 0.62;
+const FIELD_SCALE = 0.92;   // crisp: barely any upscale
 let DW, DH, FW, FH;
 let F, artCv, artCtx, paperCv, paperCtx, grainPat, paperPix;
 let cov, hgt, colorMap, nrm, hMax = 1;
@@ -188,13 +165,13 @@ let selected = -1, dragging = false, dragDX = 0, dragDY = 0;
 let lastPlant = 0;
 
 let G = {
-  surface: 'blind', emboss: 0.34, wordDepth: 0.28,
+  surface: 'blind', emboss: 0.46, wordDepth: 0.40,
   word: 'PROTOLAB', wordSub: 'MATERIAL STUDIES',
   cSheet: '#e9e3d6', lampColor: '#fff6ec',
   lightSize: 1700, lightHeight: 340, ease: 0.045,
   grainAmt: 0.30, contrast: 0.88, steps: 0,
   toneShadow: '#2f2a24', toneHigh: '#f4efe6', toneAmt: 0.30,
-  relief: 34, seed: 7
+  relief: 52, seed: 7
 };
 const CONDITION_KEYS = ['surface','emboss','wordDepth','cSheet','lampColor','lightSize',
   'lightHeight','ease','grainAmt','contrast','steps','toneShadow','toneHigh','toneAmt','relief'];
@@ -278,8 +255,8 @@ function drawWord(ctx){
   const s1 = base*0.082;
   tracked(ctx, G.word || '', 0, s1, s1*0.44);
   if(G.wordSub){
-    const s2 = base*0.021;
-    tracked(ctx, G.wordSub, s1*1.15, s2, s2*0.62);
+    const s2 = base*0.030;
+    tracked(ctx, G.wordSub, s1*1.25, s2, s2*0.52);
   }
   ctx.restore();
 }
@@ -291,8 +268,8 @@ function build(){
   const fc  = F.rasterColor(ctx => drawAll(ctx, 'c'));
   const h0  = F.rasterLuma(ctx => drawAll(ctx, 'h'));
   const wd  = F.rasterLuma(drawWord);
-  const sm  = F.blur(h0, 2, 2);
-  const wsm = F.blur(wd, 2, 2);
+  const sm  = F.blur(h0, 1, 2);
+  const wsm = F.blur(wd, 1, 1);
   const contact = F.blur(fc.cov, 16);
 
   const n2 = FW*FH;
@@ -382,7 +359,7 @@ function setup(){
       selected = items.length - 1;
     }
   }
-  syncGlobalUI(); renderShelf();
+  syncGlobalUI();
 
   const boot = () => {
     if(!items.length) scatter(6);
@@ -469,10 +446,8 @@ function mouseDragged(){
 function mouseReleased(){
   if(dragging){ dragging = false; persist(); return false; }
   if(!ready || !overStage()) return;
-  if(hitTest(mouseX, mouseY) >= 0) return false;
-  if(millis() - lastPlant < 320) return false;      // don't plant twice on a double-click
-  lastPlant = millis();
-  plantAt('flower', mouseX, mouseY);
+  // bare paper does nothing — planting is a deliberate act, from the bar
+  if(hitTest(mouseX, mouseY) < 0) deselect();
   return false;
 }
 function doubleClicked(){
@@ -484,7 +459,7 @@ function doubleClicked(){
 function keyPressed(){
   const t = document.activeElement && document.activeElement.tagName;
   if(t === 'TEXTAREA' || t === 'INPUT') return;
-  if(keyCode === ESCAPE){ deselect(); closeLibrary(); }
+  if(keyCode === ESCAPE) deselect();
   if((keyCode === BACKSPACE || keyCode === DELETE) && selected >= 0) deleteSel();
 }
 
@@ -635,72 +610,11 @@ function openStudy(){
 }
 function favouriteSel(){
   const it = items[selected]; if(!it) return;
-  const conditions = {};
-  CONDITION_KEYS.forEach(k => { conditions[k] = G[k]; });
-  Hub.addFavourite({
-    kind: it.kind,
-    name: it.kind === 'press' ? cap(it.spec.substrate) + ' seal' : cap(it.spec.species),
-    spec: JSON.parse(JSON.stringify(it.spec)),
-    conditions: conditions
-  });
-  renderShelf(); openLibrary();
+  Hub.toClippings(it.kind, it.spec);
+  location.href = Hub.clippingsLink();
 }
 
 // ── library ────────────────────────────────────────────────────
-function thumbFor(entry){
-  const w = 94, h = 60;
-  const c = Relief.makeCanvas(w*2, h*2);
-  const x = c.getContext('2d');
-  x.scale(2,2);
-  x.fillStyle = (entry.conditions && entry.conditions.cSheet) || '#e9e3d6';
-  x.fillRect(0,0,w,h);
-  const item = {kind: entry.kind, spec: entry.spec};
-  if(entry.kind !== 'press') item._parts = Flora.grow(entry.spec);
-  const s = (h*0.40)/Math.max(24, entry.spec.size);
-  x.save();
-  x.translate(w/2, h/2); x.scale(s, s);
-  renderItem(x, item, 'c');
-  x.restore();
-  return c;
-}
-function renderShelf(){
-  const shelf = document.getElementById('shelf');
-  const list = Hub.library();
-  shelf.innerHTML = '';
-  if(!list.length){
-    const e = document.createElement('div');
-    e.className = 'empty';
-    e.textContent = 'Nothing saved yet. Select a specimen and choose "Save to library".';
-    shelf.appendChild(e);
-    return;
-  }
-  list.forEach(entry => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.appendChild(thumbFor(entry));
-    const nm = document.createElement('div');
-    nm.className = 'nm'; nm.textContent = entry.name;
-    card.appendChild(nm);
-    const rm = document.createElement('div');
-    rm.className = 'rm'; rm.textContent = '×';
-    rm.onclick = (ev) => { ev.stopPropagation(); Hub.removeFavourite(entry.id); renderShelf(); };
-    card.appendChild(rm);
-    card.onclick = () => {
-      items.push({kind: entry.kind, x: DW*(0.25 + Math.random()*0.5),
-                  y: DH*(0.2 + Math.random()*0.5), rot: Math.random()*Math.PI*2,
-                  spec: JSON.parse(JSON.stringify(entry.spec))});
-      selected = items.length - 1;
-      needBuild = true; persist(); showInspector();
-    };
-    shelf.appendChild(card);
-  });
-}
-function openLibrary(){ document.getElementById('library').classList.add('open'); document.getElementById('b-lib').classList.add('on'); }
-function closeLibrary(){ document.getElementById('library').classList.remove('open'); document.getElementById('b-lib').classList.remove('on'); }
-function toggleLibrary(){
-  const el = document.getElementById('library');
-  if(el.classList.contains('open')) closeLibrary(); else { renderShelf(); openLibrary(); }
-}
 
 // ── global ─────────────────────────────────────────────────────
 function plantAt(kind, x, y){

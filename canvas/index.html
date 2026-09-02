@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clippings</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<script src="../lib/dies.js"></script>
+<script src="../lib/flora.js"></script>
+<script src="../lib/press.js"></script>
+<script src="../lib/matter.js"></script>
+<script src="../lib/hub.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#8b857c;--line:rgba(47,42,36,.13);--panel:rgba(255,255,255,.95)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Poppins',sans-serif;font-weight:300;color:var(--ink);background:#fbfaf7;overflow:hidden}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;width:100%;height:100%;cursor:default}
+#labels{position:fixed;inset:0;pointer-events:none;z-index:3}
+.cap{position:absolute;text-align:center;transform:translateX(-50%)}
+.cap b{display:block;font-size:10.5px;font-weight:400;letter-spacing:.19em;text-transform:uppercase}
+.cap i{display:block;font-family:'Lora',serif;font-style:italic;font-size:11.5px;color:var(--soft);margin-top:3px}
+.cap.sel b{color:#000}
+.cap u{display:block;text-decoration:none;font-size:10.5px;color:var(--soft);margin-top:4px;
+  font-family:'Lora',serif;font-style:italic;max-width:210px;margin-left:auto;margin-right:auto;line-height:1.45}
+
+.sheetmark{position:fixed;top:34px;left:40px;z-index:4;pointer-events:none}
+.sheetmark b{display:block;font-size:11px;font-weight:400;letter-spacing:.34em;text-transform:uppercase}
+.sheetmark i{display:block;font-family:'Lora',serif;font-style:italic;font-size:12px;color:var(--soft);margin-top:5px}
+
+.bar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:8;
+  display:flex;align-items:center;gap:4px;padding:6px;border-radius:999px;
+  background:var(--panel);border:1px solid var(--line);box-shadow:0 8px 26px rgba(47,42,36,.09)}
+.bar button{border:none;background:none;font-family:inherit;font-weight:400;font-size:12.5px;
+  letter-spacing:.05em;color:var(--ink);padding:8px 13px;border-radius:999px;cursor:pointer;transition:background .16s}
+.bar button:hover{background:rgba(47,42,36,.07)}
+.bar .div{width:1px;height:18px;background:var(--line);margin:0 3px}
+.bar .plus{font-size:16px;padding:5px 14px 7px}
+
+.panel{position:fixed;z-index:9;width:270px;padding:20px;border-radius:14px;background:var(--panel);
+  border:1px solid var(--line);box-shadow:0 14px 40px rgba(47,42,36,.13);
+  max-height:calc(100vh - 120px);overflow-y:auto;display:none}
+#inspector{top:28px;right:28px}
+#notes{top:28px;left:28px;width:330px}
+.panel h2{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);
+  font-weight:400;margin-bottom:15px;display:flex;justify-content:space-between}
+.panel h2 span{cursor:pointer;letter-spacing:0;font-size:15px;line-height:1}
+.row{margin-bottom:14px}
+.row label{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin-bottom:7px}
+.row .val{float:right;font-family:'Courier New',monospace;letter-spacing:0;text-transform:none}
+input[type=range]{width:100%;height:2px;background:var(--line);border-radius:2px;outline:none;-webkit-appearance:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--ink);border-radius:50%;cursor:pointer}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.chips.three{grid-template-columns:1fr 1fr 1fr}
+.chips button{border:1px solid var(--line);background:none;font-family:inherit;font-weight:300;font-size:11.5px;
+  padding:7px 3px;border-radius:7px;cursor:pointer;color:var(--ink);transition:all .16s}
+.chips button:hover{border-color:var(--ink)}
+.chips button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.wide{width:100%;border:1px solid var(--line);background:none;font-family:inherit;font-weight:300;font-size:12px;
+  padding:9px;border-radius:8px;cursor:pointer;color:var(--ink);transition:all .16s}
+.wide:hover{border-color:var(--ink)}
+.wide.solid{background:var(--ink);color:#fff;border-color:var(--ink)}
+.wide.danger:hover{border-color:#a8564a;color:#a8564a}
+textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;font-family:'Lora',serif;
+  font-size:12.5px;line-height:1.6;resize:vertical;background:#fff;color:var(--ink)}
+textarea:focus{outline:none;border-color:var(--ink)}
+.hint{font-size:11px;color:var(--soft);line-height:1.6;margin-top:9px}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="labels"></div>
+
+<div class="sheetmark"><b>Clippings</b><i>one light, one ground — only the material changes</i></div>
+
+<div class="bar">
+  <button class="plus" onclick="addPressing()" title="add a pressing">+</button>
+  <button onclick="shuffleAll()">Shuffle</button>
+  <button onclick="fillSet()">Full set</button>
+  <button onclick="clearAll()">Clear</button>
+  <div class="div"></div>
+  <button onclick="togglePanel('notes')">Notes</button>
+  <button onclick="downloadPNG()">PNG</button>
+</div>
+
+<div class="panel" id="inspector">
+  <h2><span id="i-title">Pressing</span><span onclick="deselect()">×</span></h2>
+  <div class="row"><label>Material</label><div class="chips" id="i-mat"></div></div>
+  <div class="row"><label>Form</label><div class="chips three" id="i-form"></div></div>
+  <div class="row" id="row-content"><label>Pressed with</label><div class="chips" id="i-content"></div></div>
+  <div class="row"><label>Scale <span class="val" id="v-scale"></span></label>
+    <input type="range" id="i-scale" min="0.5" max="1.5" step="0.02" oninput="setField('scale',+this.value)"></div>
+  <div class="row"><label>Impression <span class="val" id="v-depth"></span></label>
+    <input type="range" id="i-depth" min="0.3" max="2" step="0.05" oninput="setField('depth',+this.value)"></div>
+  <div class="row"><label>Note</label>
+    <textarea id="i-note" rows="3" placeholder="what you like about it" oninput="setField('note',this.value)"></textarea></div>
+  <div class="row"><button class="wide" onclick="reseedSel()">New seed</button></div>
+  <div class="row"><button class="wide solid" onclick="openStudy()">Open study ↗</button></div>
+  <div class="row" style="margin-bottom:0"><button class="wide danger" onclick="removeSel()">Remove</button></div>
+</div>
+
+<div class="panel" id="notes">
+  <h2>Notes <span onclick="togglePanel('notes')">×</span></h2>
+  <div class="row"><label>About this sheet</label>
+    <textarea id="sheet-note" rows="4" placeholder="what you're looking for" oninput="setSheetNote(this.value)"></textarea></div>
+  <div class="row"><label>Light <span class="val" id="v-lightAng"></span></label>
+    <input type="range" id="s-lightAng" min="0" max="360" step="2" oninput="setLight('ang',+this.value)"></div>
+  <div class="row"><label>Rake <span class="val" id="v-lightHeight"></span></label>
+    <input type="range" id="s-lightHeight" min="60" max="900" step="10" oninput="setLight('h',+this.value)"></div>
+  <div class="row"><label>Grain <span class="val" id="v-grainAmt"></span></label>
+    <input type="range" id="s-grainAmt" min="0" max="0.5" step="0.02" oninput="setLight('grain',+this.value)"></div>
+  <div class="row"><button class="wide" onclick="copyNotes()">Copy notes for Claude</button></div>
+  <div class="row" style="margin-bottom:0"><button class="wide" onclick="copyState()">Copy whole sheet</button></div>
+  <div class="hint">Notes copy out as markdown — paste them to me and I'll act on them.</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CLIPPINGS — a swatch book.
+//
+// The ground never changes: one white sheet, one fixed light. The only
+// variable is MATERIAL, which is why the relief field carries a per-pixel
+// material map — wax, brass, plaster and paper all lit by the same lamp,
+// each answering it differently.
+//
+// Rendered at full resolution. Nothing here needs to relight at 60fps, and
+// crispness matters more than motion.
+// ═══════════════════════════════════════════════════════════════
+
+const GROUND = '#fbfaf7';
+const CELL_W = 300, CELL_H = 300, CAP_H = 66;
+
+let DW, DH, COLS;
+let F, artCv, artCtx, grainPat;
+let cov, hgt, colorMap, matMap, nrm, hMax = 1;
+let needBuild = false, needShade = false, ready = false;
+
+let items = [];
+let sheetNote = '';
+let selected = -1;
+let L = {ang: 214, h: 330, radius: 2200, grain: 0.22};
+
+const FORMS = ['seal','bloom','card'];
+const CONTENTS = ['die','flower'];
+const STORE = 'protolab.clippings.v1';
+
+// ── a pressing ─────────────────────────────────────────────────
+function newPressing(over){
+  const rng = Relief.makeRng(Math.floor(Math.random()*999999)+1);
+  const mat = Matter.NAMES[Math.floor(rng()*Matter.NAMES.length)];
+  return Object.assign({
+    material: mat,
+    form: FORMS[Math.floor(rng()*FORMS.length)],
+    content: CONTENTS[Math.floor(rng()*CONTENTS.length)],
+    scale: 1, depth: 1, note: '',
+    seed: Math.floor(rng()*999999)+1,
+    die: ['monogram','crest','figure'][Math.floor(rng()*3)],
+    text: 'K',
+    species: Flora.NAMES[Math.floor(rng()*Flora.NAMES.length)]
+  }, over || {});
+}
+function specFor(it){
+  if(it.form === 'bloom' || (it.form === 'card' && it.content === 'flower')){
+    return Flora.defaults({seed: it.seed, species: it.species, size: 92*it.scale, leaves: 0});
+  }
+  return Press.defaults({seed: it.seed, substrate: 'wax', die: it.die, text: it.text,
+                         size: 92*it.scale, detail: 6, depth: it.depth, mode: 'deboss'});
+}
+
+// card body — a small sheet of the material, softly deckled
+function cardPath(ctx, R, seed){
+  const rng = Relief.makeRng(seed);
+  const w = R*1.18, h = R*0.92, steps = 180;
+  const ph = [rng()*6.28, rng()*6.28, rng()*6.28];
+  ctx.beginPath();
+  for(let i=0;i<=steps;i++){
+    const t = i/steps, per = t*4;
+    let x, y, nx, ny;
+    if(per < 1){ x = -w + 2*w*per; y = -h; nx = 0; ny = -1; }
+    else if(per < 2){ x = w; y = -h + 2*h*(per-1); nx = 1; ny = 0; }
+    else if(per < 3){ x = w - 2*w*(per-2); y = h; nx = 0; ny = 1; }
+    else { x = -w; y = h - 2*h*(per-3); nx = -1; ny = 0; }
+    const n = (Math.sin(per*6.7+ph[0])*0.5 + Math.sin(per*15.1+ph[1])*0.3 + Math.sin(per*29.3+ph[2])*0.2)*R*0.022;
+    if(i===0) ctx.moveTo(x+nx*n, y+ny*n); else ctx.lineTo(x+nx*n, y+ny*n);
+  }
+  ctx.closePath();
+}
+
+// height for one pressing, drawn at the origin
+function pressingHeight(ctx, it){
+  const R = 92*it.scale;
+  if(it.form === 'seal'){
+    Press.stamp(ctx, specFor(it), 'h');
+  } else if(it.form === 'bloom'){
+    Flora.render(ctx, it._parts, specFor(it), 'h');
+  } else {
+    ctx.fillStyle = 'rgb(150,150,150)';        // the card sits at mid height
+    cardPath(ctx, R*1.15, it.seed);
+    ctx.fill();
+    ctx.save();
+    // drawn at partial alpha, so the content MODULATES the card's level
+    // instead of replacing it — a blind emboss, raised out of the sheet
+    if(it.content === 'flower'){
+      ctx.globalAlpha = 0.55*it.depth;
+      const s = specFor(it);
+      s.size = R*0.66;
+      Flora.render(ctx, Flora.grow(s), s, 'h');
+    } else {
+      ctx.globalAlpha = 0.62*it.depth;
+      const s = specFor(it);
+      s.size = R*0.62;
+      ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#ffffff';
+      Dies.ring(ctx, s.size*0.90, s.size*0.028);
+      Dies.monogram(ctx, s.size*0.60, it.text || 'K');
+    }
+    ctx.restore();
+  }
+}
+// silhouette, for the material map
+function pressingMask(ctx, it){
+  const R = 92*it.scale;
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#fff';
+  if(it.form === 'seal'){
+    Press.stamp(ctx, specFor(it), 'c');
+  } else if(it.form === 'bloom'){
+    Flora.render(ctx, it._parts, specFor(it), 'c');
+  } else {
+    cardPath(ctx, R*1.15, it.seed); ctx.fill();
+  }
+}
+
+// ── layout ─────────────────────────────────────────────────────
+function layout(){
+  COLS = Math.max(1, Math.floor((DW - 80)/CELL_W));
+  const rows = Math.ceil(items.length/COLS) || 1;
+  const gridW = COLS*CELL_W, gridH = rows*(CELL_H + CAP_H);
+  const ox = (DW - gridW)/2 + CELL_W/2;
+  const oy = Math.max(120, (DH - gridH)/2) + CELL_H/2;
+  items.forEach((it, i) => {
+    it.x = ox + (i % COLS)*CELL_W;
+    it.y = oy + Math.floor(i/COLS)*(CELL_H + CAP_H);
+  });
+}
+
+function build(){
+  layout();
+  items.forEach(it => {
+    if(it.form === 'bloom') it._parts = Flora.grow(specFor(it));
+  });
+
+  const h0 = F.rasterLuma(ctx => {
+    items.forEach(it => { ctx.save(); ctx.translate(it.x, it.y); pressingHeight(ctx, it); ctx.restore(); });
+  });
+  const mk = F.rasterColor(ctx => {
+    items.forEach(it => { ctx.save(); ctx.translate(it.x, it.y); pressingMask(ctx, it); ctx.restore(); });
+  });
+  const sm = F.blur(h0, 1, 2);                 // just enough to round an edge
+  const n2 = DW*DH;
+
+  cov = new Float32Array(n2).fill(1);
+  colorMap = new Uint8ClampedArray(n2*3);
+  matMap = new Uint8Array(n2);
+  const surf = new Float32Array(n2);
+  hgt = new Float32Array(n2);
+  hMax = 1;
+
+  // material 0 is the ground; 1..n are the materials actually in use
+  const used = [], idxOf = {};
+  Matter.NAMES.forEach(k => {
+    if(items.some(it => it.material === k)){ idxOf[k] = used.length + 1; used.push(k); }
+  });
+  const palette = [Relief.hexRgb(GROUND)].concat(used.map(k => Relief.hexRgb(Matter.get(k).color)));
+  const reliefOf = [0.6].concat(used.map(k => Matter.get(k).relief));
+  const toothOf  = [0.004].concat(used.map(k => Matter.get(k).tooth));
+  // index 0 is the ground: ambient 1 means the lamp cannot touch it, so the
+  // sheet stays exactly one white behind every material
+  materialsForShade = [{ambient:1, aoLo:1, exposure:1, gloss:0, sheen:0, scatter:0, env:false}]
+    .concat(used.map(k => Matter.response(k)));
+
+  // which cell a pixel belongs to tells us its material — cells never overlap
+  const cellOf = new Int16Array(n2);
+  cellOf.fill(-1);
+  items.forEach((it, i) => {
+    const x0 = Math.max(0, Math.round(it.x - CELL_W/2)), x1 = Math.min(DW, Math.round(it.x + CELL_W/2));
+    const y0 = Math.max(0, Math.round(it.y - CELL_H/2)), y1 = Math.min(DH, Math.round(it.y + CELL_H/2));
+    for(let y=y0;y<y1;y++){
+      const row = y*DW;
+      for(let x=x0;x<x1;x++) cellOf[row+x] = i;
+    }
+  });
+
+  for(let y=0;y<DH;y++){
+    for(let x=0;x<DW;x++){
+      const i = y*DW + x, m = i*3;
+      const a = mk.cov[i];
+      const c = cellOf[i];
+      const mi = (a > 0.5 && c >= 0) ? (idxOf[items[c].material] || 0) : 0;
+      matMap[i] = mi;
+
+      const pc = palette[mi], gc = palette[0];
+      const t = mi === 0 ? 0 : Math.min(1, a*1.6);
+      colorMap[m]   = gc[0] + (pc[0]-gc[0])*t;
+      colorMap[m+1] = gc[1] + (pc[1]-gc[1])*t;
+      colorMap[m+2] = gc[2] + (pc[2]-gc[2])*t;
+
+      const tooth = (noise(x*0.09, y*0.09) - 0.5)*toothOf[mi];
+      const rel = sm[i]*a;
+      surf[i] = 0.5 + tooth + rel*0.62*reliefOf[mi];
+      const ao = (1 - (0.72 - rel*0.80)*(mi === 0 ? 0 : 1));
+      hgt[i] = ao > 0 ? ao : 0;
+    }
+  }
+  nrm = F.normals(cov, surf, 46);              // crisp: steep normals, tiny blur
+  needShade = true;
+  renderLabels();
+}
+
+let materialsForShade = null;
+function shade(){
+  const a = L.ang*Math.PI/180;
+  F.shade(artCtx, {
+    cov: cov, hgt: hgt, hMax: hMax, nX: nrm.nX, nY: nrm.nY, nZ: nrm.nZ,
+    colorMap: colorMap, matMap: matMap, materials: materialsForShade,
+    light: {x: DW/2 + Math.cos(a)*DW*0.62, y: DH/2 + Math.sin(a)*DH*0.62,
+            h: L.h, radius: L.radius, color: '#fffaf2'},
+    matte: true, contrast: 0.94, wrap: 0.42,
+    tone: {shadow:'#2b2721', high:'#ffffff', amount: 0.10}
+  });
+}
+
+// ── p5 ─────────────────────────────────────────────────────────
+function allocate(){
+  F = Relief.field(DW, DH);
+  artCv = Relief.makeCanvas(DW, DH); artCtx = artCv.getContext('2d');
+  grainPat = artCtx.createPattern(Relief.grainTile(256, 4242, 26), 'repeat');
+}
+function setup(){
+  pixelDensity(1);
+  DW = Math.max(720, windowWidth);
+  DH = Math.max(520, windowHeight);
+  createCanvas(DW, DH).parent('stage');
+  allocate();
+  noiseSeed(11);
+  restore();
+  buildChips(); syncUI();
+  const boot = () => {
+    if(!items.length) fillSet();
+    else { build(); }
+    ready = true;
+  };
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(boot).catch(boot);
+  else boot();
+}
+function windowResized(){
+  DW = Math.max(720, windowWidth);
+  DH = Math.max(520, windowHeight);
+  resizeCanvas(DW, DH);
+  allocate();
+  if(ready) build();
+}
+function draw(){
+  if(!ready) return;
+  if(needBuild){ needBuild = false; build(); }
+  if(needShade){ shade(); needShade = false; }
+  const g = drawingContext;
+  g.setTransform(1,0,0,1,0,0);
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+  g.clearRect(0,0,DW,DH);
+  g.drawImage(artCv, 0, 0);
+  if(selected >= 0 && items[selected]){
+    const it = items[selected];
+    g.save();
+    g.strokeStyle = 'rgba(47,42,36,0.28)'; g.lineWidth = 1; g.setLineDash([3,4]);
+    g.strokeRect(it.x - CELL_W/2 + 14, it.y - CELL_H/2 + 14, CELL_W - 28, CELL_H - 28);
+    g.restore();
+  }
+  if(grainPat && L.grain > 0){
+    g.save();
+    g.globalCompositeOperation = 'overlay';
+    g.globalAlpha = L.grain;
+    g.fillStyle = grainPat; g.fillRect(0,0,DW,DH);
+    g.restore();
+  }
+  g.globalCompositeOperation = 'source-over';
+}
+
+function cellAt(x, y){
+  for(let i=0;i<items.length;i++){
+    const it = items[i];
+    if(Math.abs(x - it.x) < CELL_W/2 && Math.abs(y - it.y) < CELL_H/2) return i;
+  }
+  return -1;
+}
+function overStage(){
+  if(mouseX < 0 || mouseY < 0 || mouseX > DW || mouseY > DH) return false;
+  const el = document.elementFromPoint(mouseX, mouseY);
+  return !el || el.tagName === 'CANVAS' || el.id === 'stage' || el.id === 'labels';
+}
+function mousePressed(){
+  if(!ready || !overStage()) return;
+  const hit = cellAt(mouseX, mouseY);
+  if(hit >= 0){ selected = hit; showInspector(); }
+  else deselect();
+  return false;
+}
+function doubleClicked(){
+  if(!ready || !overStage()) return;
+  const hit = cellAt(mouseX, mouseY);
+  if(hit >= 0){ selected = hit; openStudy(); }
+  return false;
+}
+function keyPressed(){
+  const t = document.activeElement && document.activeElement.tagName;
+  if(t === 'TEXTAREA' || t === 'INPUT') return;
+  if(keyCode === ESCAPE) deselect();
+  if((keyCode === BACKSPACE || keyCode === DELETE) && selected >= 0) removeSel();
+}
+
+// ── labels ─────────────────────────────────────────────────────
+function renderLabels(){
+  const host = document.getElementById('labels');
+  host.innerHTML = '';
+  items.forEach((it, i) => {
+    const d = document.createElement('div');
+    d.className = 'cap' + (i === selected ? ' sel' : '');
+    d.style.left = it.x + 'px';
+    d.style.top = (it.y + CELL_H/2 - 12) + 'px';
+    const form = it.form === 'seal' ? 'seal' : (it.form === 'bloom' ? 'bloom' :
+                 'card, ' + (it.content === 'flower' ? 'flower' : 'monogram'));
+    d.innerHTML = '<b>' + Matter.get(it.material).name + '</b><i>' + form + '</i>' +
+                  (it.note ? '<u>' + it.note.replace(/[<>&]/g,'') + '</u>' : '');
+    host.appendChild(d);
+  });
+}
+
+// ── inspector ──────────────────────────────────────────────────
+function buildChips(){
+  const mat = document.getElementById('i-mat');
+  Matter.NAMES.forEach(k => {
+    const b = document.createElement('button');
+    b.textContent = Matter.get(k).name.split(' ')[0];
+    b.onclick = () => setField('material', k);
+    b.dataset.v = k; mat.appendChild(b);
+  });
+  const fm = document.getElementById('i-form');
+  FORMS.forEach(k => {
+    const b = document.createElement('button');
+    b.textContent = k; b.dataset.v = k;
+    b.onclick = () => setField('form', k);
+    fm.appendChild(b);
+  });
+  const ct = document.getElementById('i-content');
+  CONTENTS.forEach(k => {
+    const b = document.createElement('button');
+    b.textContent = k === 'die' ? 'Monogram' : 'Flower'; b.dataset.v = k;
+    b.onclick = () => setField('content', k);
+    ct.appendChild(b);
+  });
+}
+function showInspector(){
+  const it = items[selected]; if(!it) return;
+  document.getElementById('inspector').style.display = 'block';
+  document.getElementById('i-title').textContent = Matter.get(it.material).name;
+  document.querySelectorAll('#i-mat button').forEach(b => b.classList.toggle('on', b.dataset.v === it.material));
+  document.querySelectorAll('#i-form button').forEach(b => b.classList.toggle('on', b.dataset.v === it.form));
+  document.querySelectorAll('#i-content button').forEach(b => b.classList.toggle('on', b.dataset.v === it.content));
+  document.getElementById('row-content').style.display = it.form === 'card' ? 'block' : 'none';
+  document.getElementById('i-scale').value = it.scale;
+  document.getElementById('v-scale').textContent = (+it.scale).toFixed(2);
+  document.getElementById('i-depth').value = it.depth;
+  document.getElementById('v-depth').textContent = (+it.depth).toFixed(2);
+  document.getElementById('i-note').value = it.note || '';
+  renderLabels();
+}
+function deselect(){ selected = -1; document.getElementById('inspector').style.display = 'none'; renderLabels(); }
+function setField(k, v){
+  const it = items[selected]; if(!it) return;
+  it[k] = v;
+  const el = document.getElementById('v-'+k);
+  if(el) el.textContent = (+v).toFixed(2);
+  persist();
+  if(k === 'note'){ renderLabels(); return; }
+  needBuild = true; showInspector();
+}
+function reseedSel(){
+  const it = items[selected]; if(!it) return;
+  it.seed = Math.floor(Math.random()*999999)+1;
+  it.species = Flora.NAMES[Math.floor(Math.random()*Flora.NAMES.length)];
+  needBuild = true; persist();
+}
+function removeSel(){
+  if(selected < 0) return;
+  items.splice(selected,1); deselect();
+  needBuild = true; persist();
+}
+function openStudy(){
+  const it = items[selected]; if(!it) return;
+  persist();
+  const kind = (it.form === 'bloom' || (it.form === 'card' && it.content === 'flower')) ? 'flower' : 'press';
+  location.href = Hub.linkTo(kind, specFor(it), {from: 'clippings'});
+}
+
+// ── sheet ──────────────────────────────────────────────────────
+function addPressing(){
+  items.push(newPressing());
+  selected = items.length - 1;
+  needBuild = true; persist();
+  setTimeout(showInspector, 0);
+}
+function fillSet(){
+  // one of everything worth comparing
+  items = [];
+  const set = [
+    {material:'wax',     form:'seal'},
+    {material:'clay',    form:'seal'},
+    {material:'brass',   form:'bloom'},
+    {material:'paper',   form:'card', content:'flower'},
+    {material:'plaster', form:'bloom'},
+    {material:'slate',   form:'seal'},
+    {material:'vellum',  form:'card', content:'die'},
+    {material:'pewter',  form:'seal'}
+  ];
+  set.forEach(o => items.push(newPressing(o)));
+  deselect(); needBuild = true; persist();
+}
+function shuffleAll(){
+  items.forEach(it => {
+    it.seed = Math.floor(Math.random()*999999)+1;
+    it.species = Flora.NAMES[Math.floor(Math.random()*Flora.NAMES.length)];
+    it.die = ['monogram','crest','figure'][Math.floor(Math.random()*3)];
+  });
+  needBuild = true; persist();
+}
+function clearAll(){ items = []; deselect(); needBuild = true; persist(); }
+function downloadPNG(){ saveCanvas('clippings', 'png'); }
+function togglePanel(id){
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+function setLight(k, v){
+  L[k === 'ang' ? 'ang' : (k === 'h' ? 'h' : 'grain')] = v;
+  const idm = {ang:'v-lightAng', h:'v-lightHeight', grain:'v-grainAmt'};
+  const el = document.getElementById(idm[k]);
+  if(el) el.textContent = v < 2 ? (+v).toFixed(2) : (+v).toFixed(0);
+  needShade = true; persist();
+}
+function setSheetNote(v){ sheetNote = v; persist(); }
+function syncUI(){
+  document.getElementById('sheet-note').value = sheetNote;
+  document.getElementById('s-lightAng').value = L.ang;
+  document.getElementById('v-lightAng').textContent = L.ang;
+  document.getElementById('s-lightHeight').value = L.h;
+  document.getElementById('v-lightHeight').textContent = L.h;
+  document.getElementById('s-grainAmt').value = L.grain;
+  document.getElementById('v-grainAmt').textContent = (+L.grain).toFixed(2);
+}
+
+// ── notes out ──────────────────────────────────────────────────
+function copyNotes(){
+  let md = '## Clippings notes\n\n';
+  if(sheetNote) md += sheetNote.trim() + '\n\n';
+  items.forEach(it => {
+    if(!it.note) return;
+    const form = it.form === 'card' ? 'card with ' + it.content : it.form;
+    md += '- **' + Matter.get(it.material).name + ', ' + form + '** (seed ' + it.seed +
+          ', scale ' + it.scale + ', impression ' + it.depth + ') — ' + it.note.trim() + '\n';
+  });
+  if(md.trim() === '## Clippings notes') md += '_nothing written yet_\n';
+  if(navigator.clipboard) navigator.clipboard.writeText(md).catch(() => {});
+  document.getElementById('sheet-note').value = md;
+}
+function copyState(){
+  const txt = JSON.stringify(stateObj());
+  if(navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => {});
+  document.getElementById('sheet-note').value = txt;
+}
+function stateObj(){
+  return {v:1, light:L, sheetNote: sheetNote, items: items.map(it => {
+    const o = {}; Object.keys(it).forEach(k => { if(k !== '_parts') o[k] = it[k]; }); return o;
+  })};
+}
+function persist(){ try { localStorage.setItem(STORE, JSON.stringify(stateObj())); } catch(e){} }
+function restore(){
+  try {
+    const raw = localStorage.getItem(STORE);
+    if(!raw) return;
+    const o = JSON.parse(raw);
+    if(o.light) Object.assign(L, o.light);
+    sheetNote = o.sheetNote || '';
+    items = o.items || [];
+  } catch(e){}
+}
+</script>
+</body>
+</html>
