@@ -90,12 +90,20 @@ textarea:focus{outline:none;border-color:var(--ink)}
 <div class="panel" id="inspector">
   <h2><span id="i-title">Pressing</span><span onclick="deselect()">×</span></h2>
   <div class="row"><label>Material</label><div class="chips" id="i-mat"></div></div>
-  <div class="row"><label>Form</label><div class="chips three" id="i-form"></div></div>
+  <div class="row"><label>Medium</label><div class="chips" id="i-medium"></div></div>
+  <div class="row"><label>Form</label><div class="chips" id="i-form"></div></div>
   <div class="row" id="row-content"><label>Pressed with</label><div class="chips" id="i-content"></div></div>
   <div class="row"><label>Scale <span class="val" id="v-scale"></span></label>
     <input type="range" id="i-scale" min="0.5" max="1.5" step="0.02" oninput="setField('scale',+this.value)"></div>
   <div class="row"><label>Impression <span class="val" id="v-depth"></span></label>
     <input type="range" id="i-depth" min="0.3" max="2" step="0.05" oninput="setField('depth',+this.value)"></div>
+  <div class="row" id="row-ink"><label>Ink</label>
+    <div class="swatchrow" style="display:flex;gap:7px">
+      <input type="color" id="i-ink1" oninput="setField('ink1',this.value)" style="width:26px;height:26px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+      <input type="color" id="i-ink2" oninput="setField('ink2',this.value)" style="width:26px;height:26px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+    </div></div>
+  <div class="row" id="row-name"><label>Plate name</label>
+    <input type="text" id="i-name" style="width:100%;border:1px solid var(--line);background:#fff;font-family:'Lora',serif;font-size:13px;padding:8px;border-radius:8px;color:var(--ink);text-align:center;letter-spacing:.08em" oninput="setField('name',this.value)"></div>
   <div class="row"><label>Note</label>
     <textarea id="i-note" rows="3" placeholder="what you like about it" oninput="setField('note',this.value)"></textarea></div>
   <div class="row"><button class="wide" onclick="reseedSel()">New seed</button></div>
@@ -150,7 +158,11 @@ let L = {ang: 214, h: 330, radius: 2200, grain: 0.22};
 let lampT = {x:0, y:0}, lampP = {x:0, y:0};
 let lampMoving = 0;
 
-const FORMS = ['seal','bloom','card'];
+const FORMS = ['seal','bloom','card','exlibris'];
+// A medium is how the mark is MADE. Relief is lit; the printed media are flat
+// and unlit — ink doesn't catch a raking light, it just sits on the paper.
+const MEDIA = ['relief','ink','twotone','pencil'];
+const MEDIUM_LABEL = {relief:'Pressed', ink:'Ink', twotone:'Two-tone', pencil:'Pencil'};
 const CONTENTS = ['die','flower'];
 const STORE = 'protolab.clippings.v1';
 
@@ -162,6 +174,9 @@ function newPressing(over){
     material: mat,
     form: FORMS[Math.floor(rng()*FORMS.length)],
     content: CONTENTS[Math.floor(rng()*CONTENTS.length)],
+    medium: 'relief',
+    ink1: '#2b2a30', ink2: '#a8443a',
+    name: 'KYRA MO',
     scale: 1, depth: 1, note: '',
     seed: Math.floor(rng()*999999)+1,
     die: ['monogram','crest','figure'][Math.floor(rng()*3)],
@@ -211,10 +226,46 @@ function cardPath(ctx, R, seed){
   ctx.closePath();
 }
 
+// a bookplate — border, EX LIBRIS, an ornament, a name
+function exlibris(ctx, it, R){
+  const w = R*0.86, h = R*1.12;
+  ctx.lineJoin = 'miter';
+  ctx.lineWidth = R*0.030;
+  ctx.strokeRect(-w, -h, w*2, h*2);
+  ctx.lineWidth = R*0.012;
+  ctx.strokeRect(-w*0.90, -h*0.92, w*1.80, h*1.84);
+  const rng = Relief.makeRng(it.seed);
+  ctx.save();
+  ctx.translate(0, -h*0.34);
+  Dies.tracked(ctx, 'EX LIBRIS', 0, R*0.115, 0.42, '500');
+  ctx.restore();
+  ctx.save();
+  ctx.translate(0, h*0.02);
+  if(it.die === 'crest') Dies.crest(ctx, R*0.40, rng, 7);
+  else if(it.die === 'figure') Dies.rosette(ctx, R*0.34, 8);
+  else Dies.monogram(ctx, R*0.34, (it.text || 'K'));
+  ctx.restore();
+  ctx.save();
+  ctx.translate(0, h*0.56);
+  ctx.lineWidth = R*0.010;
+  ctx.beginPath(); ctx.moveTo(-w*0.62, -R*0.11); ctx.lineTo(w*0.62, -R*0.11); ctx.stroke();
+  Dies.tracked(ctx, it.name || 'KYRA MO', R*0.10, R*0.082, 0.34, '400');
+  ctx.restore();
+}
+
 // height for one pressing, drawn at the origin
 function pressingHeight(ctx, it){
   const R = 92*it.scale;
-  if(it.form === 'seal'){
+  if(it.form === 'exlibris'){
+    ctx.fillStyle = 'rgb(150,150,150)';
+    cardPath(ctx, R*1.24, it.seed);
+    ctx.fill();
+    ctx.save();
+    ctx.globalAlpha = 0.55*it.depth;
+    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#ffffff';
+    exlibris(ctx, it, R*0.80);
+    ctx.restore();
+  } else if(it.form === 'seal'){
     Press.stamp(ctx, specFor(it), 'h');
   } else if(it.form === 'bloom'){
     Flora.render(ctx, it._parts, specFor(it), 'h');
@@ -245,12 +296,44 @@ function pressingHeight(ctx, it){
 function pressingMask(ctx, it){
   const R = 92*it.scale;
   ctx.fillStyle = '#fff'; ctx.strokeStyle = '#fff';
-  if(it.form === 'seal'){
+  if(it.form === 'exlibris'){
+    cardPath(ctx, R*1.24, it.seed); ctx.fill();
+  } else if(it.form === 'seal'){
     Press.stamp(ctx, specFor(it), 'c');
   } else if(it.form === 'bloom'){
     Flora.render(ctx, it._parts, specFor(it), 'c');
   } else {
     cardPath(ctx, R*1.15, it.seed); ctx.fill();
+  }
+}
+
+// The printed design, as distinct from the body: an inked seal prints its
+// die, not its blob of wax.
+function pressingInk(ctx, it){
+  const R = 92*it.scale;
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#fff';
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const rng = Relief.makeRng(it.seed);
+  if(it.form === 'exlibris'){
+    exlibris(ctx, it, R*0.80);
+  } else if(it.form === 'bloom'){
+    Flora.render(ctx, it._parts, specFor(it), 'c');
+  } else if(it.form === 'card'){
+    if(it.content === 'flower'){
+      const sp = specFor(it); sp.size = R*0.66;
+      Flora.render(ctx, Flora.grow(sp), sp, 'c');
+    } else {
+      Dies.ring(ctx, R*0.56, R*0.020);
+      Dies.monogram(ctx, R*0.38, it.text || 'K');
+    }
+  } else {
+    ctx.save();
+    Dies.ring(ctx, R*0.70, R*0.024);
+    Dies.ring(ctx, R*0.60, R*0.012);
+    if(it.die === 'crest') Dies.crest(ctx, R*0.46, rng, 7);
+    else if(it.die === 'figure') Dies.rosette(ctx, R*0.44, 9);
+    else Dies.monogram(ctx, R*0.44, it.text || 'K');
+    ctx.restore();
   }
 }
 
@@ -287,8 +370,16 @@ function build(){
     ctx.scale(SS, SS);
     items.forEach(it => { ctx.save(); ctx.translate(it.x, it.y); pressingMask(ctx, it); ctx.restore(); });
   });
+  const ink = F.rasterColor(ctx => {
+    ctx.scale(SS, SS);
+    items.forEach(it => {
+      if(it.medium === 'relief') return;
+      ctx.save(); ctx.translate(it.x, it.y); pressingInk(ctx, it); ctx.restore();
+    });
+  });
   const sm = F.blur(h0, Math.round(SS), 2);    // just enough to round an edge
   const n2 = PW*PH;
+  const OFF = Math.round(3*SS);                 // two-tone misregistration
 
   cov = new Float32Array(n2).fill(1);
   colorMap = new Uint8ClampedArray(n2*3);
@@ -300,7 +391,7 @@ function build(){
   // material 0 is the ground; 1..n are the materials actually in use
   const used = [], idxOf = {};
   Matter.NAMES.forEach(k => {
-    if(items.some(it => it.material === k)){ idxOf[k] = used.length + 1; used.push(k); }
+    if(items.some(it => it.material === k && (it.medium || 'relief') === 'relief')){ idxOf[k] = used.length + 1; used.push(k); }
   });
   const palette = [Relief.hexRgb(GROUND)].concat(used.map(k => Relief.hexRgb(Matter.get(k).color)));
   const reliefOf = [0.6].concat(used.map(k => Matter.get(k).relief));
@@ -325,12 +416,50 @@ function build(){
   for(let y=0;y<PH;y++){
     for(let x=0;x<PW;x++){
       const i = y*PW + x, m = i*3;
-      const a = mk.cov[i];
       const c = cellOf[i];
+      const med = c >= 0 ? (items[c].medium || 'relief') : 'relief';
+      const gc = palette[0];
+
+      if(med !== 'relief'){
+        // printed: flat and unlit. material 0 has ambient 1, so the lamp
+        // cannot touch it — ink stays the same colour wherever you move it.
+        matMap[i] = 0;
+        surf[i] = 0.5;
+        hgt[i] = 1;
+        let r = gc[0], g = gc[1], b = gc[2];
+        const it = items[c];
+        if(med === 'pencil'){
+          // a rubbing: graphite catches whatever stands proud of the paper
+          const rel = sm[i]*mk.cov[i];
+          const tooth = 0.55 + 0.45*noise(x*0.5/SS, y*0.5/SS);
+          const d = Math.min(1, Math.pow(rel, 1.7)*1.9)*tooth*0.92;
+          const gr = Relief.hexRgb('#3c3b40');
+          r += (gr[0]-r)*d; g += (gr[1]-g)*d; b += (gr[2]-b)*d;
+        } else {
+          const tex = 0.66 + 0.5*noise(x*0.34/SS, y*0.34/SS);   // broken coverage
+          const a1 = Math.min(1, ink.cov[i]*tex);
+          const c1 = Relief.hexRgb(it.ink1 || '#2b2a30');
+          if(med === 'twotone'){
+            const j = i + OFF + OFF*PW;
+            const a2 = j < n2 ? Math.min(1, ink.cov[j]*tex) : 0;
+            const c2 = Relief.hexRgb(it.ink2 || '#a8443a');
+            r *= (1 - a2*(1 - c2[0]/255));       // multiply, like overprinting
+            g *= (1 - a2*(1 - c2[1]/255));
+            b *= (1 - a2*(1 - c2[2]/255));
+          }
+          r *= (1 - a1*(1 - c1[0]/255));
+          g *= (1 - a1*(1 - c1[1]/255));
+          b *= (1 - a1*(1 - c1[2]/255));
+        }
+        colorMap[m] = r; colorMap[m+1] = g; colorMap[m+2] = b;
+        continue;
+      }
+
+      const a = mk.cov[i];
       const mi = (a > 0.5 && c >= 0) ? (idxOf[items[c].material] || 0) : 0;
       matMap[i] = mi;
 
-      const pc = palette[mi], gc = palette[0];
+      const pc = palette[mi];
       const t = mi === 0 ? 0 : Math.min(1, a*1.6);
       colorMap[m]   = gc[0] + (pc[0]-gc[0])*t;
       colorMap[m+1] = gc[1] + (pc[1]-gc[1])*t;
@@ -528,8 +657,11 @@ function renderLabels(){
     d.style.left = it.x + 'px';
     d.style.top = (it.y + CELL_H/2 - 12) + 'px';
     const form = it.form === 'seal' ? 'seal' : (it.form === 'bloom' ? 'bloom' :
-                 'card, ' + (it.content === 'flower' ? 'flower' : 'monogram'));
-    d.innerHTML = '<b>' + Matter.get(it.material).name + '</b><i>' + form + '</i>' +
+                 (it.form === 'exlibris' ? 'bookplate' :
+                 'card, ' + (it.content === 'flower' ? 'flower' : 'monogram')));
+    const med = it.medium || 'relief';
+    const head = med === 'relief' ? Matter.get(it.material).name : MEDIUM_LABEL[med];
+    d.innerHTML = '<b>' + head + '</b><i>' + form + '</i>' +
                   (it.note ? '<u>' + it.note.replace(/[<>&]/g,'') + '</u>' : '');
     host.appendChild(d);
   });
@@ -543,6 +675,13 @@ function buildChips(){
     b.textContent = Matter.get(k).name.split(' ')[0];
     b.onclick = () => setField('material', k);
     b.dataset.v = k; mat.appendChild(b);
+  });
+  const md = document.getElementById('i-medium');
+  MEDIA.forEach(k => {
+    const b = document.createElement('button');
+    b.textContent = MEDIUM_LABEL[k]; b.dataset.v = k;
+    b.onclick = () => setField('medium', k);
+    md.appendChild(b);
   });
   const fm = document.getElementById('i-form');
   FORMS.forEach(k => {
@@ -565,6 +704,13 @@ function showInspector(){
   document.getElementById('i-title').textContent = Matter.get(it.material).name;
   document.querySelectorAll('#i-mat button').forEach(b => b.classList.toggle('on', b.dataset.v === it.material));
   document.querySelectorAll('#i-form button').forEach(b => b.classList.toggle('on', b.dataset.v === it.form));
+  document.querySelectorAll('#i-medium button').forEach(b => b.classList.toggle('on', b.dataset.v === (it.medium||'relief')));
+  const printed = (it.medium||'relief') !== 'relief';
+  document.getElementById('row-ink').style.display = (printed && it.medium !== 'pencil') ? 'block' : 'none';
+  document.getElementById('row-name').style.display = it.form === 'exlibris' ? 'block' : 'none';
+  document.getElementById('i-ink1').value = it.ink1 || '#2b2a30';
+  document.getElementById('i-ink2').value = it.ink2 || '#a8443a';
+  document.getElementById('i-name').value = it.name || 'KYRA MO';
   document.querySelectorAll('#i-content button').forEach(b => b.classList.toggle('on', b.dataset.v === it.content));
   document.getElementById('row-content').style.display = it.form === 'card' ? 'block' : 'none';
   document.getElementById('i-scale').value = it.scale;
@@ -623,14 +769,18 @@ function fillSet(){
   // one of everything worth comparing
   items = [];
   const set = [
-    {material:'wax',     form:'seal'},
-    {material:'clay',    form:'seal'},
-    {material:'brass',   form:'bloom'},
-    {material:'paper',   form:'card', content:'flower'},
-    {material:'plaster', form:'bloom'},
-    {material:'slate',   form:'seal'},
-    {material:'vellum',  form:'card', content:'die'},
-    {material:'pewter',  form:'seal'}
+    {material:'wax',     form:'seal',     medium:'relief'},
+    {material:'clay',    form:'seal',     medium:'relief'},
+    {material:'brass',   form:'bloom',    medium:'relief'},
+    {material:'paper',   form:'card',     medium:'relief', content:'flower'},
+    {material:'paper',   form:'exlibris', medium:'ink'},
+    {material:'paper',   form:'seal',     medium:'twotone'},
+    {material:'paper',   form:'bloom',    medium:'pencil'},
+    {material:'plaster', form:'bloom',    medium:'relief'},
+    {material:'slate',   form:'seal',     medium:'relief'},
+    {material:'vellum',  form:'card',     medium:'relief', content:'die'},
+    {material:'pewter',  form:'seal',     medium:'relief'},
+    {material:'paper',   form:'exlibris', medium:'twotone'}
   ];
   set.forEach(o => items.push(newPressing(o)));
   deselect(); needBuild = true; persist();
@@ -677,7 +827,8 @@ function copyNotes(){
   items.forEach(it => {
     if(!it.note) return;
     const form = it.form === 'card' ? 'card with ' + it.content : it.form;
-    md += '- **' + Matter.get(it.material).name + ', ' + form + '** (seed ' + it.seed +
+    const med = MEDIUM_LABEL[it.medium || 'relief'];
+    md += '- **' + med + ', ' + Matter.get(it.material).name + ', ' + form + '** (seed ' + it.seed +
           ', scale ' + it.scale + ', impression ' + it.depth + ') — ' + it.note.trim() + '\n';
   });
   if(md.trim() === '## Clippings notes') md += '_nothing written yet_\n';

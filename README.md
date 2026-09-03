@@ -29,6 +29,24 @@ sheet under one lamp and each answers it differently. Material index 0 is the
 ground, given `ambient: 1` so the lamp cannot touch it — which is what keeps the
 white behind everything exactly one white.
 
+There are two independent axes. **Material** — wax, clay, brass, plaster,
+slate, vellum, pewter, cotton paper — only matters for pressed work, since it
+governs how a surface answers the light. **Medium** is how the mark is made:
+
+| | |
+|---|---|
+| Pressed | lit relief |
+| Ink | a flat printed impression, unlit, with broken coverage |
+| Two-tone | two ink passes, misregistered, overprinting |
+| Pencil | a rubbing — graphite catches whatever stands proud of the paper |
+
+The printed media bypass the relief pipeline and sit on material index 0, the
+one the lamp cannot touch. That's the point: ink doesn't change colour when you
+move a light across it, and a swatch book should be honest about that.
+
+Forms are seal, bloom, card and **ex libris** — a bookplate with a border,
+EX LIBRIS, an ornament and a name.
+
 Every pressing takes a note, and the notes copy out as markdown.
 
 ## The studies
