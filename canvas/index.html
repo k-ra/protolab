@@ -141,10 +141,17 @@ const GROUND = '#fbfaf7';
 const CELL_W = 300, CELL_H = 300, CAP_H = 66;
 const TOP_PAD = 132, BOT_PAD = 130;
 
-// Render at the display's real pixel density. A 1x buffer stretched over a
-// retina screen is what made this look pixelated — one canvas pixel covering
-// four device pixels. Nothing here relights at speed, so we can afford it.
-const SS = Math.min(window.devicePixelRatio || 1, 2);
+// Render at the display's real pixel density — a 1x buffer stretched over a
+// retina screen is what made this look pixelated. But a tall sheet at 2x is
+// millions of pixels held in a dozen Float32Arrays, so the density is capped
+// by a pixel budget: short sheets stay fully crisp, long ones degrade.
+const PIXEL_BUDGET = 4.5e6;
+function densityFor(w, h){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const fit = Math.sqrt(PIXEL_BUDGET/Math.max(1, w*h));
+  return Math.max(1, Math.min(dpr, fit));
+}
+let SS = Math.min(window.devicePixelRatio || 1, 2);
 
 let DW, DH, PW, PH, COLS;
 let F, artCv, artCtx, grainPat;
@@ -366,11 +373,13 @@ function build(){
     ctx.scale(SS, SS);
     items.forEach(it => { ctx.save(); ctx.translate(it.x, it.y); pressingHeight(ctx, it); ctx.restore(); });
   });
-  const mk = F.rasterColor(ctx => {
+  // only the coverage is used — raster() returns alpha alone, where
+  // rasterColor() would also allocate a colour map the size of the sheet
+  const mkCov = F.raster(ctx => {
     ctx.scale(SS, SS);
     items.forEach(it => { ctx.save(); ctx.translate(it.x, it.y); pressingMask(ctx, it); ctx.restore(); });
   });
-  const ink = F.rasterColor(ctx => {
+  const inkCov = F.raster(ctx => {
     ctx.scale(SS, SS);
     items.forEach(it => {
       if(it.medium === 'relief') return;
@@ -381,6 +390,8 @@ function build(){
   const n2 = PW*PH;
   const OFF = Math.round(3*SS);                 // two-tone misregistration
 
+  // keep a real array here rather than a null sentinel: making the shader's
+  // coverage read polymorphic deoptimises the hot loop by an order of magnitude
   cov = new Float32Array(n2).fill(1);
   colorMap = new Uint8ClampedArray(n2*3);
   matMap = new Uint8Array(n2);
@@ -430,18 +441,18 @@ function build(){
         const it = items[c];
         if(med === 'pencil'){
           // a rubbing: graphite catches whatever stands proud of the paper
-          const rel = sm[i]*mk.cov[i];
+          const rel = sm[i]*mkCov[i];
           const tooth = 0.55 + 0.45*noise(x*0.5/SS, y*0.5/SS);
           const d = Math.min(1, Math.pow(rel, 1.7)*1.9)*tooth*0.92;
           const gr = Relief.hexRgb('#3c3b40');
           r += (gr[0]-r)*d; g += (gr[1]-g)*d; b += (gr[2]-b)*d;
         } else {
           const tex = 0.66 + 0.5*noise(x*0.34/SS, y*0.34/SS);   // broken coverage
-          const a1 = Math.min(1, ink.cov[i]*tex);
+          const a1 = Math.min(1, inkCov[i]*tex);
           const c1 = Relief.hexRgb(it.ink1 || '#2b2a30');
           if(med === 'twotone'){
             const j = i + OFF + OFF*PW;
-            const a2 = j < n2 ? Math.min(1, ink.cov[j]*tex) : 0;
+            const a2 = j < n2 ? Math.min(1, inkCov[j]*tex) : 0;
             const c2 = Relief.hexRgb(it.ink2 || '#a8443a');
             r *= (1 - a2*(1 - c2[0]/255));       // multiply, like overprinting
             g *= (1 - a2*(1 - c2[1]/255));
@@ -455,7 +466,7 @@ function build(){
         continue;
       }
 
-      const a = mk.cov[i];
+      const a = mkCov[i];
       const mi = (a > 0.5 && c >= 0) ? (idxOf[items[c].material] || 0) : 0;
       matMap[i] = mi;
 
@@ -484,8 +495,9 @@ let materialsForShade = null;
 // of the pixels — and upscale it. When it settles we light the real thing.
 // The buffers are downsampled once per build, so this costs nothing per frame.
 let lo = null;
+const LO_DIV = 3;                 // a ninth of the pixels while the lamp moves
 function makeLo(){
-  const lw = Math.max(2, Math.floor(PW/2)), lh = Math.max(2, Math.floor(PH/2));
+  const lw = Math.max(2, Math.floor(PW/LO_DIV)), lh = Math.max(2, Math.floor(PH/LO_DIV));
   const n = lw*lh;
   const o = {W: lw, H: lh, F: Relief.field(lw, lh),
              cov: new Float32Array(n).fill(1), hgt: new Float32Array(n),
@@ -495,11 +507,9 @@ function makeLo(){
   for(let y=0;y<lh;y++){
     for(let x=0;x<lw;x++){
       const i = y*lw + x;
-      const a0 = (y*2)*PW + x*2, a1 = a0 + 1, a2 = a0 + PW, a3 = a2 + 1;
-      o.hgt[i] = (hgt[a0]+hgt[a1]+hgt[a2]+hgt[a3])*0.25;
-      o.nX[i]  = (nrm.nX[a0]+nrm.nX[a1]+nrm.nX[a2]+nrm.nX[a3])*0.25;
-      o.nY[i]  = (nrm.nY[a0]+nrm.nY[a1]+nrm.nY[a2]+nrm.nY[a3])*0.25;
-      o.nZ[i]  = (nrm.nZ[a0]+nrm.nZ[a1]+nrm.nZ[a2]+nrm.nZ[a3])*0.25;
+      const a0 = (y*LO_DIV)*PW + x*LO_DIV;
+      o.hgt[i] = hgt[a0];
+      o.nX[i]  = nrm.nX[a0]; o.nY[i] = nrm.nY[a0]; o.nZ[i] = nrm.nZ[a0];
       o.matMap[i] = matMap[a0];
       o.colorMap[i*3]   = colorMap[a0*3];
       o.colorMap[i*3+1] = colorMap[a0*3+1];
@@ -510,7 +520,7 @@ function makeLo(){
 }
 
 function shade(preview){
-  const k = preview ? 0.5 : 1;
+  const k = preview ? 1/LO_DIV : 1;
   const src = preview ? lo : null;
   const field = preview ? lo.F : F;
   const target = preview ? lo.ctx : artCtx;
@@ -528,6 +538,7 @@ function shade(preview){
 
 // ── p5 ─────────────────────────────────────────────────────────
 function allocate(){
+  SS = densityFor(DW, DH);
   PW = Math.round(DW*SS); PH = Math.round(DH*SS);
   F = Relief.field(PW, PH);
   artCv = Relief.makeCanvas(PW, PH); artCtx = artCv.getContext('2d');
@@ -554,6 +565,12 @@ function setup(){
   const boot = () => {
     if(!items.length) fillSet();
     else { build(); }
+    // The first call into the shader is 5-10x slower than the steady state
+    // while it JITs. Pay that on the small preview buffer instead of on the
+    // full-resolution pass, so the sheet doesn't hitch as it appears.
+    for(let i=0;i<3;i++) shade(true);
+    shade(false);
+    needShade = false; lampMoving = 0;
     ready = true;
   };
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(boot).catch(boot);
@@ -577,8 +594,12 @@ function draw(){
     needShade = true;
   }
   if(needShade){
-    if(lampMoving > 0){ shade(true); lampMoving--; needShade = lampMoving > 0; }
-    else { shade(false); needShade = false; }
+    if(lampMoving > 0){
+      shade(true); lampMoving--;
+      needShade = true;          // stay hot — the full-resolution pass is still owed
+    } else {
+      shade(false); needShade = false;
+    }
   }
   const g = drawingContext;
   g.setTransform(1,0,0,1,0,0);
