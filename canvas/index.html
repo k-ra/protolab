@@ -108,6 +108,7 @@ textarea:focus{outline:none;border-color:var(--ink)}
     <textarea id="i-note" rows="3" placeholder="what you like about it" oninput="setField('note',this.value)"></textarea></div>
   <div class="row"><button class="wide" onclick="reseedSel()">New seed</button></div>
   <div class="row"><button class="wide solid" onclick="openStudy()">Open study ↗</button></div>
+  <div class="row"><button class="wide" onclick="copyStyle()">Copy style prompt</button></div>
   <div class="row" style="margin-bottom:0"><button class="wide danger" onclick="removeSel()">Remove</button></div>
 </div>
 
@@ -119,9 +120,15 @@ textarea:focus{outline:none;border-color:var(--ink)}
     <input type="range" id="s-lightHeight" min="60" max="900" step="10" oninput="showLight('h',+this.value)" onchange="setLight('h',+this.value)"></div>
   <div class="row"><label>Grain <span class="val" id="v-grainAmt"></span></label>
     <input type="range" id="s-grainAmt" min="0" max="0.5" step="0.02" oninput="setLight('grain',+this.value)"></div>
-  <div class="row"><button class="wide" onclick="copyNotes()">Copy notes for Claude</button></div>
-  <div class="row" style="margin-bottom:0"><button class="wide" onclick="copyState()">Copy whole sheet</button></div>
-  <div class="hint">Notes copy out as markdown — paste them to me and I'll act on them.</div>
+  <div class="row"><label>Export</label>
+    <textarea id="export-box" rows="7" placeholder="a copied style lands here"></textarea></div>
+  <div class="row"><div class="chips">
+    <button onclick="copyNotes()">Notes</button>
+    <button onclick="copySheetStyle()">Whole sheet</button>
+    <button onclick="copyStyle()">Selected style</button>
+    <button onclick="copyState()">Raw JSON</button>
+  </div></div>
+  <div class="hint">Everything copies to the clipboard as markdown. A style prompt carries the description in words, the exact numbers, and a link that reopens it.</div>
 </div>
 
 <script>
@@ -841,6 +848,119 @@ function syncUI(){
   document.getElementById('v-grainAmt').textContent = (+L.grain).toFixed(2);
 }
 
+// ── style, in a form another project can use ───────────────────
+//
+// Three registers in one block: prose for a person or a model, the exact
+// numbers for anyone reimplementing it, and a link that reopens it here.
+
+function conditionsOf(it){
+  const M = Matter.get(it.material);
+  const c = {
+    ground: GROUND, groundLit: false,
+    medium: it.medium || 'relief',
+    material: it.material, materialColor: M.color,
+    ambient: M.ambient, aoLo: M.aoLo, exposure: M.exposure,
+    gloss: M.gloss, sheen: M.sheen, scatter: M.scatter,
+    env: !!M.env, relief: M.relief, tooth: M.tooth,
+    lampHeight: L.h, lampRadius: L.radius, lampColor: '#fffaf2',
+    matte: true, wrap: 0.42, contrast: 0.94,
+    toneShadow: '#2b2721', toneHigh: '#ffffff', toneAmt: 0.10,
+    grain: L.grain
+  };
+  if((it.medium||'relief') !== 'relief'){ c.ink1 = it.ink1; c.ink2 = it.ink2; }
+  return c;
+}
+
+function geometryOf(it){
+  const R = Math.round(92*it.scale);
+  if(it.form === 'exlibris')
+    return 'a bookplate: ruled double border, EX LIBRIS letterspaced above a ' +
+           it.die + ' ornament, a rule and the name "' + (it.name||'') + '" below. Plate radius ' + R + 'px.';
+  if(it.form === 'bloom')
+    return 'a single bloom (' + it.species + ') built as a height field — petals filled with a gradient ' +
+           'along their axis, high at the base and falling to the tip, so the flower domes without a dome ' +
+           'being drawn; each petal stroked darker to cut a groove where they overlap. Radius ' + R + 'px, seed ' + it.seed + '.';
+  if(it.form === 'card')
+    return 'a small deckle-edged card with ' + (it.content === 'flower' ? 'a flower' : 'a monogram') +
+           ' raised out of it — the content modulates the card\'s own level rather than replacing it, ' +
+           'a blind emboss. Card radius ' + R + 'px, impression ' + it.depth + ', seed ' + it.seed + '.';
+  return 'a pressed seal: an irregular poured body, a flattened plateau where the die landed, a raised bead ' +
+         'of squeezed-out material at the die\'s rim, and a ' + it.die +
+         (it.die === 'monogram' ? ' ("' + (it.text||'') + '")' : '') +
+         ' sunk into it. Radius ' + R + 'px, impression ' + it.depth + ', detail 6, seed ' + it.seed + '.';
+}
+
+function lightParagraph(){
+  return '**Light** — one small point lamp hovering above the surface, not a directional vector: ' +
+    'a per-pixel light direction with distance falloff, so the highlight is a travelling pool rather than a sheen. ' +
+    'Rake height ' + L.h + ', pool radius ' + L.radius + ', warm white #fffaf2. ' +
+    'Matte response: no specular lobe at all, wrapped diffuse (0.42) for a soft terminator, a midtone lift so the ' +
+    'falloff reads flat rather than modelled, and a faint grazing sheen in place of a highlight. ' +
+    'Ambient is never attenuated, so nothing outside the pool goes black.';
+}
+
+function stylePrompt(it){
+  const M = Matter.get(it.material);
+  const med = it.medium || 'relief';
+  const c = conditionsOf(it);
+  let md = '## Style — ' + (med === 'relief' ? M.name : MEDIUM_LABEL[med]) + ', ' + it.form + '\n\n';
+
+  if(med === 'relief'){
+    md += 'A pressing in ' + M.name.toLowerCase() + ' on a flat white ground (' + GROUND + '). ' +
+          'The ground is deliberately unlit — a constant — so the material is the only thing that reads.\n\n';
+    md += '**Material** — ' + M.name.toLowerCase() + ', ' + M.color + '. Ambient ' + M.ambient +
+          ', occlusion floor ' + M.aoLo + ', exposure ' + M.exposure + ', gloss ' + M.gloss +
+          ', grazing sheen ' + M.sheen + ', subsurface scatter ' + M.scatter +
+          (M.env ? ', with a hemispheric environment ramp (' + M.envLo + '–' + M.envHi + ') instead of a highlight' : '') +
+          '. Takes an impression at ' + M.relief + ', holds an edge at ' + M.crisp + ', surface tooth ' + M.tooth + '.\n\n';
+    md += lightParagraph() + '\n\n';
+  } else if(med === 'pencil'){
+    md += 'A pencil rubbing taken off a relief, on a flat white ground (' + GROUND + '). ' +
+          'Graphite (#3c3b40) catches whatever stands proud of the paper: darkness follows height, ' +
+          'raised to about 1.7 and modulated by paper tooth. Flat and unlit — no lamp touches it.\n\n';
+  } else {
+    md += 'A ' + (med === 'twotone' ? 'two-colour' : 'single-colour') + ' inked impression on a flat white ground (' +
+          GROUND + '). Flat and unlit: ink does not change colour when a light moves across it. ' +
+          'The design is printed, not the body — an inked seal puts down its die, not its blob of wax. ' +
+          'Coverage is broken up by noise so it starves the way a real stamp does. ' +
+          'Ink ' + it.ink1 + (med === 'twotone' ? ', overprinted with ' + it.ink2 +
+          ' misregistered by ~3px and combined by multiply' : '') + '.\n\n';
+  }
+
+  md += '**Finish** — contrast pulled to ' + c.contrast + ' toward mid, a split-tone grade from ' +
+        c.toneShadow + ' to ' + c.toneHigh + ' at ' + c.toneAmt + ', and film grain at ' + c.grain +
+        ' composited over the finished frame with `overlay` to break up smooth gradients.\n\n';
+  md += '**Geometry** — ' + geometryOf(it) + '\n\n';
+  if(it.note) md += '**Why I kept it** — ' + it.note.trim() + '\n\n';
+
+  md += '```json\n' + JSON.stringify(c, null, 1) + '\n```\n\n';
+  const kind = (it.form === 'bloom' || (it.form === 'card' && it.content === 'flower')) ? 'flower' : 'press';
+  try {
+    md += 'Reopen: ' + new URL(Hub.linkTo(kind, specFor(it), {conditions: c}), location.href).href + '\n';
+  } catch(e){}
+  return md;
+}
+
+function putExport(md){
+  const box = document.getElementById('export-box');
+  box.value = md;
+  if(navigator.clipboard) navigator.clipboard.writeText(md).catch(() => {});
+  else { box.focus(); box.select(); }
+  document.getElementById('notes').style.display = 'block';
+}
+function copyStyle(){
+  const it = items[selected];
+  if(!it){ putExport('Select a pressing first, then Copy style prompt.'); return; }
+  putExport(stylePrompt(it));
+}
+function copySheetStyle(){
+  let md = '# Clippings — style sheet\n\n';
+  if(sheetNote) md += sheetNote.trim() + '\n\n';
+  md += 'A flat white ground (' + GROUND + '), unlit, constant across every sample. ' + lightParagraph() + '\n\n---\n\n';
+  items.forEach(it => { md += stylePrompt(it) + '\n---\n\n'; });
+  putExport(md);
+}
+
 // ── notes out ──────────────────────────────────────────────────
 function copyNotes(){
   let md = '## Clippings notes\n\n';
@@ -853,14 +973,9 @@ function copyNotes(){
           ', scale ' + it.scale + ', impression ' + it.depth + ') — ' + it.note.trim() + '\n';
   });
   if(md.trim() === '## Clippings notes') md += '_nothing written yet_\n';
-  if(navigator.clipboard) navigator.clipboard.writeText(md).catch(() => {});
-  document.getElementById('sheet-note').value = md;
+  putExport(md);
 }
-function copyState(){
-  const txt = JSON.stringify(stateObj());
-  if(navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => {});
-  document.getElementById('sheet-note').value = txt;
-}
+function copyState(){ putExport(JSON.stringify(stateObj())); }
 function stateObj(){
   return {v:1, light:L, sheetNote: sheetNote, items: items.map(it => {
     const o = {}; Object.keys(it).forEach(k => { if(k !== '_parts') o[k] = it[k]; }); return o;
