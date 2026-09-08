@@ -204,31 +204,14 @@ select:hover { border-color: var(--ink-3); }
 .add:hover { color: var(--ink); background: rgba(0, 0, 0, .04); }
 
 .notes { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-.canvas {
-  position: relative; flex: 1; min-height: 240px;
-  background-image: radial-gradient(var(--line) 1px, transparent 1px);
-  background-size: 14px 14px;
-  border-radius: 3px;
+.notes-text {
+  flex: 1; min-height: 240px;
+  font-size: 12.5px; line-height: 20px;
+  white-space: pre-wrap; word-break: break-word;
+  background-image: repeating-linear-gradient(transparent 0 19px, var(--line) 19px 20px);
+  background-attachment: local;
 }
-.canvas.empty::after {
-  content: attr(data-placeholder);
-  position: absolute; left: 8px; top: 8px;
-  font-size: 11px; color: var(--ink-3);
-}
-.note {
-  position: absolute; max-width: 170px;
-  padding: 2px 5px;
-  background: var(--c); border-radius: 5px;
-  cursor: grab; font-size: 12px; line-height: 1.35;
-  transform: rotate(-.6deg);
-  touch-action: none;
-}
-.note.hl-none { background: #fff; box-shadow: 0 0 0 1px var(--line); }
-.note-text { white-space: pre-wrap; word-break: break-word; min-width: 24px; }
-.note .del, .note .swatch-btn { position: absolute; top: -7px; opacity: 0; background-color: #fff; }
-.note .del { right: -7px; border: 1px solid var(--line); border-radius: 50%; }
-.note .swatch-btn { right: 10px; }
-.note:hover .del, .note:hover .swatch-btn { opacity: .95; }
+.notes-text:empty::before { position: static; }
 
 .minical { margin-top: auto; font-size: 10px; color: var(--ink-2); }
 .mc-title { font-family: var(--mono); margin-bottom: 4px; letter-spacing: .06em; }

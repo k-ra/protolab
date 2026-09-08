@@ -64,11 +64,15 @@ function load() {
 }
 function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 function dayData(k) {
-  return (state.days[k] ||= { title: '', blocks: [], todos: [], notes: [] });
+  const d = (state.days[k] ||= { title: '', blocks: [], todos: [], notes: '' });
+  // older versions kept notes as positioned scraps; fold them into plain text
+  if (Array.isArray(d.notes)) d.notes = d.notes.map(n => n.text).filter(Boolean).join('\n');
+  return d;
 }
 
 let state = load();
 let cursor = todayKey();          // left page of the current spread
+const fresh = new Set();          // ids of just-drawn blocks; they vanish if left untitled
 
 /* ---------- time layout (work / off / all hours) ---------- */
 // Returns the vertical layout of the grid: visible segments and collapsed gaps.
@@ -370,7 +374,14 @@ function renderTimeline(container, key) {
 
     const t = el('div', { class: 'block-title', 'data-placeholder': '…' });
     t.textContent = b.title;
-    bindEditable(t, v => { b.title = v; save(); });
+    bindEditable(t, v => { b.title = v; save(); }, {
+      onBlur() {
+        if (fresh.has(b.id)) {
+          fresh.delete(b.id);
+          if (!b.title.trim()) { d.blocks = d.blocks.filter(x => x !== b); save(); render(); }
+        }
+      },
+    });
     node.append(
       el('div', { class: 'block-time' }, `${fmtTime(b.start)} – ${fmtTime(b.end)}`),
       t,
@@ -458,6 +469,7 @@ function onGridPointerDown(e, key) {
 function addBlock(key, start, end) {
   const b = { id: uid(), start, end, title: '', color: state.settings.color };
   dayData(key).blocks.push(b);
+  fresh.add(b.id);
   save(); render();
   const t = $(`.block[data-id="${b.id}"] .block-title`);
   t && focusEditable(t);
@@ -500,61 +512,13 @@ function renderTodos(container, key) {
   container.append(ul, add);
 }
 
-/* ---------- messy notes canvas ---------- */
+/* ---------- notes: plain text, like a notes app ---------- */
 function renderNotes(container, key) {
   const d = dayData(key);
-  const cv = el('div', { class: `canvas${d.notes.length ? '' : ' empty'}`, 'data-placeholder': 'double-click to scribble' });
-
-  for (const n of d.notes) {
-    const node = el('div', { class: `note hl-${n.color}`, 'data-id': n.id, style: `left:${n.x}px;top:${n.y}px` });
-    const txt = el('div', { class: 'note-text', 'data-placeholder': '…' });
-    txt.textContent = n.text;
-    bindEditable(txt, v => { n.text = v; save(); }, {
-      multiline: true,
-      onBlur() { if (!n.text.trim()) { d.notes = d.notes.filter(x => x !== n); save(); render(); } },
-    });
-    node.append(txt,
-      swatchButton(n.color, c => { n.color = c; save(); render(); }),
-      delButton(() => { d.notes = d.notes.filter(x => x !== n); save(); render(); }));
-    cv.append(node);
-  }
-
-  cv.addEventListener('dblclick', e => {
-    if (e.target !== cv) return;
-    const r = cv.getBoundingClientRect();
-    const n = {
-      id: uid(), text: '', color: state.settings.color,
-      x: clamp(e.clientX - r.left - 6, 0, r.width - 40),
-      y: clamp(e.clientY - r.top - 10, 0, r.height - 24),
-    };
-    d.notes.push(n); save(); render();
-    const t = $(`.note[data-id="${n.id}"] .note-text`);
-    t && focusEditable(t);
-  });
-
-  cv.addEventListener('pointerdown', e => {
-    if (e.button !== 0) return;
-    const node = e.target.closest('.note');
-    if (!node) return;
-    const n = d.notes.find(x => x.id === node.dataset.id);
-    const txt = node.querySelector('.note-text');
-    if (!n || document.activeElement === txt) return;
-    e.preventDefault();
-    const sx = e.clientX, sy = e.clientY, ox = n.x, oy = n.y;
-    let cur = { x: ox, y: oy };
-    trackPointer(e, node, {
-      move(ev) {
-        const r = cv.getBoundingClientRect();
-        cur.x = clamp(ox + ev.clientX - sx, 0, r.width - node.offsetWidth);
-        cur.y = clamp(oy + ev.clientY - sy, 0, r.height - node.offsetHeight);
-        node.style.left = `${cur.x}px`; node.style.top = `${cur.y}px`;
-      },
-      end() { n.x = cur.x; n.y = cur.y; save(); },
-      click(ev) { focusEditable(txt, ev); },
-    });
-  });
-
-  container.append(cv);
+  const txt = el('div', { class: 'notes-text', 'data-placeholder': 'notes' });
+  txt.textContent = d.notes;
+  bindEditable(txt, v => { d.notes = v; save(); }, { multiline: true });
+  container.append(txt);
 }
 
 /* ---------- mini month ---------- */
