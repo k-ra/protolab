@@ -10,7 +10,7 @@ const SNAP = 0.25;        // 15 minutes
 const GRID_H = 660;       // target grid height in px; hour rows stretch to fill it
 const GAP_H = 26;         // height of a collapsed (hidden) span
 
-const PALETTE = ['yellow', 'pink', 'green', 'blue', 'lilac', 'peach', 'none'];
+const PALETTE = ['yellow', 'peach', 'pink', 'lilac', 'blue', 'sky', 'mint', 'green', 'grey', 'none'];
 const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
   'August', 'September', 'October', 'November', 'December'];
@@ -21,7 +21,14 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const snap = t => Math.round(t / SNAP) * SNAP;
 const pad = n => String(n).padStart(2, '0');
-const fmtTime = t => `${Math.floor(t)}:${pad(Math.round((t - Math.floor(t)) * 60))}`;
+// 12-hour clock: 8 … 12, 1 … 12. 24 is midnight.
+const h12 = t => ((Math.floor(t) + 11) % 12) + 1;
+const mins = t => Math.round((t - Math.floor(t)) * 60);
+const ampm = t => (t % 24) < 12 ? 'am' : 'pm';
+const fmtTime = t => `${h12(t)}:${pad(mins(t))}`;                  // 12:30
+const fmtHour = t => `${h12(t)}${mins(t) ? ':' + pad(mins(t)) : ''} ${ampm(t)}`;  // 12:30 pm
+const fmtHourBare = t => `${h12(t)}${mins(t) ? ':' + pad(mins(t)) : ''}`;              // 12:30
+const fmtRange = (a, b) => `${ampm(a) === ampm(b) ? fmtHourBare(a) : fmtHour(a)} – ${fmtHour(b)}`;
 
 const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const fromKey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
@@ -240,8 +247,8 @@ function renderToolbar() {
   const s = state.settings;
   viewSel.value = s.view;
   wsSel.innerHTML = ''; weSel.innerHTML = '';
-  for (let h = DAY_START; h < DAY_END; h++) wsSel.append(el('option', { value: h }, fmtTime(h)));
-  for (let h = DAY_START + 1; h <= DAY_END; h++) weSel.append(el('option', { value: h }, fmtTime(h)));
+  for (let h = DAY_START; h < DAY_END; h++) wsSel.append(el('option', { value: h }, fmtHour(h)));
+  for (let h = DAY_START + 1; h <= DAY_END; h++) weSel.append(el('option', { value: h }, fmtHour(h)));
   wsSel.value = s.workStart; weSel.value = s.workEnd;
   $('.hours').style.opacity = s.view === 'all' ? .5 : 1;
 
@@ -336,13 +343,14 @@ function renderTimeline(container, key) {
       const n = d.blocks.filter(b => hiddenIn(b, L) && b.start >= it.from && b.end <= it.to).length;
       grid.append(el('div', {
         class: 'gap', style: `top:${it.y}px;height:${it.h}px`, title: 'show all hours',
-      }, `${fmtTime(it.from)} – ${fmtTime(it.to)}${n ? ` · ${n} hidden` : ''}`));
+      }, `${fmtRange(it.from, it.to)}${n ? ` · ${n} hidden` : ''}`));
       continue;
     }
     for (let h = Math.ceil(it.from); h <= it.to; h++) {
       const y = timeToY(h, L);
       const line = el('div', { class: 'hour', style: `top:${y}px` });
-      line.append(el('span', { class: 'hour-label' }, fmtTime(h)));
+      const marker = h === DAY_START || h % 12 === 0;
+      line.append(el('span', { class: 'hour-label' }, marker ? fmtHour(h) : fmtHourBare(h)));
       grid.append(line);
       if (L.pph >= 52 && h + .5 < it.to) {
         grid.append(el('div', { class: 'hour half', style: `top:${timeToY(h + .5, L)}px` }));

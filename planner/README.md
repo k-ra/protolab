@@ -5,7 +5,7 @@ everything is kept in `localStorage`.
 
 Each page is one day, laid out like a Japanese weekly planner:
 
-- **Time blocks**, 8:00 → 24:00. Drag on empty grid to draw one (or click for 30 min),
+- **Time blocks**, 8 am → 12 am. Drag on empty grid to draw one (or click for 30 min),
   drag a block to move it — across the two pages too — and pull its bottom edge to resize.
   Click to edit the label.
 - **Todo** list with a tiny check box, highlighter per item.
