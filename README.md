@@ -39,6 +39,18 @@ governs how a surface answers the light. **Medium** is how the mark is made:
 | Ink | a flat printed impression, unlit, with broken coverage |
 | Two-tone | two ink passes, misregistered, overprinting |
 | Pencil | a rubbing — graphite catches whatever stands proud of the paper |
+| Bleed | ink spreading into fibre; a noisy threshold on a spread mask |
+| Halftone | a rotated dot screen, the dot growing with tone |
+| Litho | crayon on a grained stone — a stochastic threshold, no grid |
+| Etch | parallel hatching, crossed where it goes dark |
+| Cut | carved: a hard threshold whose edge chatters like a gouge |
+| Jitter | a pen line that boils — the mark laid down repeatedly, displaced, on twos |
+| Spikes | geometric spikes struck out of the silhouette, leaning away from the cursor |
+
+The printmaking screens take their tone from the relief's own height field, so a
+halftone of a seal still reads as that seal. Jitter and Spikes are redrawn every
+frame rather than baked, which is what lets them respond to the cursor —
+they're vector marks, not a lighting pass, so it costs almost nothing.
 
 The printed media bypass the relief pipeline and sit on material index 0, the
 one the lamp cannot touch. That's the point: ink doesn't change colour when you
@@ -105,6 +117,7 @@ sit at the end of the pass.
 | `lib/press.js` | a pressed seal, same contract as a flower |
 | `lib/dies.js` | the engraver's vocabulary — rings, beads, monograms, laurels, crests |
 | `lib/matter.js` | the material catalogue — colour, light response, relief character |
+| `lib/marks.js` | printmaking — screens (halftone, litho, hatch, cut, bleed) and live marks (jitter, spikes) |
 | `lib/hub.js` | the collection, and how presets travel between pages |
 | `PRESETS.md` | saved lighting and paper conditions |
 

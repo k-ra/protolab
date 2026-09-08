@@ -10,6 +10,7 @@
 <script src="../lib/flora.js"></script>
 <script src="../lib/press.js"></script>
 <script src="../lib/matter.js"></script>
+<script src="../lib/marks.js"></script>
 <script src="../lib/hub.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -82,6 +83,7 @@ textarea:focus{outline:none;border-color:var(--ink)}
   <button onclick="shuffleAll()">Shuffle</button>
   <button onclick="fillSet()">Full set</button>
   <button onclick="clearAll()">Clear</button>
+  <button id="b-prop" onclick="plantProposals()" style="display:none"></button>
   <div class="div"></div>
   <button onclick="togglePanel('notes')">Notes</button>
   <button onclick="downloadPNG()">PNG</button>
@@ -175,8 +177,14 @@ let lampMoving = 0;
 const FORMS = ['seal','bloom','card','exlibris'];
 // A medium is how the mark is MADE. Relief is lit; the printed media are flat
 // and unlit — ink doesn't catch a raking light, it just sits on the paper.
-const MEDIA = ['relief','ink','twotone','pencil'];
-const MEDIUM_LABEL = {relief:'Pressed', ink:'Ink', twotone:'Two-tone', pencil:'Pencil'};
+const MEDIA = ['relief','ink','twotone','pencil',
+               'bleed','halftone','litho','hatch','linocut','jitter','spikes'];
+const MEDIUM_LABEL = {relief:'Pressed', ink:'Ink', twotone:'Two-tone', pencil:'Pencil',
+  bleed:'Bleed', halftone:'Halftone', litho:'Litho', hatch:'Etch', linocut:'Cut',
+  jitter:'Jitter', spikes:'Spikes'};
+// redrawn every frame instead of baked, so they can move
+const LIVE = {jitter:1, spikes:1};
+const isLive = m => !!LIVE[m];
 const CONTENTS = ['die','flower'];
 const STORE = 'protolab.clippings.v1';
 
@@ -214,8 +222,12 @@ function specFor(it){
       cLeaf: Flora.mixHex(M.color, '#000000', 0.10)
     });
   }
+  // A printed mark isn't made of the material, so it shouldn't inherit its
+  // body: a halftone of a "seal" wants a poured blob to screen, not the flat
+  // rectangle a paper substrate would give it.
+  const printed = (it.medium || 'relief') !== 'relief';
   return Press.defaults({
-    seed: it.seed, substrate: SHAPE_OF[it.material] || 'wax',
+    seed: it.seed, substrate: printed ? 'wax' : (SHAPE_OF[it.material] || 'wax'),
     die: it.die, text: it.text, color: M.color,
     size: 92*it.scale, detail: 6, depth: it.depth, mode: 'deboss'
   });
@@ -351,6 +363,51 @@ function pressingInk(ctx, it){
   }
 }
 
+// a small pre-coloured stamp of the design, for the live marks to wobble
+function makeMark(it){
+  const R = 92*it.scale;
+  const size = Math.ceil(R*3);
+  const cv = Relief.makeCanvas(size, size);
+  const ctx = cv.getContext('2d');
+  ctx.translate(size/2, size/2);
+  ctx.fillStyle = it.ink1 || '#2b2a30';
+  ctx.strokeStyle = it.ink1 || '#2b2a30';
+  if(it.form === 'bloom' && !it._parts) it._parts = Flora.grow(specFor(it));
+  pressingInk(ctx, it);
+  return cv;
+}
+
+// Redrawn every frame over the baked sheet. Cheap — these are vector marks,
+// not a lighting pass — which is what lets them respond to the cursor.
+function drawLive(g){
+  const t = millis()*0.001;
+  const speed = Math.min(1, Math.hypot(lampT.x - lampP.x, lampT.y - lampP.y)/26);
+  items.forEach(it => {
+    const med = it.medium || 'relief';
+    if(!isLive(med)) return;
+    g.save();
+    g.translate(it.x*SS, it.y*SS);
+    g.scale(SS, SS);
+    if(med === 'jitter' && it._markCv){
+      Marks.jitter(g, it._markCv, {
+        passes: 3, amp: 1.2 + speed*7, time: t, fps: 8,
+        alpha: 0.42 + 0.18*(1 - speed)
+      });
+    } else if(med === 'spikes'){
+      const dx = lampT.x - it.x, dy = lampT.y - it.y;
+      const d = Math.hypot(dx, dy);
+      Marks.spikes(g, {
+        count: 10 + Math.round((it.depth||1)*10),
+        radius: 92*it.scale, seed: it.seed,
+        away: Math.atan2(dy, dx),
+        push: Math.max(0, 1 - d/460),
+        time: t, color: it.ink1 || '#2b2a30'
+      });
+    }
+    g.restore();
+  });
+}
+
 // ── layout ─────────────────────────────────────────────────────
 // the sheet is as tall as it needs to be, and the page scrolls
 function layout(){
@@ -389,10 +446,16 @@ function build(){
   const inkCov = F.raster(ctx => {
     ctx.scale(SS, SS);
     items.forEach(it => {
-      if(it.medium === 'relief') return;
+      const md = it.medium || 'relief';
+      if(md === 'relief' || isLive(md)) return;
       ctx.save(); ctx.translate(it.x, it.y); pressingInk(ctx, it); ctx.restore();
     });
   });
+  // ink only spreads if something is actually bleeding
+  const wantBleed = items.some(it => it.medium === 'bleed');
+  const inkSpread = wantBleed ? F.blur(inkCov, Math.round(4*SS), 2) : null;
+  // live marks get a small pre-coloured stamp they can wobble around
+  items.forEach(it => { it._markCv = isLive(it.medium) ? makeMark(it) : null; });
   const sm = F.blur(h0, Math.round(SS), 2);    // just enough to round an edge
   const n2 = PW*PH;
   const OFF = Math.round(3*SS);                 // two-tone misregistration
@@ -446,16 +509,33 @@ function build(){
         hgt[i] = 1;
         let r = gc[0], g = gc[1], b = gc[2];
         const it = items[c];
+        if(isLive(med)){
+          colorMap[m] = r; colorMap[m+1] = g; colorMap[m+2] = b;   // drawn later
+          continue;
+        }
         if(med === 'pencil'){
           // a rubbing: graphite catches whatever stands proud of the paper
-          const rel = sm[i]*mkCov[i];
+          let rv = (sm[i]*mkCov[i] - 0.26)/0.62;
+          rv = rv < 0 ? 0 : (rv > 1 ? 1 : rv);
+          const rel = rv;
           const tooth = 0.55 + 0.45*noise(x*0.5/SS, y*0.5/SS);
           const d = Math.min(1, Math.pow(rel, 1.7)*1.9)*tooth*0.92;
           const gr = Relief.hexRgb('#3c3b40');
           r += (gr[0]-r)*d; g += (gr[1]-g)*d; b += (gr[2]-b)*d;
         } else {
           const tex = 0.66 + 0.5*noise(x*0.34/SS, y*0.34/SS);   // broken coverage
-          const a1 = Math.min(1, inkCov[i]*tex);
+          // the printmaking screens take their tone from the relief, so a
+          // halftone of a seal still reads as that seal
+          let tv = (sm[i]*mkCov[i] - 0.30)/0.58;
+          tv = tv < 0 ? 0 : (tv > 1 ? 1 : tv);
+          const tone = Math.pow(tv, 1.15);
+          let a1;
+          if(med === 'halftone')     a1 = Marks.halftone(x, y, tone, 5.2*SS, 0.32);
+          else if(med === 'litho')   a1 = Marks.litho(x, y, tone, Math.max(1, Math.round(SS)));
+          else if(med === 'hatch')   a1 = Marks.hatch(x, y, tone, 4.4*SS, 0.72);
+          else if(med === 'linocut') a1 = Marks.linocut(x, y, tone, 0.20);
+          else if(med === 'bleed')   a1 = Marks.bleed(inkSpread ? inkSpread[i] : 0, x, y, it.depth);
+          else                       a1 = Math.min(1, inkCov[i]*tex);
           const c1 = Relief.hexRgb(it.ink1 || '#2b2a30');
           if(med === 'twotone'){
             const j = i + OFF + OFF*PW;
@@ -579,6 +659,7 @@ function setup(){
     shade(false);
     needShade = false; lampMoving = 0;
     ready = true;
+    loadProposals();
   };
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(boot).catch(boot);
   else boot();
@@ -592,6 +673,7 @@ function windowResized(){
 function draw(){
   if(!ready) return;
   if(needBuild){ needBuild = false; build(); }
+  const anyLive = items.some(it => isLive(it.medium));
 
   // the lamp trails the cursor
   const dx = lampT.x - lampP.x, dy = lampT.y - lampP.y;
@@ -624,6 +706,8 @@ function draw(){
     g.strokeRect((it.x - CELL_W/2 + 14)*SS, (it.y - CELL_H/2 + 14)*SS, (CELL_W - 28)*SS, (CELL_H - 28)*SS);
     g.restore();
   }
+  drawLive(g);
+
   if(grainPat && L.grain > 0){
     g.save();
     g.globalCompositeOperation = 'overlay';
@@ -804,6 +888,13 @@ function fillSet(){
     {material:'paper',   form:'exlibris', medium:'ink'},
     {material:'paper',   form:'seal',     medium:'twotone'},
     {material:'paper',   form:'bloom',    medium:'pencil'},
+    {material:'paper',   form:'seal',     medium:'halftone'},
+    {material:'paper',   form:'bloom',    medium:'litho'},
+    {material:'paper',   form:'seal',     medium:'hatch'},
+    {material:'paper',   form:'bloom',    medium:'linocut'},
+    {material:'paper',   form:'seal',     medium:'bleed'},
+    {material:'paper',   form:'bloom',    medium:'jitter'},
+    {material:'paper',   form:'seal',     medium:'spikes'},
     {material:'plaster', form:'bloom',    medium:'relief'},
     {material:'slate',   form:'seal',     medium:'relief'},
     {material:'vellum',  form:'card',     medium:'relief', content:'die'},
@@ -959,6 +1050,36 @@ function copySheetStyle(){
   md += 'A flat white ground (' + GROUND + '), unlit, constant across every sample. ' + lightParagraph() + '\n\n---\n\n';
   items.forEach(it => { md += stylePrompt(it) + '\n---\n\n'; });
   putExport(md);
+}
+
+// ── proposals ──────────────────────────────────────────────────
+// A scheduled agent writes new combinations into proposals.json every few
+// hours. They're not planted automatically — they wait in the bar until asked.
+let proposals = [];
+function loadProposals(){
+  fetch('proposals.json', {cache: 'no-store'}).then(r => r.ok ? r.json() : null).then(o => {
+    if(!o || !o.items) return;
+    const planted = (Hub.arrangement && {}) || {};
+    const seen = {};
+    items.forEach(it => { if(it.fromProposal) seen[it.fromProposal] = 1; });
+    proposals = o.items.filter(p => !seen[p.id]);
+    const b = document.getElementById('b-prop');
+    if(proposals.length){
+      b.style.display = '';
+      b.textContent = proposals.length + ' new';
+      b.title = (o.note || 'proposed effects');
+    }
+  }).catch(() => {});
+}
+function plantProposals(){
+  proposals.forEach(p => {
+    const it = newPressing(Object.assign({}, p.spec || {}, {note: p.why || ''}));
+    it.fromProposal = p.id;
+    items.push(it);
+  });
+  proposals = [];
+  document.getElementById('b-prop').style.display = 'none';
+  deselect(); needBuild = true; persist();
 }
 
 // ── notes out ──────────────────────────────────────────────────
