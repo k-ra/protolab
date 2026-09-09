@@ -59,6 +59,12 @@ move a light across it, and a swatch book should be honest about that.
 Forms are seal, bloom, card and **ex libris** — a bookplate with a border,
 EX LIBRIS, an ornament and a name.
 
+**Show all / One at a time.** The grid is one big lit field, so it can only be
+relit at reduced resolution while the lamp moves. One at a time bounds the field
+to a single specimen, which fits inside the pixel budget at full device density
+and refreshes fast enough to stay sharp — arrow keys step through. **Lamp fixed**
+stops the light following the cursor, which has the same effect for the grid.
+
 Every pressing takes a note, and the notes copy out as markdown.
 
 ## The studies

@@ -40,6 +40,7 @@ body{font-family:'Poppins',sans-serif;font-weight:300;color:var(--ink);backgroun
 .bar button:hover{background:rgba(47,42,36,.07)}
 .bar .div{width:1px;height:18px;background:var(--line);margin:0 3px}
 .bar .plus{font-size:16px;padding:5px 14px 7px}
+.bar #b-prev,.bar #b-next{font-size:17px;padding:4px 13px 7px;line-height:1}
 
 .panel{position:fixed;z-index:9;width:270px;padding:20px;border-radius:14px;background:var(--panel);
   border:1px solid var(--line);box-shadow:0 14px 40px rgba(47,42,36,.13);
@@ -79,6 +80,12 @@ textarea:focus{outline:none;border-color:var(--ink)}
 </div>
 
 <div class="bar">
+  <button id="b-view" onclick="toggleView()">One at a time</button>
+  <button id="b-prev" onclick="step(-1)" style="display:none">‹</button>
+  <button id="b-next" onclick="step(1)" style="display:none">›</button>
+  <div class="div"></div>
+  <button id="b-lock" onclick="toggleLock()" title="stop the lamp following the cursor">Lamp follows</button>
+  <div class="div"></div>
   <button class="plus" onclick="addPressing()" title="add a pressing">+</button>
   <button onclick="shuffleAll()">Shuffle</button>
   <button onclick="fillSet()">Full set</button>
@@ -170,6 +177,11 @@ let needBuild = false, needShade = false, ready = false;
 let items = [];
 let sheetNote = '';
 let selected = -1;
+// 'sheet' shows the grid; 'gallery' shows one pressing at a time in a small
+// box, which is the whole trick — a bounded field can be lit at full density
+// and refreshed fast enough to stay crisp while the lamp moves.
+let mode = 'sheet', cursor = 0, lightLock = false;
+let GAL = 1;
 let L = {ang: 214, h: 330, radius: 2200, grain: 0.22};
 let lampT = {x:0, y:0}, lampP = {x:0, y:0};
 let lampMoving = 0;
@@ -382,12 +394,12 @@ function makeMark(it){
 function drawLive(g){
   const t = millis()*0.001;
   const speed = Math.min(1, Math.hypot(lampT.x - lampP.x, lampT.y - lampP.y)/26);
-  items.forEach(it => {
+  visible().forEach(it => {
     const med = it.medium || 'relief';
     if(!isLive(med)) return;
     g.save();
     g.translate(it.x*SS, it.y*SS);
-    g.scale(SS, SS);
+    g.scale(SS*GAL, SS*GAL);
     if(med === 'jitter' && it._markCv){
       Marks.jitter(g, it._markCv, {
         passes: 3, amp: 1.2 + speed*7, time: t, fps: 8,
@@ -408,9 +420,29 @@ function drawLive(g){
   });
 }
 
+function visible(){
+  if(mode !== 'gallery') return items;
+  if(!items.length) return [];
+  cursor = ((cursor % items.length) + items.length) % items.length;
+  return [items[cursor]];
+}
+
 // ── layout ─────────────────────────────────────────────────────
 // the sheet is as tall as it needs to be, and the page scrolls
+function boxSize(){
+  return Math.max(420, Math.min(640, Math.min(window.innerWidth - 140, window.innerHeight - 250)));
+}
 function layout(){
+  if(mode === 'gallery'){
+    const B = boxSize();
+    DW = B;
+    COLS = 1;
+    GAL = (B*0.36)/92;
+    const vis = visible();
+    if(vis[0]){ vis[0].x = B/2; vis[0].y = B/2; }
+    return B;
+  }
+  GAL = 1;
   COLS = Math.max(1, Math.floor((DW - 80)/CELL_W));
   const rows = Math.ceil(items.length/COLS) || 1;
   const gridW = COLS*CELL_W, gridH = rows*(CELL_H + CAP_H);
@@ -429,33 +461,34 @@ function reflow(){
 
 function build(){
   reflow();
-  items.forEach(it => {
+  const vis = visible();
+  vis.forEach(it => {
     if(it.form === 'bloom') it._parts = Flora.grow(specFor(it));
   });
 
   const h0 = F.rasterLuma(ctx => {
     ctx.scale(SS, SS);
-    items.forEach(it => { ctx.save(); ctx.translate(it.x, it.y); pressingHeight(ctx, it); ctx.restore(); });
+    vis.forEach(it => { ctx.save(); ctx.translate(it.x, it.y); ctx.scale(GAL, GAL); pressingHeight(ctx, it); ctx.restore(); });
   });
   // only the coverage is used — raster() returns alpha alone, where
   // rasterColor() would also allocate a colour map the size of the sheet
   const mkCov = F.raster(ctx => {
     ctx.scale(SS, SS);
-    items.forEach(it => { ctx.save(); ctx.translate(it.x, it.y); pressingMask(ctx, it); ctx.restore(); });
+    vis.forEach(it => { ctx.save(); ctx.translate(it.x, it.y); ctx.scale(GAL, GAL); pressingMask(ctx, it); ctx.restore(); });
   });
   const inkCov = F.raster(ctx => {
     ctx.scale(SS, SS);
-    items.forEach(it => {
+    vis.forEach(it => {
       const md = it.medium || 'relief';
       if(md === 'relief' || isLive(md)) return;
-      ctx.save(); ctx.translate(it.x, it.y); pressingInk(ctx, it); ctx.restore();
+      ctx.save(); ctx.translate(it.x, it.y); ctx.scale(GAL, GAL); pressingInk(ctx, it); ctx.restore();
     });
   });
   // ink only spreads if something is actually bleeding
-  const wantBleed = items.some(it => it.medium === 'bleed');
+  const wantBleed = vis.some(it => it.medium === 'bleed');
   const inkSpread = wantBleed ? F.blur(inkCov, Math.round(4*SS), 2) : null;
   // live marks get a small pre-coloured stamp they can wobble around
-  items.forEach(it => { it._markCv = isLive(it.medium) ? makeMark(it) : null; });
+  vis.forEach(it => { it._markCv = isLive(it.medium) ? makeMark(it) : null; });
   const sm = F.blur(h0, Math.round(SS), 2);    // just enough to round an edge
   const n2 = PW*PH;
   const OFF = Math.round(3*SS);                 // two-tone misregistration
@@ -472,7 +505,7 @@ function build(){
   // material 0 is the ground; 1..n are the materials actually in use
   const used = [], idxOf = {};
   Matter.NAMES.forEach(k => {
-    if(items.some(it => it.material === k && (it.medium || 'relief') === 'relief')){ idxOf[k] = used.length + 1; used.push(k); }
+    if(vis.some(it => it.material === k && (it.medium || 'relief') === 'relief')){ idxOf[k] = used.length + 1; used.push(k); }
   });
   const palette = [Relief.hexRgb(GROUND)].concat(used.map(k => Relief.hexRgb(Matter.get(k).color)));
   const reliefOf = [0.6].concat(used.map(k => Matter.get(k).relief));
@@ -485,9 +518,10 @@ function build(){
   // which cell a pixel belongs to tells us its material — cells never overlap
   const cellOf = new Int16Array(n2);
   cellOf.fill(-1);
-  items.forEach((it, i) => {
-    const x0 = Math.max(0, Math.round((it.x - CELL_W/2)*SS)), x1 = Math.min(PW, Math.round((it.x + CELL_W/2)*SS));
-    const y0 = Math.max(0, Math.round((it.y - CELL_H/2)*SS)), y1 = Math.min(PH, Math.round((it.y + CELL_H/2)*SS));
+  const HW = mode === 'gallery' ? DW : CELL_W, HH = mode === 'gallery' ? DW : CELL_H;
+  vis.forEach((it, i) => {
+    const x0 = Math.max(0, Math.round((it.x - HW/2)*SS)), x1 = Math.min(PW, Math.round((it.x + HW/2)*SS));
+    const y0 = Math.max(0, Math.round((it.y - HH/2)*SS)), y1 = Math.min(PH, Math.round((it.y + HH/2)*SS));
     for(let y=y0;y<y1;y++){
       const row = y*PW;
       for(let x=x0;x<x1;x++) cellOf[row+x] = i;
@@ -498,7 +532,7 @@ function build(){
     for(let x=0;x<PW;x++){
       const i = y*PW + x, m = i*3;
       const c = cellOf[i];
-      const med = c >= 0 ? (items[c].medium || 'relief') : 'relief';
+      const med = c >= 0 ? (vis[c].medium || 'relief') : 'relief';
       const gc = palette[0];
 
       if(med !== 'relief'){
@@ -508,7 +542,7 @@ function build(){
         surf[i] = 0.5;
         hgt[i] = 1;
         let r = gc[0], g = gc[1], b = gc[2];
-        const it = items[c];
+        const it = vis[c];
         if(isLive(med)){
           colorMap[m] = r; colorMap[m+1] = g; colorMap[m+2] = b;   // drawn later
           continue;
@@ -554,7 +588,7 @@ function build(){
       }
 
       const a = mkCov[i];
-      const mi = (a > 0.5 && c >= 0) ? (idxOf[items[c].material] || 0) : 0;
+      const mi = (a > 0.5 && c >= 0) ? (idxOf[vis[c].material] || 0) : 0;
       matMap[i] = mi;
 
       const pc = palette[mi];
@@ -634,7 +668,10 @@ function allocate(){
 function styleCanvas(){
   const c = document.querySelector('#stage canvas');
   if(c){ c.style.width = DW + 'px'; c.style.height = DH + 'px'; }
-  document.getElementById('sheet').style.height = DH + 'px';
+  const sh = document.getElementById('sheet');
+  sh.style.height = DH + 'px';
+  sh.style.width = mode === 'gallery' ? DW + 'px' : '100%';
+  sh.style.margin = mode === 'gallery' ? '90px auto 0' : '0';
   document.getElementById('labels').style.height = DH + 'px';
 }
 function setup(){
@@ -665,7 +702,7 @@ function setup(){
   else boot();
 }
 function windowResized(){
-  DW = Math.max(720, document.documentElement.clientWidth);
+  DW = mode === 'gallery' ? boxSize() : Math.max(720, document.documentElement.clientWidth);
   DH = Math.max(520, window.innerHeight);
   allocate(); resizeCanvas(PW, PH); styleCanvas();
   if(ready) build();
@@ -677,9 +714,9 @@ function draw(){
 
   // the lamp trails the cursor
   const dx = lampT.x - lampP.x, dy = lampT.y - lampP.y;
-  if(Math.abs(dx) > 0.2 || Math.abs(dy) > 0.2){
-    lampP.x += dx*0.10; lampP.y += dy*0.10;
-    lampMoving = 14;                    // frames of grace before the crisp pass
+  if(Math.abs(dx) > 0.6 || Math.abs(dy) > 0.6){
+    lampP.x += dx*0.18; lampP.y += dy*0.18;
+    lampMoving = 4;                    // frames of grace before the crisp pass
     needShade = true;
   }
   if(needShade){
@@ -699,7 +736,7 @@ function draw(){
   g.imageSmoothingQuality = 'high';
   if(lampMoving > 0 && lo) g.drawImage(lo.cv, 0, 0, PW, PH);
   else g.drawImage(artCv, 0, 0);
-  if(selected >= 0 && items[selected]){
+  if(mode !== 'gallery' && selected >= 0 && items[selected]){
     const it = items[selected];
     g.save();
     g.strokeStyle = 'rgba(47,42,36,0.28)'; g.lineWidth = SS; g.setLineDash([3*SS,4*SS]);
@@ -721,6 +758,7 @@ function draw(){
 function mxCSS(){ return mouseX/SS; }
 function myCSS(){ return mouseY/SS; }
 function cellAt(x, y){
+  if(mode === 'gallery') return items.length ? cursor : -1;
   for(let i=0;i<items.length;i++){
     const it = items[i];
     if(Math.abs(x - it.x) < CELL_W/2 && Math.abs(y - it.y) < CELL_H/2) return i;
@@ -734,6 +772,7 @@ function overStage(){
          el.id === 'labels' || el.id === 'sheet' || el.className === 'cap';
 }
 function mouseMoved(){
+  if(lightLock) return;
   if(mouseX >= 0 && mouseY >= 0 && mouseX <= PW && mouseY <= PH){
     lampT.x = mxCSS(); lampT.y = myCSS();
   }
@@ -756,6 +795,8 @@ function keyPressed(){
   const t = document.activeElement && document.activeElement.tagName;
   if(t === 'TEXTAREA' || t === 'INPUT') return;
   if(keyCode === ESCAPE) deselect();
+  if(keyCode === LEFT_ARROW) step(-1);
+  if(keyCode === RIGHT_ARROW) step(1);
   if((keyCode === BACKSPACE || keyCode === DELETE) && selected >= 0) removeSel();
 }
 
@@ -763,11 +804,13 @@ function keyPressed(){
 function renderLabels(){
   const host = document.getElementById('labels');
   host.innerHTML = '';
-  items.forEach((it, i) => {
+  const vis = visible();
+  vis.forEach((it, vi) => {
+    const i = mode === 'gallery' ? cursor : vi;
     const d = document.createElement('div');
     d.className = 'cap' + (i === selected ? ' sel' : '');
     d.style.left = it.x + 'px';
-    d.style.top = (it.y + CELL_H/2 - 12) + 'px';
+    d.style.top = (it.y + (mode === 'gallery' ? DW/2 - 34 : CELL_H/2 - 12)) + 'px';
     const form = it.form === 'seal' ? 'seal' : (it.form === 'bloom' ? 'bloom' :
                  (it.form === 'exlibris' ? 'bookplate' :
                  'card, ' + (it.content === 'flower' ? 'flower' : 'monogram')));
@@ -914,6 +957,33 @@ function shuffleAll(){
 }
 function clearAll(){ items = []; deselect(); needBuild = true; persist(); }
 function downloadPNG(){ saveCanvas('clippings', 'png'); }
+function toggleView(){
+  mode = mode === 'sheet' ? 'gallery' : 'sheet';
+  const gal = mode === 'gallery';
+  document.getElementById('b-view').textContent = gal ? 'Show all' : 'One at a time';
+  document.getElementById('b-prev').style.display = gal ? '' : 'none';
+  document.getElementById('b-next').style.display = gal ? '' : 'none';
+  document.getElementById('sheet').classList.toggle('gallery', gal);
+  if(gal){ cursor = selected >= 0 ? selected : 0; selected = cursor; }
+  window.scrollTo(0, 0);
+  DW = gal ? boxSize() : Math.max(720, document.documentElement.clientWidth);
+  allocate(); resizeCanvas(PW, PH); styleCanvas();
+  build();
+  if(gal) showInspector(); else deselect();
+  persist();
+}
+function step(d){
+  if(mode !== 'gallery' || !items.length) return;
+  cursor = ((cursor + d) % items.length + items.length) % items.length;
+  selected = cursor;
+  needBuild = true; showInspector();
+}
+function toggleLock(){
+  lightLock = !lightLock;
+  const b = document.getElementById('b-lock');
+  b.textContent = lightLock ? 'Lamp fixed' : 'Lamp follows';
+  b.classList.toggle('on', lightLock);
+}
 function togglePanel(id){
   const el = document.getElementById(id);
   el.style.display = el.style.display === 'block' ? 'none' : 'block';
