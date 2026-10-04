@@ -1,5 +1,124 @@
 {
   "note": "seeded by hand; the scheduler appends from here",
-  "updated": "2026-09-08",
-  "items": []
+  "updated": "2026-10-03",
+  "items": [
+    {
+      "id": "p-20260908-0508-1",
+      "why": "Slate is the darkest material on the sheet, so pressing the smallest possible bloom into it at maximum depth should show whether relief reads from depth alone or needs albedo to carry it.",
+      "spec": {
+        "material": "slate",
+        "form": "bloom",
+        "medium": "relief",
+        "species": "poppy",
+        "scale": 0.55,
+        "depth": 2
+      }
+    },
+    {
+      "id": "p-20260908-0508-2",
+      "why": "An ex libris is all fine border rules and small type, so putting one through a coarse halftone in two pale inks should show exactly how much line detail a dot screen eats before the plate stops being readable.",
+      "spec": {
+        "material": "paper",
+        "form": "exlibris",
+        "medium": "halftone",
+        "ink1": "#7f95a6",
+        "ink2": "#cfc4b2",
+        "scale": 1.15,
+        "depth": 1
+      }
+    },
+    {
+      "id": "p-20260908-0508-3",
+      "why": "Spikes is a live mark and a pressed flower is a still one, so running spikes over a big botanical card in a single dark green should tell us whether the movement reads as growth or just as noise sitting on top.",
+      "spec": {
+        "material": "vellum",
+        "form": "card",
+        "content": "flower",
+        "medium": "spikes",
+        "species": "cosmos",
+        "ink1": "#2f4632",
+        "scale": 1.4,
+        "depth": 1
+      }
+    },
+    {
+      "id": "p-20260913-1056-1",
+      "why": "The deep slate bloom tested the ceiling of relief, so an ex libris pressed into soft pewter at the shallowest depth should find the floor \u2014 the point below which thin border rules and small type stop casting anything the lamp can find.",
+      "spec": {
+        "material": "pewter",
+        "form": "exlibris",
+        "medium": "relief",
+        "scale": 1.3,
+        "depth": 0.3
+      }
+    },
+    {
+      "id": "p-20260913-1056-2",
+      "why": "Two-tone is normally two inks you can tell apart, so misregistering two greys that differ by almost nothing, at the largest size on the sheet, should show whether the second pass reads as colour at all or just as a doubled shadow.",
+      "spec": {
+        "material": "paper",
+        "form": "seal",
+        "medium": "twotone",
+        "die": "crest",
+        "ink1": "#4a4750",
+        "ink2": "#524a58",
+        "scale": 1.5,
+        "depth": 1
+      }
+    },
+    {
+      "id": "p-20260913-1056-3",
+      "why": "Marigold is the most petal-crowded species we have, so cutting one small in a single hot orange should show where linocut's blunt positive/negative reading gives out \u2014 the moment the geometry is finer than the cut.",
+      "spec": {
+        "material": "clay",
+        "form": "bloom",
+        "medium": "linocut",
+        "species": "marigold",
+        "ink1": "#b8452e",
+        "scale": 0.7,
+        "depth": 1
+      }
+    },
+    {
+      "id": "p-20261003-1258-1",
+      "why": "Pencil is the lightest, most hesitant medium and brass the heaviest material, but material only touches lit relief, so a pencil monogram seal on brass should confirm the brass drops out completely and show whether a seal still reads without any metal weight.",
+      "spec": {
+        "material": "brass",
+        "form": "seal",
+        "medium": "pencil",
+        "die": "monogram",
+        "text": "K",
+        "ink1": "#3a3a40",
+        "scale": 1,
+        "depth": 1
+      }
+    },
+    {
+      "id": "p-20261003-1258-2",
+      "why": "Etch hatching is built from line direction, so a single bloom with the most whorls we have at maximum size should show whether crossing hatch lines pick out petal layers or merge them into one grey mass.",
+      "spec": {
+        "material": "paper",
+        "form": "bloom",
+        "medium": "hatch",
+        "species": "marigold",
+        "ink1": "#1f2a44",
+        "scale": 1.5,
+        "depth": 1
+      }
+    },
+    {
+      "id": "p-20261003-1258-3",
+      "why": "Bleed spreads ink past its edges, so a tiny crest seal in two near-complementary inks (rust and teal) should show whether the bleed blends them into a third colour or leaves a muddy halo.",
+      "spec": {
+        "material": "vellum",
+        "form": "seal",
+        "medium": "bleed",
+        "die": "crest",
+        "ink1": "#b5532f",
+        "ink2": "#2f6f6b",
+        "scale": 0.5,
+        "depth": 1
+      }
+    }
+  ]
 }
