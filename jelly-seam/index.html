@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Jelly Seam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Inter:wght@400;500&display=swap">
+<style>
+/* Layout: one full-bleed forest, split down its own path. Photograph left, ink right.
+   Single look by choice (the scene is the page), so colors are set once, explicitly. */
+:root {
+  --paper: #f6f4ef;
+  --ink: #181816;
+  --chalk: #f3efe7;
+  --mist: rgba(243, 239, 231, 0.62);
+  --ink-soft: rgba(24, 24, 22, 0.58);
+  --veil: #0e0f0d;
+  --display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --body: 'Inter', system-ui, -apple-system, sans-serif;
+  --gutter: clamp(16px, 4vw, 48px);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { margin: 0; background: var(--veil); color: var(--chalk); overflow: hidden; font-family: var(--body); }
+.scene { position: fixed; inset: 0; }
+canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; touch-action: none; }
+
+/* CSS fallback when WebGL is unavailable: two images, clipped at the seam */
+.fallback { position: absolute; inset: 0; }
+.fallback img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.fallback .f-ink { clip-path: inset(0 0 0 var(--split, 50%)); transition: clip-path 900ms var(--ease); }
+
+.road {
+  position: absolute;
+  bottom: calc(var(--gutter) + env(safe-area-inset-bottom, 0px));
+  display: grid;
+  gap: 6px;
+  max-width: 42vw;
+  padding: 8px 10px;
+  margin: -8px -10px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity 600ms var(--ease), transform 600ms var(--ease);
+}
+.road:focus-visible { outline: 1px solid currentColor; outline-offset: 4px; }
+.road.left { left: var(--gutter); color: var(--chalk); }
+.road.right { right: var(--gutter); color: var(--ink); text-align: right; }
+.road .name {
+  font-family: var(--display);
+  font-weight: 300;
+  font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  line-height: 1;
+  text-wrap: balance;
+}
+.road .what {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.road.left .what { color: var(--mist); }
+.road.right .what { color: var(--ink-soft); }
+.scene[data-lean='left'] .road.right,
+.scene[data-lean='right'] .road.left { opacity: 0.45; }
+.scene[data-gone] .road { opacity: 0; transform: translateY(8px); pointer-events: none; }
+
+/* arrival: what the visitor lands on after the dissolve (prototype stand-in) */
+.arrive {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  text-align: center;
+  padding-inline: var(--gutter);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 900ms var(--ease) 300ms;
+}
+.arrive[data-on] { opacity: 1; pointer-events: auto; }
+.arrive .name { font-family: var(--display); font-weight: 300; font-size: clamp(1.8rem, 4vw, 3rem); letter-spacing: 0.2em; text-transform: uppercase; }
+.arrive .note { font-size: 13px; line-height: 1.6; max-width: 34ch; }
+.arrive .actions { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+.arrive a, .arrive button {
+  font: inherit; font-size: 10.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase;
+  color: inherit; background: none; border: 0; padding: 6px 0; cursor: pointer; text-decoration: none;
+  border-bottom: 1px solid currentColor;
+}
+.arrive.portfolio { color: var(--chalk); }
+.arrive.portfolio .note { color: var(--mist); }
+.arrive.lab { color: var(--ink); }
+.arrive.lab .note { color: var(--ink-soft); }
+
+@media (max-width: 640px) {
+  .road { max-width: 44vw; gap: 4px; }
+  .road .name { font-size: 1.15rem; letter-spacing: 0.14em; }
+  .road .what { font-size: 9px; letter-spacing: 0.12em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .road, .arrive, .fallback .f-ink { transition-duration: 1ms; }
+}
+</style>
+</head>
+<body>
+
+<main class="scene" id="scene" aria-label="Two roads">
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div class="fallback" id="fallback" hidden>
+    <img src="forest.jpg" alt="">
+    <img class="f-ink" id="f-ink" alt="">
+  </div>
+
+  <button class="road left" id="go-left" data-side="left">
+    <span class="name">Kyra Mo</span>
+    <span class="what">personal portfolio</span>
+  </button>
+  <button class="road right" id="go-right" data-side="right">
+    <span class="name">Office of Mo</span>
+    <span class="what">product lab</span>
+  </button>
+
+  <section class="arrive portfolio" id="arrive-left" aria-live="polite">
+    <span class="name">Kyra Mo</span>
+    <p class="note">The photograph takes the whole screen and darkens into the hub: Writing, Photography, Workshop.</p>
+    <div class="actions"><button type="button" data-back>Back to the fork</button></div>
+  </section>
+  <section class="arrive lab" id="arrive-right" aria-live="polite">
+    <span class="name">Office of Mo</span>
+    <p class="note">The ink takes the whole screen, then the visitor lands on officeofmo.com with Folio and Dayblock.</p>
+    <div class="actions">
+      <a href="https://officeofmo.com" target="_blank" rel="noopener">Open officeofmo.com</a>
+      <button type="button" data-back>Back to the fork</button>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const PHOTO = 'forest.jpg';
+  // the third road is drawn but held back; add #space to the link to see it
+  const SPACE = location.hash === '#space';
+  // ── THE INK FOREST — drawn procedurally, stroke by stroke, in the photograph's own
+  //    coordinates (1489 × 1024) so its path, lamp and bamboo meet the photo at the seam.
+  function inkForest(scale) {
+    const W = 1489, H = 1024;
+    const c = document.createElement('canvas');
+    c.width = W * scale; c.height = H * scale;
+    const x = c.getContext('2d');
+    x.scale(scale, scale);
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    const INKC = '#1b1b19', PAPER = '#f6f4ef';
+    let seed = 7;
+    const R = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const rr = (a, b) => a + (b - a) * R();
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const Q = [];                       // drawing queue: the forest draws itself in this order
+    const add = (fn) => Q.push(fn);
+
+    // paper, with a whisper of fibre
+    x.fillStyle = PAPER; x.fillRect(0, 0, W, H);
+    for (let i = 0; i < 2600; i++) {
+      x.fillStyle = `rgba(120,110,90,${rr(0.015, 0.05)})`;
+      x.fillRect(rr(0, W), rr(0, H), rr(2, 9), 0.6);
+    }
+
+    const stroke = (pts, w = 1.2, a = 1) => {
+      x.strokeStyle = INKC; x.globalAlpha = a; x.lineWidth = w;
+      x.beginPath(); x.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) x.lineTo(pts[i][0], pts[i][1]);
+      x.stroke(); x.globalAlpha = 1;
+    };
+    // a hand line: a straight segment with a little wander
+    const hand = (x0, y0, x1, y1, w = 1.2, a = 1, j = 0.8) => {
+      const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 18));
+      const pts = [];
+      for (let i = 0; i <= n; i++) { const t = i / n; pts.push([lerp(x0, x1, t) + (i && i < n ? rr(-j, j) : 0), lerp(y0, y1, t) + (i && i < n ? rr(-j, j) : 0)]); }
+      stroke(pts, w, a);
+    };
+    const leaf = (bx, by, ang, len, wid, fill = true, vein = false) => {
+      const ca = Math.cos(ang), sa = Math.sin(ang);
+      const P = (u, v) => [bx + ca * u - sa * v, by + sa * u + ca * v];
+      x.beginPath();
+      const a = P(0, 0), b = P(len, 0);
+      x.moveTo(a[0], a[1]);
+      let p1 = P(len * 0.35, -wid), p2 = P(len * 0.8, -wid * 0.6);
+      x.bezierCurveTo(p1[0], p1[1], p2[0], p2[1], b[0], b[1]);
+      p1 = P(len * 0.8, wid * 0.6); p2 = P(len * 0.35, wid);
+      x.bezierCurveTo(p1[0], p1[1], p2[0], p2[1], a[0], a[1]);
+      x.fillStyle = INKC; x.strokeStyle = INKC; x.lineWidth = 1;
+      if (fill) x.fill(); else { x.fillStyle = PAPER; x.fill(); x.stroke(); }
+      if (vein) {
+        const m = [P(0, 0), P(len * 0.95, 0)]; stroke(m, 0.8);
+        for (let k = 1; k < 6; k++) {
+          const u = len * k / 6.5, s = k % 2 ? 1 : -1;
+          for (const sg of [1, -1]) { const q0 = P(u, 0), q1 = P(u + len * 0.12, sg * wid * 0.7); stroke([q0, q1], 0.6, 0.8); }
+        }
+      }
+    };
+
+    // ── the path: perspective paving that runs out to the fork ──
+    const L = [[470, 1024], [560, 935], [655, 858], [760, 805], [845, 788]];
+    const Rt = [[1295, 1024], [1205, 948], [1115, 888], [1048, 830], [1002, 792]];
+    const along = (poly, t) => {
+      const segs = poly.length - 1, f = Math.min(segs - 1e-6, t * segs), i = Math.floor(f), u = f - i;
+      return [lerp(poly[i][0], poly[i + 1][0], u), lerp(poly[i][1], poly[i + 1][1], u)];
+    };
+    add(() => { stroke(L, 1.6); stroke(Rt, 1.6); hand(845, 788, 1002, 792, 1.2); });
+    const rows = 16, ts = [];
+    for (let k = 0; k <= rows; k++) ts.push(Math.pow(k / rows, 1.75));
+    for (let k = 1; k < rows; k++) add(() => { const a = along(L, ts[k]), b = along(Rt, ts[k]); hand(a[0], a[1], b[0], b[1], 0.9 + ts[k] * 0.4, 0.9); });
+    for (let k = 0; k < rows; k++) add(() => {
+      const a0 = along(L, ts[k]), b0 = along(Rt, ts[k]), a1 = along(L, ts[k + 1]), b1 = along(Rt, ts[k + 1]);
+      let u = rr(0.05, 0.25);
+      while (u < 0.95) {
+        hand(lerp(a0[0], b0[0], u), lerp(a0[1], b0[1], u), lerp(a1[0], b1[0], u), lerp(a1[1], b1[1], u), 0.8, 0.85, 0.4);
+        u += rr(0.14, 0.3);
+      }
+    });
+    // grass ticks along both kerbs
+    add(() => { for (let i = 0; i < 90; i++) { const side = i % 2 ? L : Rt, p = along(side, R()); const s = side === L ? -1 : 1; hand(p[0], p[1], p[0] + s * rr(2, 7), p[1] - rr(4, 12), 0.7, 0.8, 0.3); } });
+    // the stone resting on the path
+    add(() => {
+      const cx = 912, cy = 862, pts = [];
+      for (let i = 0; i <= 28; i++) { const a = (i / 28) * Math.PI * 2; const r = 1 + (Math.sin(a * 3 + 1) * 0.06) + rr(-0.03, 0.03); pts.push([cx + Math.cos(a) * 82 * r, cy + Math.sin(a) * (a > Math.PI ? 26 : 18) * r]); }
+      x.fillStyle = PAPER; x.beginPath(); pts.forEach((p, i) => (i ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1]))); x.fill(); stroke(pts, 1.3);
+      hand(850, 852, 905, 846, 0.7, 0.7); hand(915, 845, 970, 852, 0.7, 0.7);
+    });
+    // the fence at the back of the garden
+    add(() => { hand(650, 596, 1062, 588, 0.8, 0.6); hand(650, 612, 1062, 604, 0.8, 0.6); for (let sx = 662; sx < 1060; sx += rr(22, 34)) hand(sx, 596, sx, 700, 0.6, 0.35, 0.2); });
+
+    // ── trees behind: recursive, tapering, sparse leaves at the tips ──
+    const tree = (bx, by, ang, len, w, depth) => {
+      const ex = bx + Math.cos(ang) * len, ey = by + Math.sin(ang) * len;
+      const mx = (bx + ex) / 2 + rr(-len, len) * 0.08, my = (by + ey) / 2 + rr(-len, len) * 0.08;
+      add(() => { x.strokeStyle = INKC; x.lineWidth = w; x.beginPath(); x.moveTo(bx, by); x.quadraticCurveTo(mx, my, ex, ey); x.stroke(); });
+      if (depth <= 0) { add(() => { for (let i = 0; i < 3; i++) leaf(ex, ey, ang + rr(-1.4, 1.4), rr(10, 18), rr(3, 5), R() < 0.55); }); return; }
+      const kids = R() < 0.3 ? 3 : 2;
+      for (let i = 0; i < kids; i++) tree(ex, ey, ang + rr(-0.55, 0.55) + (i - (kids - 1) / 2) * 0.35, len * rr(0.62, 0.8), Math.max(0.6, w * 0.68), depth - 1);
+    };
+    tree(632, 690, -Math.PI / 2 - 0.04, 210, 7, 6);
+    tree(886, 770, -Math.PI / 2 + 0.08, 190, 6, 6);
+    tree(700, 420, -Math.PI / 2 + 0.7, 130, 3, 4);
+    tree(1255, 600, -Math.PI / 2 - 0.1, 200, 4, 5);
+
+    // ── the lamp at the fork ──
+    add(() => {
+      x.fillStyle = PAPER; x.fillRect(737, 528, 16, 302);
+      hand(738, 530, 738, 830, 1.3, 1, 0.2); hand(752, 530, 752, 830, 1.3, 1, 0.2);
+      hand(733, 830, 757, 830, 1.2);
+      x.fillStyle = PAPER; x.fillRect(724, 472, 45, 33); x.strokeStyle = INKC; x.lineWidth = 1.4; x.strokeRect(724, 472, 45, 33);
+      x.lineWidth = 0.9; x.strokeRect(731, 478, 31, 21);
+      x.fillStyle = PAPER; x.fillRect(733, 513, 46, 15); x.lineWidth = 1.1; x.strokeRect(733, 513, 46, 15);
+      x.beginPath(); x.arc(771, 520, 4, 0, 7); x.stroke();
+    });
+
+    // ── bamboo: paired edges, ringed nodes, leaf sprays near the top ──
+    const bamboo = (x0, y0, x1, y1, w) => {
+      const len = Math.hypot(x1 - x0, y1 - y0), nx = -(y1 - y0) / len, ny = (x1 - x0) / len;
+      const bow = rr(-14, 14);
+      const at = (t) => { const b = Math.sin(t * Math.PI) * bow; return [lerp(x0, x1, t) + nx * b, lerp(y0, y1, t) + ny * b]; };
+      const ww = (t) => w * (0.7 + 0.3 * t);
+      add(() => {
+        const A = [], B = [];
+        for (let i = 0; i <= 30; i++) { const t = i / 30, p = at(t), h = ww(t) / 2; A.push([p[0] + nx * h, p[1] + ny * h]); B.push([p[0] - nx * h, p[1] - ny * h]); }
+        x.fillStyle = PAPER; x.beginPath(); [...A, ...B.reverse()].forEach((p, i) => (i ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1]))); x.fill();
+        B.reverse(); stroke(A, 1.3); stroke(B, 1.3);
+      });
+      let t = rr(0.02, 0.08);
+      while (t < 0.98) {
+        const tt = t;
+        add(() => {
+          const p = at(tt), h = ww(tt) / 2;
+          hand(p[0] + nx * h, p[1] + ny * h, p[0] - nx * h, p[1] - ny * h + 2, 1.1, 1, 0.2);
+          hand(p[0] + nx * h, p[1] + ny * h + 4, p[0] - nx * h, p[1] - ny * h + 6, 0.6, 0.7, 0.2);
+          if (tt < 0.55 && R() < 0.35) {
+            const side = R() < 0.5 ? 1 : -1, ang = Math.atan2(y1 - y0, x1 - x0) + side * rr(0.9, 1.5);
+            for (let k = 0; k < 4; k++) leaf(p[0], p[1], ang + rr(-0.5, 0.6) + 0.25, rr(38, 62), rr(5, 8), R() < 0.5);
+          }
+        });
+        t += (70 / len) * (0.6 + 0.6 * t) * rr(0.85, 1.15);
+      }
+    };
+    [[70, -30, 38, 520, 18], [160, -30, 150, 540, 22], [305, -30, 250, 620, 15], [412, -30, 288, 700, 22],
+     [565, -30, 446, 660, 18], [640, -30, 480, 650, 16],
+     [1010, -30, 1094, 890, 18], [1046, -30, 1136, 870, 16], [1152, 230, 1150, 880, 10], [1335, -30, 1362, 470, 13]]
+      .forEach((b) => bamboo(...b));
+
+    // ── palm fronds: a curved rachis with fine pinnae ──
+    const frond = (bx, by, ang, len, curl) => add(() => {
+      const pts = [];
+      for (let i = 0; i <= 28; i++) { const t = i / 28; pts.push([bx + Math.cos(ang) * len * t, by + Math.sin(ang) * len * t + curl * len * 0.45 * t * t]); }
+      stroke(pts, 1.2);
+      for (let i = 3; i < 28; i += 1) {
+        const p = pts[i], q = pts[i + 1] || p, ta = Math.atan2(q[1] - p[1], q[0] - p[0]);
+        const l = len * 0.2 * Math.sin(((i - 2) / 26) * Math.PI) + 3;
+        for (const s of [1, -1]) {
+          const a = ta + s * 0.55 + 0.32;        // pinnae sweep forward and droop
+          const m = [p[0] + Math.cos(a) * l * 0.5, p[1] + Math.sin(a) * l * 0.5 + l * 0.12];
+          stroke([p, m, [p[0] + Math.cos(a) * l, p[1] + Math.sin(a) * l + l * 0.35]], 0.7, 0.9);
+        }
+      }
+    });
+    const palm = (bx, by, n, len, spread = 2.4, up = -Math.PI / 2) => { for (let i = 0; i < n; i++) frond(bx, by, up + (i / (n - 1) - 0.5) * spread + rr(-0.1, 0.1), len * rr(0.8, 1.1), rr(0.25, 0.6)); };
+    palm(1330, 570, 9, 210, 3.0);
+    palm(470, 560, 7, 170, 2.8);
+    palm(1010, 720, 5, 120, 2.4);
+    palm(300, 840, 6, 190, 2.6);
+    palm(690, 760, 5, 90, 2.4);
+
+    // ── broad leaves in the foreground, the ones nearest the visitor ──
+    add(() => { for (let i = 0; i < 14; i++) leaf(rr(0, 330), rr(700, 1000), rr(-2.9, -0.3), rr(60, 105), rr(16, 26), false, true); });
+    add(() => { for (let i = 0; i < 12; i++) leaf(rr(1180, 1460), rr(840, 1010), rr(-2.6, -0.6), rr(70, 120), rr(10, 16), false, true); });
+
+    return { canvas: c, queue: Q };
+  }
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const scene = document.getElementById('scene');
+  const cv = document.getElementById('gl');
+  const gl = cv.getContext('webgl', { antialias: false, premultipliedAlpha: false });
+
+  // ── state, all springs so everything wobbles a little like jelly ──
+  const S = {
+    split: 0.5, splitV: 0,        // seam position (0 = all ink, 1 = all photo)
+    target: 0.5,
+    mouse: [0.5, 0.5], mouseS: [0.5, 0.5], vel: [0, 0], velS: [0, 0],
+    fill: 0, fillT: 0,            // dissolve progress
+    side: 0,                      // -1 photo won, +1 ink won
+    gone: false,
+  };
+
+  const setLean = (l) => { if (!S.gone) scene.dataset.lean = l || ''; };
+
+  function choose(side) {
+    if (S.gone) return;
+    S.gone = true;
+    scene.dataset.gone = '';
+    scene.dataset.lean = side;
+    S.side = side === 'left' ? -1 : 1;
+    S.target = side === 'left' ? 1.25 : -0.25;
+    S.fillT = 1;
+    setTimeout(() => {
+      document.getElementById(side === 'left' ? 'arrive-left' : 'arrive-right').dataset.on = '';
+    }, reduce ? 0 : 900);
+    if (!gl) document.getElementById('fallback').style.setProperty('--split', side === 'left' ? '100%' : '0%');
+  }
+  function back() {
+    S.gone = false; delete scene.dataset.gone; scene.dataset.lean = '';
+    S.target = 0.5; S.fillT = 0;
+    document.querySelectorAll('.arrive').forEach((a) => delete a.dataset.on);
+    if (!gl) document.getElementById('fallback').style.setProperty('--split', '50%');
+  }
+  document.getElementById('go-left').addEventListener('click', (e) => { e.stopPropagation(); choose('left'); });
+  document.getElementById('go-right').addEventListener('click', (e) => { e.stopPropagation(); choose('right'); });
+  document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', back));
+  document.getElementById('go-left').addEventListener('mouseenter', () => { S.target = 0.6; setLean('left'); });
+  document.getElementById('go-right').addEventListener('mouseenter', () => { S.target = 0.4; setLean('right'); });
+
+  // the ink side draws itself, a few strokes a frame, on load
+  const forest = inkForest(Math.min(2, Math.max(1, (devicePixelRatio || 1) * innerWidth / 1489)));
+  let drawn = 0;
+  const drawSome = (n) => { const end = Math.min(forest.queue.length, drawn + n); for (; drawn < end; drawn++) forest.queue[drawn](); };
+
+  if (!gl) {
+    drawSome(Infinity);
+    document.getElementById('f-ink').src = forest.canvas.toDataURL('image/jpeg', 0.9);
+    document.getElementById('fallback').hidden = false; cv.hidden = true; return;
+  }
+
+  // ── shaders ──
+  const vs = `attribute vec2 p; varying vec2 v; void main(){ v = p*.5+.5; gl_Position = vec4(p,0.,1.); }`;
+  const fs = `
+  precision highp float;
+  varying vec2 v;
+  uniform sampler2D uPhoto, uInk;
+  uniform vec2 uRes, uImg, uMouse, uVel;
+  uniform float uSplit, uWob, uFill, uSide, uTime, uSpace;
+  float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
+  float n(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+    return mix(mix(h(i),h(i+vec2(1,0)),f.x), mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x), f.y); }
+  float fbm(vec2 p){ float s=0., a=.5; for(int i=0;i<5;i++){ s+=a*n(p); p*=2.03; a*=.5; } return s; }
+  vec2 cover(vec2 uv){
+    float rs = uRes.x/uRes.y, ri = uImg.x/uImg.y;
+    vec2 sc = rs > ri ? vec2(1., ri/rs) : vec2(rs/ri, 1.);
+    return (uv-.5)*sc + .5;
+  }
+  void main(){
+    vec2 uv = vec2(v.x, 1.-v.y);
+    float asp = uRes.x/uRes.y;
+    // jelly: the image near the cursor is dragged along with it and springs back
+    vec2 d = (uv - uMouse) * vec2(asp, 1.);
+    float w = exp(-dot(d,d) / .045);
+    vec2 duv = uv - uVel * w * .9;
+    duv += d / vec2(asp,1.) * w * length(uVel) * -1.2;   // a soft bulge when it moves fast
+    vec2 tuv = cover(duv);
+    vec3 photo = texture2D(uPhoto, tuv).rgb;
+    vec3 ink = texture2D(uInk, tuv).rgb;
+
+    // the seam runs down the path; ink-bleed edge, wobbling on its spring
+    float y = uv.y;
+    float seam = uSplit
+      + (fbm(vec2(y*3.2, uTime*.06)) - .5) * .05
+      + uWob * sin(y*7. + uTime*2.4) * .5;
+    float rough = (fbm(uv*vec2(14., 22.) + uTime*.03) - .5) * (.018 + uFill*.22);
+    float e = uv.x - seam + rough;
+    float soft = .004 + uFill*.05;
+    float m = smoothstep(-soft, soft, e);          // 1 = ink side
+    vec3 col = mix(photo, ink, m);
+
+    // a thin pale line where paper meets photograph, like a deckled edge
+    float edge = exp(-pow(e/(.0022+uFill*.01), 2.)) * (1.-uFill);
+    col = mix(col, vec3(.965,.957,.937), edge*.55);
+
+    // the photograph side dims as it is entered, the way the hub ground does
+    col *= mix(1., .55, uFill * step(uSide, 0.) * (1.-m));
+
+    // third road: one star through the canopy above the path
+    if (uSpace > .5) {
+      vec2 sp = (uv - vec2(.502, .085)) * vec2(asp,1.) * uRes.y;
+      float star = step(abs(sp.x), 1.6) * step(abs(sp.y), 1.6);
+      float tw = .55 + .45*sin(uTime*2.1);
+      col = mix(col, vec3(1.), star * tw * (1.-uFill));
+    }
+    // fine grain so the photo and ink sit in one atmosphere
+    col += (h(gl_FragCoord.xy + fract(uTime)*91.) - .5) * .035;
+    gl_FragColor = vec4(col, 1.);
+  }`;
+  const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o);
+    if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+  const pr = gl.createProgram();
+  gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(pr); gl.useProgram(pr);
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const U = {}; ['uPhoto','uInk','uRes','uImg','uMouse','uVel','uSplit','uWob','uFill','uSide','uTime','uSpace'].forEach((k) => U[k] = gl.getUniformLocation(pr, k));
+
+  const tex = (src, unit) => new Promise((res) => {
+    const im = new Image(); im.onload = () => {
+      const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, im);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      res(im);
+    }; im.src = src;
+  });
+
+  // ── input ──
+  const pt = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
+  const sideAt = (x) => (x < S.split ? 'left' : 'right');
+  cv.addEventListener('pointermove', (e) => {
+    const p = pt(e); S.mouse = p;
+    if (S.gone || e.pointerType === 'touch') return;
+    const s = sideAt(p[0]);
+    S.target = s === 'left' ? 0.6 : 0.4; setLean(s);
+  });
+  cv.addEventListener('pointerleave', () => { if (!S.gone) { S.target = 0.5; setLean(''); } });
+  cv.addEventListener('pointerdown', (e) => { const p = pt(e); S.mouse = p; S.mouseS = [...p]; });
+  cv.addEventListener('click', (e) => choose(sideAt(pt(e)[0])));
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') back(); });
+
+  let inkTex = null;
+  function uploadInk() {
+    gl.activeTexture(gl.TEXTURE1);
+    if (!inkTex) {
+      inkTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, inkTex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    } else gl.bindTexture(gl.TEXTURE_2D, inkTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, forest.canvas);
+  }
+
+  // ── loop ──
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const w = cv.clientWidth, h = cv.clientHeight, d = Math.min(devicePixelRatio || 1, 2);
+    if (cv.width !== Math.round(w*d)) { cv.width = Math.round(w*d); cv.height = Math.round(h*d); }
+    gl.viewport(0, 0, cv.width, cv.height);
+    if (drawn < forest.queue.length) { drawSome(reduce ? Infinity : Math.ceil(forest.queue.length / 150)); uploadInk(); }
+
+    // seam spring: under-damped so it overshoots and settles like jelly
+    const k = S.gone ? 30 : 60, damp = S.gone ? 9 : 5.5;
+    if (reduce) { S.split = S.target; S.splitV = 0; }
+    else { S.splitV += ((S.target - S.split) * k - S.splitV * damp) * dt; S.split += S.splitV * dt; }
+    S.fill += (S.fillT - S.fill) * Math.min(1, dt * (S.fillT ? 1.6 : 4));
+
+    // cursor velocity, smoothed, also on a spring so the drag rebounds
+    const mx = S.mouse[0] - S.mouseS[0], my = S.mouse[1] - S.mouseS[1];
+    S.mouseS[0] += mx * Math.min(1, dt * 7); S.mouseS[1] += my * Math.min(1, dt * 7);
+    S.vel = [mx, my];
+    S.velS[0] += (S.vel[0] - S.velS[0]) * Math.min(1, dt * 10); S.velS[1] += (S.vel[1] - S.velS[1]) * Math.min(1, dt * 10);
+    const vv = reduce ? [0, 0] : [Math.max(-.12, Math.min(.12, S.velS[0])), Math.max(-.12, Math.min(.12, S.velS[1]))];
+
+    gl.uniform1i(U.uPhoto, 0); gl.uniform1i(U.uInk, 1);
+    gl.uniform2f(U.uRes, cv.width, cv.height);
+    gl.uniform2f(U.uImg, IMG[0], IMG[1]);
+    gl.uniform2f(U.uMouse, S.mouseS[0], S.mouseS[1]);
+    gl.uniform2f(U.uVel, vv[0], vv[1]);
+    gl.uniform1f(U.uSplit, S.split);
+    gl.uniform1f(U.uWob, reduce ? 0 : Math.max(-.06, Math.min(.06, S.splitV * .05)));
+    gl.uniform1f(U.uFill, S.fill);
+    gl.uniform1f(U.uSide, S.side);
+    gl.uniform1f(U.uTime, reduce ? 0 : now / 1000);
+    gl.uniform1f(U.uSpace, SPACE ? 1 : 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(frame);
+  }
+  let IMG = [1489, 1024];
+  uploadInk();
+  Promise.all([tex(PHOTO, 0)]).then(([im]) => { IMG = [im.naturalWidth, im.naturalHeight]; requestAnimationFrame(frame); });
+  window.__roads = { choose, back, S };
+})();
+</script>
+</body>
+</html>
