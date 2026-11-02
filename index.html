@@ -1,8 +1,712 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PROTOLAB</title>
-<meta http-equiv="refresh" content="0; url=./protolab/">
-<link rel="canonical" href="./protolab/">
-<style>body{margin:0;height:100vh;display:grid;place-items:center;background:#efece4;
-color:#7d766c;font:300 13px/1.6 system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase}</style>
-<a href="./protolab/" style="color:inherit;text-decoration:none">Protolab</a>
+<meta name="description" content="A running log of pressings, indentations, print processes and finishes on digital paper.">
+<script src="vendor/p5.min.js"></script>
+<script src="lib/relief.js"></script>
+<script src="lib/dies.js"></script>
+<script src="lib/flora.js"></script>
+<script src="lib/press.js"></script>
+<script src="lib/matter.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Poppins:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b;--sheet:#efece4}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--sheet);color:var(--ink);font-family:'Poppins',sans-serif;font-weight:300;overflow:hidden}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* each slip has an invisible hand-hold laid exactly over it */
+#slips a{position:absolute;left:0;top:0;display:block;border-radius:3px;
+  -webkit-tap-highlight-color:transparent;outline:none}
+#slips a:focus-visible{outline:1px dashed var(--soft);outline-offset:11px}
+/* the name is pencilled on the sheet beneath the slip, and only when you come close */
+#slips a span{position:absolute;left:50%;top:100%;margin-top:14px;transform:translateX(-50%);
+  font-family:'Lora',serif;font-style:italic;font-size:13px;line-height:1;color:var(--soft);
+  white-space:nowrap;opacity:0;transition:opacity .5s ease;pointer-events:none}
+#slips a.near span,#slips a:focus-visible span{opacity:1}
+@media (hover:none){#slips a span{opacity:.9}}
+@media (prefers-reduced-motion:reduce){#slips a span{transition:none}}
+
+noscript{position:fixed;inset:0;display:grid;place-content:center;gap:12px;text-align:center;
+  font-family:'Lora',serif;font-style:italic;font-size:15px}
+noscript a{color:var(--soft)}
+</style>
+</head>
+<body>
+<h1 class="vh">Protolab</h1>
+<div id="stage"></div>
+<nav id="slips" aria-label="Protolab">
+  <a href="protolab/" data-k="sheet"><span>The sheet</span></a>
+  <a href="flowers/" data-k="specimen"><span>Specimen</span></a>
+  <a href="press/" data-k="press"><span>The Press</span></a>
+  <a href="canvas/" data-k="clippings"><span>Clippings</span></a>
+  <a href="wax-seal/" data-k="sigil"><span>Sigil Pressure</span></a>
+</nav>
+<noscript>
+  <a href="protolab/">The sheet</a><a href="canvas/">Clippings</a><a href="flowers/">Specimen</a>
+  <a href="press/">The Press</a><a href="wax-seal/">Sigil Pressure</a>
+</noscript>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// The cover — one sheet of paper, with clippings resting on it.
+//
+// Nothing here is a picture. The wordmark is a blind deboss in the sheet's
+// height field; every slip is a real pressing from the clippings pipeline,
+// cut from its own stock and lit by the same lamp. The lamp is the sun:
+// it rises on arrival to rake the deboss into view, and leans a little
+// toward the cursor. A canopy somewhere overhead lets its shade drift over
+// everything.
+//
+// The slips are the way in. They answer in paper's vocabulary: come near and
+// one lifts on a breath of air, hover and it rises off the sheet, press and
+// it is picked up.
+// ═══════════════════════════════════════════════════════════════
+
+const SHEET = '#efece4';
+const STOCK = {cotton:'#fbfaf7', sheet:'#efece4', vellum:'#e4dcc6', amber:'#aa7942'};
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SEED = Math.floor(Math.random()*99999) + 1;
+const PIXEL_BUDGET = 5e6;
+
+// one lamp for everything — the shading below and the pool on the sheet use
+// the same numbers, so a slip and the paper beneath it always agree
+const LAMP = {h: 980, radius: 3200, color: '#fff8ee', amb: 0.58, wrap: 0.42};
+const PAPER_RESPONSE = {ambient: LAMP.amb, aoLo: 0.62, exposure: 1.0, gloss: 0, sheen: 0.02, scatter: 0.02, env: false};
+const BLUEPRINT = {shadow: '#002e7a', high: '#ffffff', amount: 1};
+
+let DW, DH, SS, PW, PH;
+let paperCv, poolCv, poolCtx, bgCv, bgCtx, grainPat, canopyCv;
+let wm = null;                 // the debossed wordmark
+let slips = [];
+let lamp = {x: 0, y: 0, h: LAMP.h}, lampT = {x: 0, y: 0, h: LAMP.h}, lastLit = null;
+let pointer = null, pressed = null;
+let ready = false, settled = true, t0 = 0, boot = null, waiting = false;
+
+// ── stock and silhouettes ──────────────────────────────────────
+// a small sheet, softly deckled — the same edge the clippings sheet cuts
+function deckle(ctx, w, h, seed, rough){
+  const rng = Relief.makeRng(seed);
+  const ph = [rng()*6.28, rng()*6.28, rng()*6.28];
+  const k = Math.min(w, h)*(rough || 0.022);
+  ctx.beginPath();
+  for(let i=0;i<=220;i++){
+    const per = i/220*4;
+    let x, y, nx, ny;
+    if(per < 1){ x = -w + 2*w*per; y = -h; nx = 0; ny = -1; }
+    else if(per < 2){ x = w; y = -h + 2*h*(per-1); nx = 1; ny = 0; }
+    else if(per < 3){ x = w - 2*w*(per-2); y = h; nx = 0; ny = 1; }
+    else { x = -w; y = h - 2*h*(per-3); nx = -1; ny = 0; }
+    const n = (Math.sin(per*6.7+ph[0])*0.5 + Math.sin(per*15.1+ph[1])*0.3 + Math.sin(per*29.3+ph[2])*0.2)*k;
+    if(i === 0) ctx.moveTo(x+nx*n, y+ny*n); else ctx.lineTo(x+nx*n, y+ny*n);
+  }
+  ctx.closePath();
+}
+
+function outline(ctx, s){
+  deckle(ctx, s.hw, s.hh, s.seed, s.rough);
+  if(s.hole){                           // a punched tag: the hole shows the sheet
+    ctx.moveTo(s.hole.x + s.hole.r, s.hole.y);
+    ctx.arc(s.hole.x, s.hole.y, s.hole.r, 0, Math.PI*2, true);
+  }
+}
+
+// a bookplate — the clippings sheet's ex libris
+function exlibris(ctx, R, seed){
+  const w = R*0.86, h = R*1.12;
+  ctx.lineJoin = 'miter';
+  ctx.lineWidth = R*0.030; ctx.strokeRect(-w, -h, w*2, h*2);
+  ctx.lineWidth = R*0.012; ctx.strokeRect(-w*0.90, -h*0.92, w*1.80, h*1.84);
+  ctx.save(); ctx.translate(0, -h*0.36); Dies.tracked(ctx, 'EX LIBRIS', 0, R*0.115, 0.42, '500'); ctx.restore();
+  ctx.save(); ctx.translate(0, h*0.04); Dies.crest(ctx, R*0.40, Relief.makeRng(seed), 7); ctx.restore();
+  ctx.save(); ctx.translate(0, h*0.58);
+  ctx.lineWidth = R*0.010;
+  ctx.beginPath(); ctx.moveTo(-w*0.62, -R*0.11); ctx.lineTo(w*0.62, -R*0.11); ctx.stroke();
+  Dies.tracked(ctx, 'KYRA MO', R*0.10, R*0.082, 0.34, '400');
+  ctx.restore();
+}
+
+// ── what each slip carries ────────────────────────────────────
+// Heights are grey levels: the slip itself sits at mid grey, a pressing
+// raises (white) or sinks (black) it. Drawn at partial alpha, so it modulates
+// the stock instead of replacing it — exactly how the clippings cards work.
+const BASE = 0.5;
+const grey = v => { const c = Math.round(Math.max(0, Math.min(1, v))*255); return 'rgb('+c+','+c+','+c+')'; };
+
+const KINDS = {
+  // the sheet, in miniature: a blind poppy in the same stock
+  sheet: {
+    stock: STOCK.sheet,
+    height(ctx, s){
+      const f = s.flower;
+      ctx.globalAlpha = 0.8; Flora.render(ctx, f.parts, f.spec, 'h');
+    }
+  },
+  // a coloured bloom mounted on vellum — the one living thing on the sheet
+  specimen: {
+    stock: STOCK.vellum,
+    height(ctx, s){
+      const f = s.flower;
+      stem(ctx, s, grey(0.66), grey(0.60));
+      ctx.globalAlpha = 0.9; Flora.render(ctx, f.parts, f.spec, 'h');
+    },
+    color(ctx, s){
+      const f = s.flower;
+      stem(ctx, s, Flora.mixHex(f.spec.cLeaf, '#000000', 0.12), f.spec.cLeaf);
+      Flora.render(ctx, f.parts, f.spec, 'c');
+    }
+  },
+  // letterpress: a platemark and a debossed monogram
+  press: {
+    stock: STOCK.cotton,
+    height(ctx, s){
+      const U = s.U;
+      ctx.fillStyle = grey(BASE - 0.17);                 // where the plate landed
+      ctx.fillRect(-s.hw*0.74, -s.hh*0.78, s.hw*1.48, s.hh*1.56);
+      ctx.fillStyle = ctx.strokeStyle = grey(BASE - 0.40);
+      Dies.ring(ctx, U*0.50, U*0.016);
+      Dies.monogram(ctx, U*0.34, 'K');
+    }
+  },
+  // a Blueprint ex libris: deep blue and white on amber, one band
+  clippings: {
+    stock: STOCK.amber, tone: true,
+    height(ctx, s){
+      ctx.globalAlpha = 0.55; ctx.fillStyle = ctx.strokeStyle = '#fff';
+      exlibris(ctx, s.U*0.62, s.seed);
+    },
+    ink(ctx, s){ ctx.fillStyle = ctx.strokeStyle = '#fff'; exlibris(ctx, s.U*0.62, s.seed); }
+  },
+  // a wax seal on a punched tag
+  sigil: {
+    stock: STOCK.cotton, wax: true,
+    height(ctx, s){
+      ctx.save(); ctx.translate(0, s.hh*0.16);
+      Press.stamp(ctx, s.seal, 'h');
+      ctx.restore();
+    },
+    color(ctx, s){ ctx.save(); ctx.translate(0, s.hh*0.16); Press.stamp(ctx, s.seal, 'c'); ctx.restore(); },
+    mask(ctx, s){ ctx.save(); ctx.translate(0, s.hh*0.16); ctx.fillStyle = '#fff'; Press.stamp(ctx, s.seal, 'c'); ctx.restore(); }
+  }
+};
+
+// a pressed stem with a pair of leaves, running from the bloom to the foot
+function stem(ctx, s, line, leaf){
+  const U = s.U, foot = s.hh*0.80 + s.hh*0.30, rng = Relief.makeRng(s.seed + 3);
+  const bend = (rng() < 0.5 ? -1 : 1)*U*(0.18 + rng()*0.22);
+  ctx.save();
+  ctx.strokeStyle = line; ctx.lineCap = 'round'; ctx.lineWidth = U*0.026;
+  ctx.beginPath(); ctx.moveTo(0, 0);
+  ctx.bezierCurveTo(bend*0.2, foot*0.35, bend, foot*0.7, bend*0.7, foot);
+  ctx.stroke();
+  ctx.fillStyle = leaf;
+  [[0.42, -1], [0.62, 1]].forEach(([t, side]) => {
+    const y = foot*t, x = bend*t*1.1;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(side*(0.95 + rng()*0.3));
+    const L = U*(0.42 + rng()*0.12), W = L*0.30;
+    ctx.beginPath(); ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(W, -L*0.2, W*0.8, -L*0.8, 0, -L);
+    ctx.bezierCurveTo(-W*0.8, -L*0.8, -W, -L*0.2, 0, 0);
+    ctx.fill();
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+// ── composition ───────────────────────────────────────────────
+// Not a grid that reflows. Each shape of window gets its own arrangement,
+// re-rolled from the visit's seed — the slips look set down, not placed.
+const LAYOUTS = {
+  wide: {
+    mark: {x: 0.50, y: 0.34},
+    U: (w, h) => Math.min(w/1440, h/880)*112,
+    slips: {
+      sheet:     {x: 0.20, y: 0.30, r:  5, hw: 0.95, hh: 0.74},
+      specimen:  {x: 0.335, y: 0.70, r: -4, hw: 1.06, hh: 1.36},
+      press:     {x: 0.565, y: 0.735, r:  3, hw: 0.82, hh: 1.04},
+      sigil:     {x: 0.735, y: 0.62, r: 11, hw: 0.56, hh: 0.86},
+      clippings: {x: 0.815, y: 0.32, r: -7, hw: 0.70, hh: 0.92}
+    }
+  },
+  tall: {
+    mark: {x: 0.50, y: 0.19},
+    U: (w, h) => Math.min(w/430, h/900)*74,
+    slips: {
+      sheet:     {x: 0.78, y: 0.34, r:  7, hw: 0.95, hh: 0.74},
+      specimen:  {x: 0.36, y: 0.43, r: -5, hw: 1.06, hh: 1.36},
+      press:     {x: 0.70, y: 0.62, r:  4, hw: 0.82, hh: 1.04},
+      clippings: {x: 0.27, y: 0.75, r: -8, hw: 0.70, hh: 0.92},
+      sigil:     {x: 0.68, y: 0.86, r: 12, hw: 0.56, hh: 0.86}
+    }
+  }
+};
+// painter's order: later slips rest on earlier ones
+const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil'];
+
+function compose(){
+  const L = DW/DH > 1.05 ? LAYOUTS.wide : LAYOUTS.tall;
+  const U = Math.max(46, Math.min(150, L.U(DW, DH)));
+  const rng = Relief.makeRng(SEED);
+  const old = {};
+  slips.forEach(s => old[s.k] = s);
+  slips = ORDER.map((k, i) => {
+    const p = L.slips[k];
+    const s = {
+      k, U, kind: KINDS[k],
+      seed: SEED*7 + i*131,
+      x: (p.x + (rng() - 0.5)*0.03)*DW,
+      y: (p.y + (rng() - 0.5)*0.03)*DH,
+      rot: (p.r + (rng() - 0.5)*5)*Math.PI/180,
+      hw: p.hw*U, hh: p.hh*U, rough: 0.02,
+      el: document.querySelector('#slips a[data-k="'+k+'"]'),
+      lift: old[k] ? old[k].lift : 60, liftT: 2, order: i
+    };
+    if(k === 'sigil') s.hole = {x: 0, y: -s.hh*0.70, r: U*0.055};
+    if(k === 'sheet' || k === 'specimen'){
+      const spec = Flora.defaults(k === 'specimen'
+        ? Object.assign({seed: s.seed, species: 'cosmos', size: U*0.74, leaves: 0}, paletteFor(s.seed))
+        : {seed: s.seed, species: 'aster', size: U*0.50, leaves: 0});
+      s.flower = {spec, parts: Flora.grow(spec)};
+      if(k === 'specimen') s.flowerOffset = -s.hh*0.30;
+    }
+    if(k === 'sigil') s.seal = Press.defaults({seed: s.seed, substrate: 'wax', die: 'crest', size: U*0.42,
+                                               color: Matter.get('wax').color, detail: 6, depth: 1});
+    return s;
+  });
+  wm = makeWordmark(L.mark.x*DW, L.mark.y*DH, U);
+}
+
+function paletteFor(seed){
+  const P = Flora.PALETTES[[0, 3, 5][seed % 3]];
+  return {cBase: P[0], cTip: P[1], cDisc: P[2], cLeaf: P[3]};
+}
+
+// ── one slip: rasterise once, relight when the lamp moves ─────
+const PAD = 26;
+function buildSlip(s){
+  const W = Math.ceil((s.hw*2 + PAD*2)*SS), H = Math.ceil((s.hh*2 + PAD*2)*SS);
+  const F = Relief.field(W, H);
+  const at = ctx => ctx.setTransform(SS, 0, 0, SS, W/2, H/2);
+  const K = s.kind;
+
+  const cov = F.raster(ctx => { at(ctx); outline(ctx, s); ctx.fill('evenodd'); });
+  const h0 = F.rasterLuma(ctx => {
+    at(ctx);
+    ctx.fillStyle = grey(BASE); outline(ctx, s); ctx.fill('evenodd');
+    if(s.flowerOffset) ctx.translate(0, s.flowerOffset);
+    K.height(ctx, s);
+  });
+  const col = F.rasterColor(ctx => {
+    at(ctx);
+    ctx.fillStyle = K.stock; outline(ctx, s); ctx.fill('evenodd');
+    if(K.color){ if(s.flowerOffset) ctx.translate(0, s.flowerOffset); K.color(ctx, s); }
+  });
+  const wax = K.mask ? F.raster(ctx => { at(ctx); K.mask(ctx, s); }) : null;
+
+  const sm = F.blur(h0, Math.max(1, Math.round(SS*0.8)), 2);
+  const n2 = W*H, surf = new Float32Array(n2), hgt = new Float32Array(n2);
+  const matMap = new Uint8Array(n2);
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      const i = y*W + x;
+      const a = cov[i];
+      const isWax = wax && wax[i] > 0.5;
+      matMap[i] = isWax ? 1 : 0;
+      // the tooth of the stock, so flat paper still has a surface
+      const tooth = (noise(x*0.11/SS + s.seed, y*0.11/SS) - 0.5)*(isWax ? 0.010 : 0.016);
+      const rel = sm[i]*a;
+      surf[i] = tooth + rel*0.62;
+      // recesses collect a little shade
+      hgt[i] = Math.min(1, 1 + (rel - BASE)*1.6);
+    }
+  }
+  const nrm = F.normals(cov, surf, 46*SS);
+  const materials = [PAPER_RESPONSE, Matter.response('wax')];
+
+  s.F = F; s.W = W; s.H = H;
+  s.shadeArgs = {cov, hgt, hMax: 1, nX: nrm.nX, nY: nrm.nY, nZ: nrm.nZ,
+                 colorMap: col.colorMap, matMap, materials};
+  s.cv = Relief.makeCanvas(W, H); s.ctx = s.cv.getContext('2d');
+
+  // the Blueprint band only applies to what was printed, not to the amber
+  if(K.tone){
+    const ink = F.raster(ctx => { at(ctx); K.ink(ctx, s); });
+    const spread = F.blur(ink, Math.max(1, Math.round(SS*1.2)), 2);
+    const mc = Relief.makeCanvas(W, H), mctx = mc.getContext('2d');
+    const img = mctx.createImageData(W, H);
+    for(let i=0;i<n2;i++){ img.data[i*4+3] = Math.min(255, spread[i]*cov[i]*420); }
+    mctx.putImageData(img, 0, 0);
+    s.toneMask = mc;
+    s.toneCv = Relief.makeCanvas(W, H); s.toneCtx = s.toneCv.getContext('2d');
+  }
+
+  // two shadows: a tight contact line, and a soft one that grows with lift
+  s.shContact = Relief.makeCanvas(W, H); F.shadow(s.shContact.getContext('2d'), cov, 1.6*SS, 0.55);
+  s.shSoft    = Relief.makeCanvas(W, H); F.shadow(s.shSoft.getContext('2d'), cov, 7*SS, 0.42);
+}
+
+// the lamp, carried into a slip's own unrotated frame
+function localLamp(s){
+  const dx = lamp.x - s.x, dy = lamp.y - s.y;
+  const c = Math.cos(-s.rot), n = Math.sin(-s.rot);
+  return {x: (dx*c - dy*n)*SS + s.W/2, y: (dx*n + dy*c)*SS + s.H/2,
+          h: lamp.h*SS, radius: LAMP.radius*SS, color: LAMP.color};
+}
+
+function shadeSlip(s){
+  const light = localLamp(s);
+  const base = Object.assign({light, matte: true, wrap: LAMP.wrap, contrast: 0.96,
+                              tone: {shadow: '#2b2721', high: '#ffffff', amount: 0.08}}, s.shadeArgs);
+  s.F.shade(s.ctx, base);
+  if(s.toneMask){
+    s.F.shade(s.toneCtx, Object.assign({}, base, {steps: 1, contrast: 0.86, tone: BLUEPRINT}));
+    s.toneCtx.globalCompositeOperation = 'destination-in';
+    s.toneCtx.drawImage(s.toneMask, 0, 0);
+    s.toneCtx.globalCompositeOperation = 'source-over';
+    s.ctx.drawImage(s.toneCv, 0, 0);
+  }
+}
+
+// ── the wordmark: a blind deboss in the sheet itself ───────────
+// Lit as a difference from flat paper, so it has no edge of its own: where
+// the sheet is level the overlay is exactly transparent.
+function makeWordmark(cx, cy, U){
+  const text = 'PROTOLAB';
+  const size = Math.max(26, Math.min(72, U*0.50));
+  const track = 0.34;
+  const probe = Relief.makeCanvas(4, 4).getContext('2d');
+  const tw = Dies.measureTracked(probe, text, size, track, '400');
+  const W = Math.ceil((tw + 60)*SS), H = Math.ceil(size*2.4*SS);
+  const F = Relief.field(W, H);
+  const h0 = F.rasterLuma(ctx => {
+    ctx.fillStyle = grey(0.5); ctx.fillRect(0, 0, W, H);
+    ctx.setTransform(SS, 0, 0, SS, W/2, H/2);
+    ctx.fillStyle = grey(0.0);
+    Dies.tracked(ctx, text, size*0.04, size, track, '400');
+  });
+  const hs = F.blur(h0, Math.max(1, Math.round(SS*1.0)), 2);
+  const n2 = W*H;
+  const ones = new Float32Array(n2).fill(1);
+  const nrm = F.normals(ones, hs, 6*SS);
+  // only the pixels that aren't level need lighting
+  const idx = [];
+  for(let i=0;i<n2;i++) if(Math.abs(hs[i] - 0.5) > 0.004) idx.push(i);
+  const cv = Relief.makeCanvas(W, H);
+  return {cx, cy, W, H, nrm, hs, idx: Int32Array.from(idx), cv, ctx: cv.getContext('2d'),
+          img: cv.getContext('2d').createImageData(W, H)};
+}
+
+function shadeWordmark(){
+  const w = wm, d = w.img.data;
+  const lx0 = (lamp.x - w.cx)*SS + w.W/2, ly0 = (lamp.y - w.cy)*SS + w.H/2, lh = lamp.h*SS;
+  const {nX, nY, nZ} = w.nrm;
+  for(let k=0;k<w.idx.length;k++){
+    const i = w.idx[k], x = i % w.W, y = (i / w.W) | 0;
+    const dx = lx0 - x, dy = ly0 - y;
+    const inv = 1/Math.sqrt(dx*dx + dy*dy + lh*lh);
+    const lx = dx*inv, ly = dy*inv, lz = lh*inv;
+    let v = (nX[i]*lx + nY[i]*ly + nZ[i]*lz) - lz;          // lit minus flat
+    v -= (0.5 - w.hs[i])*0.10;                                 // the floor sits in shade
+    const o = i*4;
+    if(v > 0){ d[o] = 255; d[o+1] = 252; d[o+2] = 244; d[o+3] = Math.min(255, v*330); }
+    else     { d[o] = 52;  d[o+1] = 44;  d[o+2] = 34;  d[o+3] = Math.min(255, -v*300); }
+  }
+  w.ctx.putImageData(w.img, 0, 0);
+}
+
+// ── the sheet ─────────────────────────────────────────────────
+function buildPaper(){
+  // fibre is low frequency, so it is grown at a third of the size and scaled
+  const q = 3, w = Math.ceil(PW/q), h = Math.ceil(PH/q);
+  const F = Relief.field(w, h);
+  const small = Relief.makeCanvas(w, h);
+  F.paper(small.getContext('2d'), SHEET, {seed: SEED, vignette: 0.10, amount: 9});
+  paperCv = Relief.makeCanvas(PW, PH);
+  const c = paperCv.getContext('2d');
+  c.imageSmoothingQuality = 'high';
+  c.drawImage(small, 0, 0, PW, PH);
+  grainPat = c.createPattern(Relief.grainTile(256, SEED, 26), 'repeat');
+  poolCv = Relief.makeCanvas(Math.ceil(DW/12) + 1, Math.ceil(DH/12) + 1);
+  poolCtx = poolCv.getContext('2d');
+  bgCv = Relief.makeCanvas(PW, PH); bgCtx = bgCv.getContext('2d');
+  canopyCv = makeCanopy();
+}
+
+// the lamp's pool on flat paper, with the same falloff the shader uses
+const lampRGB = Relief.hexRgb(LAMP.color).map(v => v/255);
+function shadePool(){
+  const w = poolCv.width, h = poolCv.height;
+  const img = poolCtx.createImageData(w, h), d = img.data;
+  const R2 = 1/(LAMP.radius*LAMP.radius), lh2 = lamp.h*lamp.h;
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const dx = lamp.x - x*12, dy = lamp.y - y*12, flat = dx*dx + dy*dy;
+      const lz = lamp.h/Math.sqrt(flat + lh2);
+      const diff = Math.pow(Math.max(0, (lz + LAMP.wrap)/(1 + LAMP.wrap)/(1 + flat*R2)), 0.72);
+      const o = (y*w + x)*4;
+      for(let c=0;c<3;c++) d[o+c] = Math.min(255, 255*(LAMP.amb + (1 - LAMP.amb)*diff*lampRGB[c]));
+      d[o+3] = 255;
+    }
+  }
+  poolCtx.putImageData(img, 0, 0);
+}
+
+// Shade from leaves somewhere above: clustered toward one corner, so the sun
+// still falls clear on the rest of the sheet.
+function makeCanopy(){
+  const q = 6, w = Math.ceil(DW/q) + 40, h = Math.ceil(DH/q) + 40;
+  const F = Relief.field(w, h);
+  const rng = Relief.makeRng(SEED + 5);
+  const corner = {x: w*0.98, y: -h*0.04};
+  const reach = Math.hypot(w, h)*0.50;
+  const m = F.raster(ctx => {
+    for(let i=0;i<260;i++){
+      const a = Math.PI*0.5 + rng()*Math.PI*0.5;      // fan down and to the left
+      const r = Math.pow(rng(), 0.7)*reach;
+      const x = corner.x + Math.cos(a)*r, y = corner.y + Math.sin(a)*r;
+      const len = 7 + rng()*9, wid = len*(0.32 + rng()*0.18);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(rng()*6.28);
+      ctx.globalAlpha = 0.5 + rng()*0.5;
+      ctx.beginPath(); ctx.ellipse(0, 0, len, wid, 0, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+  });
+  const b = F.blur(m, 2, 3);
+  const cv = Relief.makeCanvas(w, h), ctx = cv.getContext('2d');
+  const img = ctx.createImageData(w, h);
+  for(let i=0;i<w*h;i++){
+    const v = Math.min(1, b[i]*1.25);
+    img.data[i*4] = 74; img.data[i*4+1] = 80; img.data[i*4+2] = 66;
+    img.data[i*4+3] = v*255;
+  }
+  ctx.putImageData(img, 0, 0);
+  return cv;
+}
+
+// ── lighting, all at once ─────────────────────────────────────
+// The sheet and wordmark are cheap and relit every time. Slips are not, so
+// while the lamp drifts they take turns — two a frame — and nobody can tell.
+let turn = 0;
+function relight(all){
+  shadePool();
+  shadeWordmark();
+  if(all) slips.forEach(shadeSlip);
+  else for(let k=0;k<2;k++) shadeSlip(slips[turn++ % slips.length]);
+  bgCtx.globalCompositeOperation = 'source-over';
+  bgCtx.drawImage(paperCv, 0, 0);
+  bgCtx.globalCompositeOperation = 'multiply';
+  bgCtx.imageSmoothingQuality = 'high';
+  bgCtx.drawImage(poolCv, 0, 0, poolCv.width*12*SS, poolCv.height*12*SS);
+  bgCtx.globalCompositeOperation = 'source-over';
+  bgCtx.drawImage(wm.cv, Math.round(wm.cx*SS - wm.W/2), Math.round(wm.cy*SS - wm.H/2));
+  lastLit = {x: lamp.x, y: lamp.y, h: lamp.h};
+}
+
+// ── p5 ────────────────────────────────────────────────────────
+function measure(){
+  DW = document.documentElement.clientWidth;
+  DH = window.innerHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  SS = Math.max(1, Math.min(dpr, Math.sqrt(PIXEL_BUDGET/(DW*DH))));
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS);
+}
+
+function restLamp(){
+  return {x: DW*0.30, y: -DH*0.14, h: LAMP.h};
+}
+
+function build(){
+  compose();
+  buildPaper();
+  slips.forEach(buildSlip);
+  placeLinks();
+}
+
+function setup(){
+  pixelDensity(1);
+  measure();
+  createCanvas(PW, PH).parent('stage');
+  styleCanvas();
+  noiseSeed(SEED);
+  boot = () => {
+    measure();
+    // a window opened in the background can report no size yet
+    if(DW < 2 || DH < 2){ waiting = true; return; }
+    waiting = false;
+    resizeCanvas(PW, PH); styleCanvas();
+    build();
+    const r = restLamp();
+    lampT = Object.assign({}, r);
+    // arrival: the sun comes up from low on the left and rakes the deboss in
+    lamp = REDUCED ? Object.assign({}, r) : {x: -DW*0.25, y: DH*0.55, h: 120};
+    slips.forEach((s, i) => { s.lift = REDUCED ? 1.5 : 70; s.delay = REDUCED ? 0 : 500 + i*170; });
+    relight(true);
+    ready = true;
+    t0 = millis();
+  };
+  const fonts = document.fonts;
+  if(fonts && fonts.load){
+    Promise.all([fonts.load('400 40px Lora'), fonts.load('500 20px Lora'), fonts.load('italic 13px Lora')])
+      .then(() => fonts.ready).then(boot, boot);
+  } else boot();
+}
+
+function styleCanvas(){
+  const c = document.querySelector('#stage canvas');
+  c.style.width = DW + 'px'; c.style.height = DH + 'px';
+}
+
+let resizeTimer = 0;
+function windowResized(){
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if(waiting && boot){ boot(); return; }
+    measure(); resizeCanvas(PW, PH); styleCanvas();
+    if(!ready) return;
+    build();
+    const r = restLamp(); lampT = Object.assign({}, r);
+    if(REDUCED) lamp = Object.assign({}, r);
+    relight(true);
+  }, 160);
+}
+
+function draw(){
+  if(!ready) return;
+  const now = millis(), t = (now - t0)/1000;
+
+  // the lamp leans a little toward the cursor, slowly
+  const r = restLamp();
+  lampT.x = r.x + (pointer ? (pointer.x - DW*0.5)*0.22 : 0);
+  lampT.y = r.y + (pointer ? (pointer.y - DH*0.5)*0.14 : 0);
+  const ease = t < 3.2 ? 0.035 : 0.045;
+  if(!REDUCED){
+    lamp.x += (lampT.x - lamp.x)*ease;
+    lamp.y += (lampT.y - lamp.y)*ease;
+    lamp.h += (lampT.h - lamp.h)*ease*0.8;
+  }
+  const drift = lastLit ? Math.hypot(lamp.x - lastLit.x, lamp.y - lastLit.y, (lamp.h - lastLit.h)*2) : 0;
+  if(drift > 1.2){ relight(false); settled = false; }
+  else if(!settled){ relight(true); settled = true; }   // one full pass once it stops
+
+  // lift: settled, stirred, held, picked
+  slips.forEach(s => {
+    let target = 1.5;
+    if(s.el.classList.contains('near')) target = 4;
+    if(s.hover || s.focus) target = 9;
+    if(pressed === s) target = 15;
+    if(now - t0 < s.delay) target = s.lift;           // not set down yet
+    s.lift += (target - s.lift)*(REDUCED ? 1 : (target > s.lift ? 0.16 : 0.085));
+  });
+
+  const g = drawingContext;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalAlpha = 1;
+  g.globalCompositeOperation = 'source-over';
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  g.drawImage(bgCv, 0, 0);
+
+  slips.forEach(s => drawSlip(g, s, now));
+
+  // the canopy, swaying a little; a second, fainter copy for depth
+  const sway = REDUCED ? 0 : Math.sin(t*0.37)*5 + Math.sin(t*0.83 + 1.3)*2.5;
+  const swy  = REDUCED ? 0 : Math.cos(t*0.29)*3;
+  g.save();
+  g.globalCompositeOperation = 'multiply';
+  g.globalAlpha = 0.075;
+  const cw = canopyCv.width*6*SS, ch = canopyCv.height*6*SS;
+  g.drawImage(canopyCv, (-120 + sway)*SS, (-120 + swy)*SS, cw, ch);
+  g.globalAlpha = 0.045;
+  g.drawImage(canopyCv, (-138 - sway*1.6)*SS, (-110 + swy*1.4)*SS, cw, ch);
+  g.restore();
+
+  g.save();
+  g.globalCompositeOperation = 'overlay';
+  g.globalAlpha = 0.22;
+  g.fillStyle = grainPat; g.fillRect(0, 0, PW, PH);
+  g.restore();
+}
+
+function drawSlip(g, s, now){
+  const appear = Math.min(1, Math.max(0, (now - t0 - s.delay)/260));
+  if(appear <= 0) return;
+  const lift = s.lift;
+  // the shadow falls away from the lamp, further the higher the slip is held
+  const dx = s.x - lamp.x, dy = s.y - lamp.y, dl = Math.hypot(dx, dy, lamp.h) || 1;
+  const sx = dx/dl, sy = dy/dl;
+  const k = 0.9 + 0.012*lift;                     // nearer the eye, a touch larger
+
+  g.save();
+  g.globalAlpha = appear*Math.max(0, 1 - lift/10);
+  g.translate((s.x + sx*1.2)*SS, (s.y + sy*1.2 + 0.6)*SS);
+  g.rotate(s.rot);
+  g.drawImage(s.shContact, -s.W/2, -s.H/2);
+  g.restore();
+
+  g.save();
+  g.globalAlpha = appear*Math.min(1, 0.35 + lift/9)*0.9;
+  g.translate((s.x + sx*lift*1.6)*SS, (s.y + sy*lift*1.6 + lift*0.5)*SS);
+  g.rotate(s.rot);
+  g.scale(k*0.92 + 0.08, k*0.92 + 0.08);
+  g.drawImage(s.shSoft, -s.W/2, -s.H/2);
+  g.restore();
+
+  g.save();
+  g.globalAlpha = appear;
+  const up = 1 + lift*0.0035;
+  g.translate((s.x - sx*lift*0.25)*SS, (s.y - sy*lift*0.25 - lift*0.18)*SS);
+  g.rotate(s.rot);
+  g.scale(up, up);
+  g.drawImage(s.cv, -s.W/2, -s.H/2);
+  g.restore();
+}
+
+// ── the hand-holds ────────────────────────────────────────────
+function placeLinks(){
+  slips.forEach(s => {
+    const a = s.el;
+    a.style.width = s.hw*2 + 'px'; a.style.height = s.hh*2 + 'px';
+    a.style.transform = 'translate(' + (s.x - s.hw) + 'px,' + (s.y - s.hh) + 'px) rotate(' + s.rot + 'rad)';
+  });
+}
+
+function nearness(){
+  slips.forEach(s => {
+    let near = false;
+    if(pointer){
+      const dx = pointer.x - s.x, dy = pointer.y - s.y;
+      const c = Math.cos(-s.rot), n = Math.sin(-s.rot);
+      const lx = Math.abs(dx*c - dy*n) - s.hw, ly = Math.abs(dx*n + dy*c) - s.hh;
+      near = Math.hypot(Math.max(0, lx), Math.max(0, ly)) < 70;
+    }
+    s.el.classList.toggle('near', near);
+  });
+}
+
+document.querySelectorAll('#slips a').forEach(a => {
+  const slip = () => slips.find(s => s.el === a);
+  a.addEventListener('pointerenter', () => { const s = slip(); if(s) s.hover = true; });
+  a.addEventListener('pointerleave', () => { const s = slip(); if(s){ s.hover = false; if(pressed === s) pressed = null; } });
+  a.addEventListener('pointerdown',  () => { pressed = slip() || null; });
+  a.addEventListener('focus', () => { const s = slip(); if(s) s.focus = true; });
+  a.addEventListener('blur',  () => { const s = slip(); if(s) s.focus = false; });
+});
+window.addEventListener('pointerup', () => { pressed = null; });
+window.addEventListener('pointermove', e => {
+  if(e.pointerType === 'touch') return;
+  pointer = {x: e.clientX, y: e.clientY};
+  nearness();
+});
+document.documentElement.addEventListener('pointerleave', () => { pointer = null; nearness(); });
+// coming back through history should find the slips at rest, not held
+window.addEventListener('pageshow', () => { pressed = null; slips.forEach(s => { s.hover = false; }); });
+</script>
+</body>
+</html>
