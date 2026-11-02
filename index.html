@@ -11,6 +11,7 @@
 <script src="lib/flora.js"></script>
 <script src="lib/press.js"></script>
 <script src="lib/matter.js"></script>
+<script src="lib/gouache.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Poppins:wght@300;400&display=swap" rel="stylesheet">
@@ -25,8 +26,11 @@ body{background:var(--sheet);color:var(--ink);font-family:'Poppins',sans-serif;f
 
 /* each slip has an invisible hand-hold laid exactly over it */
 #slips a{position:absolute;left:0;top:0;display:block;border-radius:3px;
-  -webkit-tap-highlight-color:transparent;outline:none}
+  -webkit-tap-highlight-color:transparent;outline:none;touch-action:none;
+  -webkit-user-drag:none;user-select:none;-webkit-touch-callout:none}
+body.holding,body.holding #slips a{cursor:grabbing}
 #slips a:focus-visible{outline:1px dashed var(--soft);outline-offset:11px}
+#slips a.round{border-radius:50%}
 /* the name is pencilled on the sheet beneath the slip, and only when you come close */
 #slips a span{position:absolute;left:50%;top:100%;margin-top:14px;transform:translateX(-50%);
   font-family:'Lora',serif;font-style:italic;font-size:13px;line-height:1;color:var(--soft);
@@ -49,10 +53,12 @@ noscript a{color:var(--soft)}
   <a href="press/" data-k="press"><span>The Press</span></a>
   <a href="canvas/" data-k="clippings"><span>Clippings</span></a>
   <a href="wax-seal/" data-k="sigil"><span>Sigil Pressure</span></a>
+  <a href="twin-peaks/" data-k="map" class="round"><span>San Francisco, Round</span></a>
 </nav>
 <noscript>
   <a href="protolab/">The sheet</a><a href="canvas/">Clippings</a><a href="flowers/">Specimen</a>
   <a href="press/">The Press</a><a href="wax-seal/">Sigil Pressure</a>
+  <a href="twin-peaks/">San Francisco, Round</a>
 </noscript>
 
 <script>
@@ -72,6 +78,13 @@ noscript a{color:var(--soft)}
 // ═══════════════════════════════════════════════════════════════
 
 const SHEET = '#efece4';
+const MAP = new Image();
+MAP.src = 'twin-peaks/clipping.jpg';
+// if the map arrives after the sheet was laid, cut its clipping then
+MAP.addEventListener('load', () => {
+  const s = ready && slips.find(q => q.k === 'map');
+  if(s){ buildSlip(s); shadeSlip(s); }
+});
 const STOCK = {cotton:'#fbfaf7', sheet:'#efece4', vellum:'#e4dcc6', amber:'#aa7942'};
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const SEED = Math.floor(Math.random()*99999) + 1;
@@ -88,7 +101,7 @@ let paperCv, poolCv, poolCtx, bgCv, bgCtx, grainPat, canopyCv;
 let wm = null;                 // the debossed wordmark
 let slips = [];
 let lamp = {x: 0, y: 0, h: LAMP.h}, lampT = {x: 0, y: 0, h: LAMP.h}, lastLit = null;
-let pointer = null, pressed = null;
+let pointer = null, held = null;
 let ready = false, settled = true, t0 = 0, boot = null, waiting = false;
 
 // ── stock and silhouettes ──────────────────────────────────────
@@ -111,7 +124,22 @@ function deckle(ctx, w, h, seed, rough){
   ctx.closePath();
 }
 
+// a disc, cut by hand: never quite round
+function disc(ctx, r, seed){
+  const rng = Relief.makeRng(seed);
+  const ph = [rng()*6.28, rng()*6.28, rng()*6.28];
+  ctx.beginPath();
+  for(let i=0;i<=240;i++){
+    const a = i/240*Math.PI*2;
+    const n = (Math.sin(a*3+ph[0])*0.5 + Math.sin(a*11+ph[1])*0.3 + Math.sin(a*27+ph[2])*0.2)*r*0.012;
+    const x = Math.cos(a)*(r + n), y = Math.sin(a)*(r + n);
+    if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
 function outline(ctx, s){
+  if(s.round){ disc(ctx, s.hw, s.seed); return; }
   deckle(ctx, s.hw, s.hh, s.seed, s.rough);
   if(s.hole){                           // a punched tag: the hole shows the sheet
     ctx.moveTo(s.hole.x + s.hole.r, s.hole.y);
@@ -142,27 +170,19 @@ const BASE = 0.5;
 const grey = v => { const c = Math.round(Math.max(0, Math.min(1, v))*255); return 'rgb('+c+','+c+','+c+')'; };
 
 const KINDS = {
-  // the sheet, in miniature: a blind poppy in the same stock
+  // the sheet, in miniature: a blind aster, its slopes stepped like the map's
   sheet: {
-    stock: STOCK.sheet,
+    stock: STOCK.sheet, terrace: 0.075,
     height(ctx, s){
       const f = s.flower;
       ctx.globalAlpha = 0.8; Flora.render(ctx, f.parts, f.spec, 'h');
     }
   },
-  // a coloured bloom mounted on vellum — the one living thing on the sheet
+  // a botanical plate on vellum, painted the way the round map is painted
   specimen: {
     stock: STOCK.vellum,
-    height(ctx, s){
-      const f = s.flower;
-      stem(ctx, s, grey(0.66), grey(0.60));
-      ctx.globalAlpha = 0.9; Flora.render(ctx, f.parts, f.spec, 'h');
-    },
-    color(ctx, s){
-      const f = s.flower;
-      stem(ctx, s, Flora.mixHex(f.spec.cLeaf, '#000000', 0.12), f.spec.cLeaf);
-      Flora.render(ctx, f.parts, f.spec, 'c');
-    }
+    height(){},
+    paint: paintPlate
   },
   // letterpress: a platemark and a debossed monogram
   press: {
@@ -185,6 +205,19 @@ const KINDS = {
     },
     ink(ctx, s){ ctx.fillStyle = ctx.strokeStyle = '#fff'; exlibris(ctx, s.U*0.62, s.seed); }
   },
+  // a round clipping cut from the map — printed, so it lies flat in the light
+  map: {
+    stock: STOCK.cotton,
+    height(){},
+    color(ctx, s){
+      if(!MAP.complete || !MAP.naturalWidth) return;
+      ctx.save();
+      disc(ctx, s.hw*0.97, s.seed); ctx.clip();
+      const d = s.hw*2*1.04;
+      ctx.drawImage(MAP, -d/2, -d/2, d, d);
+      ctx.restore();
+    }
+  },
   // a wax seal on a punched tag
   sigil: {
     stock: STOCK.cotton, wax: true,
@@ -198,27 +231,133 @@ const KINDS = {
   }
 };
 
-// a pressed stem with a pair of leaves, running from the bloom to the foot
-function stem(ctx, s, line, leaf){
-  const U = s.U, foot = s.hh*0.80 + s.hh*0.30, rng = Relief.makeRng(s.seed + 3);
-  const bend = (rng() < 0.5 ? -1 : 1)*U*(0.18 + rng()*0.22);
-  ctx.save();
-  ctx.strokeStyle = line; ctx.lineCap = 'round'; ctx.lineWidth = U*0.026;
+// ── the specimen plate ────────────────────────────────────────
+// A bloom, a bud on a side stem, veined leaves and a red seal, laid out once
+// per slip and then drawn three ways: as height, as masks, as nothing else —
+// colour comes from Gouache, the way the map gets it.
+function layoutPlate(s){
+  const U = s.U, rng = Relief.makeRng(s.seed + 11);
+  const side = rng() < 0.5 ? -1 : 1;
+  const fy = -s.hh*0.30, foot = s.hh*0.90;
+  const bend = side*U*(0.10 + rng()*0.12);
+  const main = [[0, fy], [bend*0.15, fy + (foot - fy)*0.35], [bend, fy + (foot - fy)*0.70], [bend*0.6, foot]];
+  const at = t => {                               // a point on the main stem
+    const [p0, p1, p2, p3] = main, u = 1 - t;
+    return [u*u*u*p0[0] + 3*u*u*t*p1[0] + 3*u*t*t*p2[0] + t*t*t*p3[0],
+            u*u*u*p0[1] + 3*u*u*t*p1[1] + 3*u*t*t*p2[1] + t*t*t*p3[1]];
+  };
+  const b0 = at(0.42);
+  const bud = {x: -side*U*0.68, y: fy + U*0.50, r: U*0.12, a: -side*0.45};
+  const branch = [b0, [b0[0] - side*U*0.10, b0[1] - U*0.30], [bud.x + side*U*0.10, bud.y + U*0.32], [bud.x, bud.y + bud.r*0.9]];
+  const leaves = [[0.30, side], [0.56, -side], [0.76, side]].map(([t, sd]) => {
+    const p = at(t);
+    return {x: p[0], y: p[1], a: sd*(1.0 + rng()*0.35), L: U*(0.50 + rng()*0.16)};
+  });
+  const sepals = [-1, 1].map(sd => ({x: bud.x, y: bud.y + bud.r*0.7, a: bud.a + sd*0.55, L: bud.r*1.15}));
+  const seal = {x: s.hw*0.66, y: s.hh*0.80, r: U*0.065};
+  return {fy, main, branch, bud, leaves, sepals, seal};
+}
+
+function leafPath(ctx, L, w){
+  const W = L.L*0.28*w;
   ctx.beginPath(); ctx.moveTo(0, 0);
-  ctx.bezierCurveTo(bend*0.2, foot*0.35, bend, foot*0.7, bend*0.7, foot);
-  ctx.stroke();
-  ctx.fillStyle = leaf;
-  [[0.42, -1], [0.62, 1]].forEach(([t, side]) => {
-    const y = foot*t, x = bend*t*1.1;
-    ctx.save(); ctx.translate(x, y); ctx.rotate(side*(0.95 + rng()*0.3));
-    const L = U*(0.42 + rng()*0.12), W = L*0.30;
-    ctx.beginPath(); ctx.moveTo(0, 0);
-    ctx.bezierCurveTo(W, -L*0.2, W*0.8, -L*0.8, 0, -L);
-    ctx.bezierCurveTo(-W*0.8, -L*0.8, -W, -L*0.2, 0, 0);
-    ctx.fill();
+  ctx.bezierCurveTo(W*1.1, -L.L*0.18, W*0.9, -L.L*0.72, 0, -L.L);
+  ctx.bezierCurveTo(-W*0.8, -L.L*0.70, -W*1.0, -L.L*0.20, 0, 0);
+  ctx.closePath();
+}
+function budPath(ctx, b, w){
+  const r = b.r;
+  ctx.beginPath();
+  ctx.moveTo(0, r);
+  ctx.bezierCurveTo(r*1.05*w, r*0.8, r*0.95*w, -r*0.6, 0, -r*1.5);
+  ctx.bezierCurveTo(-r*0.95*w, -r*0.6, -r*1.05*w, r*0.8, 0, r);
+  ctx.closePath();
+}
+function stemPath(ctx, c){
+  ctx.beginPath(); ctx.moveTo(c[0][0], c[0][1]);
+  ctx.bezierCurveTo(c[1][0], c[1][1], c[2][0], c[2][1], c[3][0], c[3][1]);
+}
+
+// the green parts. For height, each leaf is cut as a stack of narrower
+// copies of itself, so its slope comes out as terraces — the map's contours.
+function plateGreens(ctx, s, P, mode){
+  const U = s.U, H = mode === 'h';
+  ctx.lineCap = 'round';
+  [P.main, P.branch].forEach((c, k) => {
+    ctx.strokeStyle = H ? grey(0.30) : '#fff'; ctx.lineWidth = U*(k ? 0.024 : 0.034);
+    stemPath(ctx, c); ctx.stroke();
+    if(H){ ctx.strokeStyle = grey(0.38); ctx.lineWidth = U*0.010; stemPath(ctx, c); ctx.stroke(); }
+  });
+  P.leaves.concat(P.sepals).forEach(L => {
+    ctx.save(); ctx.translate(L.x, L.y); ctx.rotate(L.a);
+    if(!H){ ctx.fillStyle = '#fff'; leafPath(ctx, L, 1); ctx.fill(); ctx.restore(); return; }
+    [[1, 0.18], [0.74, 0.25], [0.48, 0.32], [0.22, 0.39]].forEach(([w, v]) => {
+      ctx.fillStyle = grey(v); leafPath(ctx, L, w); ctx.fill();
+    });
+    ctx.strokeStyle = grey(0.44); ctx.lineWidth = Math.max(0.6, L.L*0.022);   // midrib
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(L.L*0.03, -L.L*0.5, 0, -L.L*0.94); ctx.stroke();
+    ctx.strokeStyle = grey(0.14); ctx.lineWidth = Math.max(0.5, L.L*0.012);   // veins, sunk
+    for(let k=1;k<=4;k++){
+      const y = -L.L*(0.16 + k*0.17), sp = L.L*0.20*(1 - k*0.16);
+      [-1, 1].forEach(sd => { ctx.beginPath(); ctx.moveTo(0, y + L.L*0.04); ctx.quadraticCurveTo(sd*sp*0.6, y, sd*sp, y - L.L*0.09); ctx.stroke(); });
+    }
     ctx.restore();
   });
+}
+function plateBud(ctx, s, P, mode){
+  const b = P.bud;
+  ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a);
+  if(mode === 'h'){
+    [[1, 0.46], [0.72, 0.56], [0.44, 0.66], [0.18, 0.74]].forEach(([w, v]) => { ctx.fillStyle = grey(v); budPath(ctx, b, w); ctx.fill(); });
+    ctx.strokeStyle = grey(0.36); ctx.lineWidth = Math.max(0.5, b.r*0.05);       // the furl
+    ctx.beginPath(); ctx.moveTo(-b.r*0.1, b.r*0.6); ctx.quadraticCurveTo(b.r*0.45, -b.r*0.3, 0, -b.r*1.4); ctx.stroke();
+  } else { ctx.fillStyle = '#fff'; budPath(ctx, b, 1); ctx.fill(); }
   ctx.restore();
+}
+function plateSeal(ctx, P){
+  const q = P.seal, r = q.r;
+  ctx.beginPath();
+  ctx.rect(q.x - r, q.y - r, r*2, r*2);
+  ctx.rect(q.x - r*0.74, q.y - r*0.74, r*1.48, r*1.48);
+  ctx.rect(q.x - r*0.62, q.y - r*0.62, r*1.24, r*1.24);
+  ctx.moveTo(q.x - r*0.08, q.y - r*0.45); ctx.rect(q.x - r*0.09, q.y - r*0.45, r*0.18, r*0.9);   // a single stroke, cut out
+  ctx.fill('evenodd');
+}
+
+function paintPlate(F, s, at){
+  const P = s.plate || (s.plate = layoutPlate(s));
+  const f = s.flower;
+  const petals = f.parts.filter(p => p.kind === 'petal');
+  const heart  = f.parts.filter(p => p.kind === 'disc' || p.kind === 'floret');
+  const inBloom = ctx => ctx.translate(0, P.fy);
+
+  const h = F.rasterLuma(ctx => {
+    at(ctx);
+    plateGreens(ctx, s, P, 'h');
+    plateBud(ctx, s, P, 'h');
+    ctx.save(); inBloom(ctx); Flora.render(ctx, petals, f.spec, 'h'); Flora.render(ctx, heart, f.spec, 'h'); ctx.restore();
+  });
+  const greens = F.raster(ctx => { at(ctx); plateGreens(ctx, s, P, 'm'); });
+  const blooms = F.raster(ctx => {
+    at(ctx); plateBud(ctx, s, P, 'm');
+    ctx.save(); inBloom(ctx); Flora.render(ctx, petals, f.spec, 'c'); ctx.restore();
+  });
+  const disc = F.raster(ctx => { at(ctx); inBloom(ctx); Flora.render(ctx, heart, f.spec, 'c'); });
+  const seal = F.raster(ctx => { at(ctx); ctx.fillStyle = '#fff'; plateSeal(ctx, P); });
+
+  const RA = Gouache.RAMPS;
+  const colorMap = Gouache.paint({
+    F, h, ss: SS, step: 0.08, relief: 30,
+    ground: Relief.hexRgb(STOCK.vellum),
+    shadow: {dx: s.U*0.035, dy: s.U*0.05, r: s.U*0.035},
+    layers: [
+      {mask: greens, ramp: RA.leaf, lo: 0.10, hi: 0.46},
+      {mask: blooms, ramp: RA[s.wash], lo: 0.14, hi: 0.92},
+      {mask: disc,   ramp: RA.straw, lo: 0.62, hi: 1.0},
+      {mask: seal,   ramp: RA.seal,  lo: 0, hi: 1}
+    ]
+  });
+  return {colorMap, h};
 }
 
 // ── composition ───────────────────────────────────────────────
@@ -230,64 +369,68 @@ const LAYOUTS = {
     U: (w, h) => Math.min(w/1440, h/880)*112,
     slips: {
       sheet:     {x: 0.20, y: 0.30, r:  5, hw: 0.95, hh: 0.74},
-      specimen:  {x: 0.335, y: 0.70, r: -4, hw: 1.06, hh: 1.36},
-      press:     {x: 0.565, y: 0.735, r:  3, hw: 0.82, hh: 1.04},
-      sigil:     {x: 0.735, y: 0.62, r: 11, hw: 0.56, hh: 0.86},
-      clippings: {x: 0.815, y: 0.32, r: -7, hw: 0.70, hh: 0.92}
+      specimen:  {x: 0.32, y: 0.70, r: -4, hw: 1.06, hh: 1.36},
+      press:     {x: 0.52, y: 0.74, r:  3, hw: 0.82, hh: 1.04},
+      sigil:     {x: 0.68, y: 0.63, r: 11, hw: 0.56, hh: 0.86},
+      clippings: {x: 0.815, y: 0.32, r: -7, hw: 0.70, hh: 0.92},
+      map:       {x: 0.855, y: 0.74, r: 18, hw: 0.86, hh: 0.86}
     }
   },
   tall: {
-    mark: {x: 0.50, y: 0.19},
+    mark: {x: 0.50, y: 0.14},
     U: (w, h) => Math.min(w/430, h/900)*74,
     slips: {
-      sheet:     {x: 0.78, y: 0.34, r:  7, hw: 0.95, hh: 0.74},
-      specimen:  {x: 0.36, y: 0.43, r: -5, hw: 1.06, hh: 1.36},
-      press:     {x: 0.70, y: 0.62, r:  4, hw: 0.82, hh: 1.04},
-      clippings: {x: 0.27, y: 0.75, r: -8, hw: 0.70, hh: 0.92},
-      sigil:     {x: 0.68, y: 0.86, r: 12, hw: 0.56, hh: 0.86}
+      sheet:     {x: 0.76, y: 0.27, r:  7, hw: 0.95, hh: 0.74},
+      specimen:  {x: 0.33, y: 0.37, r: -5, hw: 1.06, hh: 1.36},
+      map:       {x: 0.72, y: 0.50, r: 16, hw: 0.80, hh: 0.80},
+      press:     {x: 0.30, y: 0.61, r:  4, hw: 0.82, hh: 1.04},
+      clippings: {x: 0.73, y: 0.71, r: -8, hw: 0.70, hh: 0.92},
+      sigil:     {x: 0.31, y: 0.85, r: 12, hw: 0.56, hh: 0.86}
     }
   }
 };
 // painter's order: later slips rest on earlier ones
-const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil'];
+// A new study gets a slip here, a kind above, and a place in both layouts.
+const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map'];
 
 function compose(){
   const L = DW/DH > 1.05 ? LAYOUTS.wide : LAYOUTS.tall;
   const U = Math.max(46, Math.min(150, L.U(DW, DH)));
   const rng = Relief.makeRng(SEED);
   const old = {};
-  slips.forEach(s => old[s.k] = s);
+  slips.forEach((s, z) => { old[s.k] = s; s.z = z; });
   slips = ORDER.map((k, i) => {
     const p = L.slips[k];
+    const o = old[k] && old[k].placed ? old[k] : null;     // somewhere you put it stays put
     const s = {
       k, U, kind: KINDS[k],
       seed: SEED*7 + i*131,
       x: (p.x + (rng() - 0.5)*0.03)*DW,
       y: (p.y + (rng() - 0.5)*0.03)*DH,
       rot: (p.r + (rng() - 0.5)*5)*Math.PI/180,
+      placed: o ? true : false, z: old[k] ? old[k].z : i,
       hw: p.hw*U, hh: p.hh*U, rough: 0.02,
       el: document.querySelector('#slips a[data-k="'+k+'"]'),
       lift: old[k] ? old[k].lift : 60, liftT: 2, order: i
     };
     if(k === 'sigil') s.hole = {x: 0, y: -s.hh*0.70, r: U*0.055};
+    if(k === 'map') s.round = true;
     if(k === 'sheet' || k === 'specimen'){
       const spec = Flora.defaults(k === 'specimen'
-        ? Object.assign({seed: s.seed, species: 'cosmos', size: U*0.74, leaves: 0}, paletteFor(s.seed))
+        ? {seed: s.seed, species: ['cosmos', 'anemone', 'poppy', 'scabiosa'][s.seed % 4], size: U*0.50, leaves: 0}
         : {seed: s.seed, species: 'aster', size: U*0.50, leaves: 0});
       s.flower = {spec, parts: Flora.grow(spec)};
-      if(k === 'specimen') s.flowerOffset = -s.hh*0.30;
+      if(k === 'specimen') s.wash = ['rose', 'lav', 'coral'][Math.floor(s.seed/4) % 3];
     }
     if(k === 'sigil') s.seal = Press.defaults({seed: s.seed, substrate: 'wax', die: 'crest', size: U*0.42,
                                                color: Matter.get('wax').color, detail: 6, depth: 1});
+    if(o){ s.x = o.fx*DW; s.y = o.fy*DH; s.rot = o.rot; }
     return s;
   });
+  slips.sort((a, b) => a.z - b.z);
   wm = makeWordmark(L.mark.x*DW, L.mark.y*DH, U);
 }
 
-function paletteFor(seed){
-  const P = Flora.PALETTES[[0, 3, 5][seed % 3]];
-  return {cBase: P[0], cTip: P[1], cDisc: P[2], cLeaf: P[3]};
-}
 
 // ── one slip: rasterise once, relight when the lamp moves ─────
 const PAD = 26;
@@ -301,13 +444,18 @@ function buildSlip(s){
   const h0 = F.rasterLuma(ctx => {
     at(ctx);
     ctx.fillStyle = grey(BASE); outline(ctx, s); ctx.fill('evenodd');
-    if(s.flowerOffset) ctx.translate(0, s.flowerOffset);
     K.height(ctx, s);
   });
-  const col = F.rasterColor(ctx => {
+  // a painted slip brings its own colour, and a whisper of its height so the
+  // paint sits in the paper rather than on it
+  const painted = K.paint ? K.paint(F, s, at) : null;
+  if(painted) for(let i=0;i<h0.length;i++) h0[i] += painted.h[i]*0.14*cov[i];
+  // a terraced slip has its slopes stepped, the way the map steps its hills
+  if(K.terrace) for(let i=0;i<h0.length;i++) h0[i] = Math.floor(h0[i]/K.terrace)*K.terrace;
+  const col = painted ? {colorMap: painted.colorMap} : F.rasterColor(ctx => {
     at(ctx);
     ctx.fillStyle = K.stock; outline(ctx, s); ctx.fill('evenodd');
-    if(K.color){ if(s.flowerOffset) ctx.translate(0, s.flowerOffset); K.color(ctx, s); }
+    if(K.color) K.color(ctx, s);
   });
   const wax = K.mask ? F.raster(ctx => { at(ctx); K.mask(ctx, s); }) : null;
 
@@ -554,8 +702,14 @@ function setup(){
   };
   const fonts = document.fonts;
   if(fonts && fonts.load){
-    Promise.all([fonts.load('400 40px Lora'), fonts.load('500 20px Lora'), fonts.load('italic 13px Lora')])
-      .then(() => fonts.ready).then(boot, boot);
+    const mapReady = new Promise(res => { if(MAP.complete) res(); else { MAP.addEventListener('load', res); MAP.addEventListener('error', res); } });
+    // never leave the sheet blank: if a font or the map is slow, go without
+    const late = new Promise(res => setTimeout(res, 2500));
+    let booted = false;
+    const once = () => { if(!booted){ booted = true; boot(); } };
+    Promise.race([Promise.all([fonts.load('400 40px Lora'), fonts.load('500 20px Lora'),
+                               fonts.load('italic 13px Lora'), mapReady]).then(() => fonts.ready), late])
+      .then(once, once);
   } else boot();
 }
 
@@ -596,12 +750,14 @@ function draw(){
   if(drift > 1.2){ relight(false); settled = false; }
   else if(!settled){ relight(true); settled = true; }   // one full pass once it stops
 
-  // lift: settled, stirred, held, picked
+  carry();
+
+  // lift: settled, stirred, held, picked up, carried
   slips.forEach(s => {
     let target = 1.5;
     if(s.el.classList.contains('near')) target = 4;
     if(s.hover || s.focus) target = 9;
-    if(pressed === s) target = 15;
+    if(held && held.s === s) target = held.moved ? 24 : 15;
     if(now - t0 < s.delay) target = s.lift;           // not set down yet
     s.lift += (target - s.lift)*(REDUCED ? 1 : (target > s.lift ? 0.16 : 0.085));
   });
@@ -669,12 +825,71 @@ function drawSlip(g, s, now){
 }
 
 // ── the hand-holds ────────────────────────────────────────────
+function placeLink(s){
+  const a = s.el;
+  a.style.width = s.hw*2 + 'px'; a.style.height = s.hh*2 + 'px';
+  a.style.transform = 'translate(' + (s.x - s.hw) + 'px,' + (s.y - s.hh) + 'px) rotate(' + s.rot + 'rad)';
+}
 function placeLinks(){
+  slips.forEach((s, z) => { placeLink(s); s.el.style.zIndex = z + 1; });
+}
+
+// ── picking a slip up ─────────────────────────────────────────
+// Held by any point, a slip is dragged across the sheet by that point, so its
+// middle swings round to trail the hand — the way paper on a table does. Let
+// go while moving and it slides on a little before friction takes it. A tap
+// that never moved is still just a tap, and opens the study.
+const SLOP = 6;
+function pickUp(s, e){
+  const dx = e.clientX - s.x, dy = e.clientY - s.y;
+  const c = Math.cos(-s.rot), n = Math.sin(-s.rot);
+  held = {s, id: e.pointerId, lx: dx*c - dy*n, ly: dx*n + dy*c,
+          x0: e.clientX, y0: e.clientY, px: e.clientX, py: e.clientY, qx: e.clientX, qy: e.clientY,
+          vx: 0, vy: 0, w: 0, moved: false};
+  s.glide = null; s.justMoved = false;
+  slips.splice(slips.indexOf(s), 1); slips.push(s);   // whatever you pick up comes to the top
+  placeLinks();
+}
+function setDown(){
+  const h = held; held = null;
+  document.body.classList.remove('holding');
+  if(!h || !h.moved) return;
+  const s = h.s;
+  s.placed = true; s.fx = s.x/DW; s.fy = s.y/DH;
+  if(!REDUCED) s.glide = {vx: h.vx, vy: h.vy, w: h.w};
+  s.justMoved = true;
+}
+
+function carry(){
+  let moved = null;
+  if(held && held.moved){
+    const h = held, s = h.s;
+    h.vx = h.px - h.qx; h.vy = h.py - h.qy; h.qx = h.px; h.qy = h.py;
+    // drag acts at the middle, the hand at the grip: the sheet turns to trail
+    const c = Math.cos(s.rot), n = Math.sin(s.rot);
+    const rx = -(h.lx*c - h.ly*n), ry = -(h.lx*n + h.ly*c);
+    const r2 = rx*rx + ry*ry;
+    if(!REDUCED) h.w += -(rx*h.vy - ry*h.vx)/(r2 + s.U*s.U*0.6)*0.10;
+    h.w = Math.max(-0.06, Math.min(0.06, h.w*0.80));
+    s.rot += h.w;
+    const c2 = Math.cos(s.rot), n2 = Math.sin(s.rot);
+    s.x = h.px - (h.lx*c2 - h.ly*n2);
+    s.y = h.py - (h.lx*n2 + h.ly*c2);
+    moved = s;
+  }
   slips.forEach(s => {
-    const a = s.el;
-    a.style.width = s.hw*2 + 'px'; a.style.height = s.hh*2 + 'px';
-    a.style.transform = 'translate(' + (s.x - s.hw) + 'px,' + (s.y - s.hh) + 'px) rotate(' + s.rot + 'rad)';
+    if(!s.glide) return;
+    const g = s.glide;
+    s.x += g.vx; s.y += g.vy; s.rot += g.w;
+    g.vx *= 0.86; g.vy *= 0.86; g.w *= 0.84;
+    // the sheet's edge is as far as it goes
+    s.x = Math.max(s.U*0.4, Math.min(DW - s.U*0.4, s.x));
+    s.y = Math.max(s.U*0.4, Math.min(DH - s.U*0.4, s.y));
+    s.fx = s.x/DW; s.fy = s.y/DH;
+    if(Math.abs(g.vx) + Math.abs(g.vy) < 0.05 && Math.abs(g.w) < 0.0004) s.glide = null;
+    placeLink(s); shadeSlip(s);
   });
+  if(moved){ placeLink(moved); shadeSlip(moved); nearness(); }
 }
 
 function nearness(){
@@ -692,13 +907,35 @@ function nearness(){
 
 document.querySelectorAll('#slips a').forEach(a => {
   const slip = () => slips.find(s => s.el === a);
+  a.setAttribute('draggable', 'false');
+  a.addEventListener('dragstart', e => e.preventDefault());
   a.addEventListener('pointerenter', () => { const s = slip(); if(s) s.hover = true; });
-  a.addEventListener('pointerleave', () => { const s = slip(); if(s){ s.hover = false; if(pressed === s) pressed = null; } });
-  a.addEventListener('pointerdown',  () => { pressed = slip() || null; });
+  a.addEventListener('pointerleave', () => { const s = slip(); if(s && !(held && held.s === s)) s.hover = false; });
+  a.addEventListener('pointerdown', e => {
+    if(e.button !== 0 || held) return;
+    const s = slip(); if(!s) return;
+    a.setPointerCapture(e.pointerId);
+    pickUp(s, e);
+  });
+  a.addEventListener('pointermove', e => {
+    if(!held || e.pointerId !== held.id) return;
+    held.px = e.clientX; held.py = e.clientY;
+    if(!held.moved && Math.hypot(e.clientX - held.x0, e.clientY - held.y0) > SLOP){
+      held.moved = true; held.qx = e.clientX; held.qy = e.clientY;
+      document.body.classList.add('holding');
+    }
+  });
+  const end = e => { if(held && e.pointerId === held.id) setDown(); };
+  a.addEventListener('pointerup', end);
+  a.addEventListener('pointercancel', end);
+  // a slip that was carried was not chosen; only a still tap opens the study
+  a.addEventListener('click', e => {
+    const s = slip();
+    if(s && s.justMoved){ e.preventDefault(); s.justMoved = false; }
+  });
   a.addEventListener('focus', () => { const s = slip(); if(s) s.focus = true; });
   a.addEventListener('blur',  () => { const s = slip(); if(s) s.focus = false; });
 });
-window.addEventListener('pointerup', () => { pressed = null; });
 window.addEventListener('pointermove', e => {
   if(e.pointerType === 'touch') return;
   pointer = {x: e.clientX, y: e.clientY};
@@ -706,7 +943,8 @@ window.addEventListener('pointermove', e => {
 });
 document.documentElement.addEventListener('pointerleave', () => { pointer = null; nearness(); });
 // coming back through history should find the slips at rest, not held
-window.addEventListener('pageshow', () => { pressed = null; slips.forEach(s => { s.hover = false; }); });
+window.addEventListener('pageshow', () => { held = null; document.body.classList.remove('holding');
+  slips.forEach(s => { s.hover = false; s.justMoved = false; }); });
 </script>
 </body>
 </html>
