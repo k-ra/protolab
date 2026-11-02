@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Line — after Claude Mellan</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<script src="../lib/flora.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#efece4;color:var(--ink);overflow:hidden;font-family:'Lora',serif}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;cursor:crosshair}
+.bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);font-style:italic;font-size:14px;color:var(--soft)}
+.bar button{font:inherit;color:var(--soft);background:none;border:none;cursor:pointer}
+.bar button:hover,.bar button:focus-visible{color:var(--ink)}
+.back{position:fixed;left:20px;top:18px;font-style:italic;font-size:13px;color:var(--soft);text-decoration:none}
+.back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<div id="stage"></div>
+<div class="bar"><button id="next">another flower</button></div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// ONE LINE — an engraving made of a single spiral, after Claude Mellan.
+//
+// In 1649 Mellan engraved the Sudarium of Saint Veronica as one unbroken
+// line, spiralling out from the tip of the nose: no cross-hatching, no
+// second stroke, all of the modelling done by how hard the burin bit — the
+// line swells where it is dark and thins to nothing where it is light.
+//
+// Here the subject is a flower, grown as a relief and lit by a lamp that
+// follows the cursor. Its light is read back as tone, and the spiral is cut
+// again from that tone, so moving the light re-engraves the plate. Printed
+// intaglio: a bevelled plate mark, a little plate tone left by the wiping,
+// and the engraver's lettering in the margin.
+// ═══════════════════════════════════════════════════════════════
+
+const INK = '#211b18', SHEET = '#f6f2e7', PLATE_TONE = '#efe8d8';
+let DW, DH, SS, ready = false, dirty = true;
+let subj = null, tone = null, TN = 340, seed = 3, species = 'dahlia';
+let lamp = {x: 0.3, y: 0.25}, lampT = {x: 0.3, y: 0.25};   // in plate units, 0..1
+
+// ── the subject: a lit relief, read back as tone ───────────────
+function grow(){
+  const F = Relief.field(TN, TN);
+  const spec = Flora.defaults({seed, species, size: TN*0.34, leaves: 2});
+  const parts = Flora.grow(spec);
+  const h = F.rasterLuma(c => { c.translate(TN/2, TN/2); Flora.render(c, parts, spec, 'h'); });
+  const cov = new Float32Array(TN*TN).fill(1);
+  const hs = F.blur(h, 2, 2);
+  const nrm = F.normals(cov, hs, 9);
+  subj = {F, hs, nrm, cov, cv: Relief.makeCanvas(TN, TN)};
+  subj.ctx = subj.cv.getContext('2d', {willReadFrequently: true});
+}
+function relight(){
+  subj.F.shade(subj.ctx, {
+    cov: subj.cov, hgt: subj.hs, hMax: 1, nX: subj.nrm.nX, nY: subj.nrm.nY, nZ: subj.nrm.nZ,
+    color: '#ffffff', ambient: 0.34, wrap: 0.35, gloss: 0, matte: true, contrast: 1.1, exposure: 1.08,
+    light: {x: lamp.x*TN, y: lamp.y*TN, h: TN*0.55, radius: TN*1.6, color: '#ffffff'}
+  });
+  const d = subj.ctx.getImageData(0, 0, TN, TN).data;
+  tone = new Float32Array(TN*TN);
+  // the background is paper: only the flower carries tone
+  for(let i=0;i<TN*TN;i++){
+    const lum = d[i*4]/255, inside = subj.hs[i] > 0.02 ? 1 : 0;
+    tone[i] = inside ? lum : 1;
+  }
+}
+function toneAt(u, v){
+  const x = Math.min(TN - 1, Math.max(0, u*TN)), y = Math.min(TN - 1, Math.max(0, v*TN));
+  const x0 = x|0, y0 = y|0, x1 = Math.min(TN - 1, x0 + 1), y1 = Math.min(TN - 1, y0 + 1), tx = x - x0, ty = y - y0;
+  const a = tone[y0*TN + x0], b = tone[y0*TN + x1], c = tone[y1*TN + x0], d = tone[y1*TN + x1];
+  return (a*(1 - tx) + b*tx)*(1 - ty) + (c*(1 - tx) + d*tx)*ty;
+}
+
+// ── the plate ─────────────────────────────────────────────────
+function plateBox(){
+  const s = Math.min(DW*0.72, DH*0.62);
+  return {x: (DW - s)/2, y: (DH - s)/2 - DH*0.03, s};
+}
+
+function engrave(g){
+  const P = plateBox(), R = P.s*0.47, cx = P.x + P.s/2, cy = P.y + P.s/2;
+  const gap = Math.max(2.1, P.s/260);                       // distance between turns
+  const turns = R/gap;
+  const left = [], right = [];
+  let theta = 0;
+  // one line, out from the centre; the burin bites deeper where it is dark
+  while(true){
+    const r = gap*theta/(Math.PI*2);
+    if(r > R) break;
+    const x = cx + Math.cos(theta)*r, y = cy + Math.sin(theta)*r;
+    const t = toneAt((x - P.x)/P.s, (y - P.y)/P.s);
+    const dark = Math.pow(1 - t, 0.9);
+    const w = gap*(0.06 + 0.86*dark);
+    const nx = Math.cos(theta), ny = Math.sin(theta);
+    left.push(x + nx*w/2, y + ny*w/2); right.push(x - nx*w/2, y - ny*w/2);
+    theta += Math.min(0.6, 1.1/Math.max(r, 1));             // about one point per pixel of line
+  }
+  g.beginPath();
+  g.moveTo(left[0], left[1]);
+  for(let i=2;i<left.length;i+=2) g.lineTo(left[i], left[i+1]);
+  for(let i=right.length - 2;i>=0;i-=2) g.lineTo(right[i], right[i+1]);
+  g.closePath();
+  g.fillStyle = INK; g.fill();
+  return {turns: Math.round(turns), points: left.length/2};
+}
+
+function paint(){
+  const g = drawingContext, P = plateBox();
+  g.setTransform(SS, 0, 0, SS, 0, 0);
+  g.clearRect(0, 0, DW, DH);
+  // the sheet
+  const sx = P.x - P.s*0.14, sy = P.y - P.s*0.12, sw = P.s*1.28, sh = P.s*1.36;
+  g.save(); g.shadowColor = 'rgba(40,34,28,0.2)'; g.shadowBlur = 18; g.shadowOffsetY = 7;
+  g.fillStyle = SHEET; g.fillRect(sx, sy, sw, sh); g.restore();
+  // the plate mark: pressed in, its bevel catching the light top-left
+  const m = 7;
+  g.fillStyle = PLATE_TONE; g.fillRect(P.x - m, P.y - m, P.s + 2*m, P.s + 2*m);
+  g.lineWidth = 1.4;
+  g.strokeStyle = 'rgba(60,46,30,0.30)';
+  g.beginPath(); g.moveTo(P.x - m, P.y + P.s + m); g.lineTo(P.x - m, P.y - m); g.lineTo(P.x + P.s + m, P.y - m); g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,0.9)';
+  g.beginPath(); g.moveTo(P.x + P.s + m + 1, P.y - m); g.lineTo(P.x + P.s + m + 1, P.y + P.s + m + 1); g.lineTo(P.x - m, P.y + P.s + m + 1); g.stroke();
+  // the line
+  const info = engrave(g);
+  // the engraver's lettering, as it would be cut below the image
+  g.fillStyle = INK; g.font = 'italic ' + Math.max(10, P.s*0.022) + 'px Lora, serif'; g.textBaseline = 'alphabetic';
+  g.textAlign = 'left'; g.fillText('Flos ' + species + ', linea una', P.x, P.y + P.s + m + P.s*0.06);
+  g.textAlign = 'right'; g.fillText('Protolab sculp. · ' + info.turns + ' turns', P.x + P.s, P.y + P.s + m + P.s*0.06);
+  // ink sits up on the paper and the paper has a tooth
+  g.globalCompositeOperation = 'overlay'; g.globalAlpha = 0.25;
+  g.fillStyle = grainPat; g.fillRect(sx, sy, sw, sh);
+  g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+}
+
+let grainPat;
+function setup(){
+  pixelDensity(1);
+  DW = document.documentElement.clientWidth; DH = innerHeight; SS = Math.min(devicePixelRatio || 1, 2);
+  createCanvas(DW*SS, DH*SS).parent('stage');
+  const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px';
+  grainPat = drawingContext.createPattern(Relief.grainTile(256, 9, 28), 'repeat');
+  grow(); relight();
+  ready = true;
+}
+function windowResized(){
+  DW = document.documentElement.clientWidth; DH = innerHeight;
+  resizeCanvas(DW*SS, DH*SS);
+  const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px';
+  dirty = true;
+}
+function toPlate(mx, my){ const P = plateBox(); return {x: (mx/SS - P.x)/P.s, y: (my/SS - P.y)/P.s}; }
+function mouseMoved(){ lampT = toPlate(mouseX, mouseY); }
+function touchMoved(){ lampT = toPlate(mouseX, mouseY); }
+let lastCut = 0;
+function draw(){
+  if(!ready || DW < 2) return;
+  const dx = lampT.x - lamp.x, dy = lampT.y - lamp.y;
+  if(Math.abs(dx) + Math.abs(dy) > 0.002){ lamp.x += dx*0.10; lamp.y += dy*0.10; dirty = true; }
+  // re-engraving is a whole plate of line: do it at most every other frame
+  if(dirty && millis() - lastCut > 32){ relight(); paint(); dirty = false; lastCut = millis(); }
+}
+const SPECIES = ['dahlia', 'chrysanth', 'rose', 'anemone', 'peony', 'aster', 'marigold'];
+document.getElementById('next').onclick = () => {
+  seed = Math.floor(Math.random()*1e5); species = SPECIES[(SPECIES.indexOf(species) + 1) % SPECIES.length];
+  grow(); dirty = true;
+};
+</script>
+</body>
+</html>
