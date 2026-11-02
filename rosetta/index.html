@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Three Hands — a stele</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Poppins:wght@300&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#efece4;color:var(--ink);font-family:'Poppins',sans-serif;font-weight:300;overflow:hidden}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;cursor:crosshair}
+/* the only control: what the stone says */
+form{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;gap:10px;align-items:baseline;
+  font-family:'Lora',serif;font-style:italic;font-size:14px;color:var(--soft)}
+input{font:inherit;font-style:normal;color:var(--ink);background:transparent;border:none;
+  border-bottom:1px solid rgba(47,42,36,.25);padding:3px 2px;width:min(64vw,420px);outline:none}
+input:focus{border-bottom-color:var(--ink)}
+button{font:inherit;color:var(--soft);background:none;border:none;cursor:pointer;padding:3px 4px}
+button:hover,button:focus-visible{color:var(--ink)}
+.back{position:fixed;left:20px;top:18px;font-family:'Lora',serif;font-style:italic;font-size:13px;color:var(--soft);text-decoration:none}
+.back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<div id="stage"></div>
+<form id="say" autocomplete="off">
+  <label for="words">carve</label>
+  <input id="words" maxlength="80" value="the sheet remembers every pressing made on it">
+  <button type="button" id="chalk" aria-pressed="true">chalk</button>
+</form>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// THREE HANDS — one decree, cut three ways into one stone.
+//
+// After the stele found at Rashid in 1799: the same text in pictographs, in
+// a running cursive and in Greek capitals, which is how it could be read at
+// all. Here the text is yours. Each word becomes a cluster of pictographs
+// chosen from its letters (a name gets a cartouche), a joined cursive line
+// written right to left, and a Greek transliteration — repeated until each
+// register is full, the way a decree fills its stone.
+//
+// The stone is granodiorite: dark, flecked with feldspar and quartz,
+// polished, broken across the top. Every sign is a V-cut groove in its
+// height field, lit by a raking lamp that follows the cursor. "chalk" fills
+// the grooves the way the British Museum did in the nineteenth century so
+// visitors could read them.
+//
+// The pictographs are invented from primitives — sun, water, reed, bird,
+// eye, loaf, hand, house — not copied from any real sign list.
+// ═══════════════════════════════════════════════════════════════
+
+const STONE = '#47464a', CHALK = '#ddd7ca';
+let DW, DH, SS, PW, PH, F, art, artCtx, lo = null;
+let slab, words = '', chalk = true;
+let cov, hgt, nrm, colorMap, groove, hMax = 1;
+let lamp = {x: 0, y: 0}, lampT = {x: 0, y: 0}, moving = 0, need = false, ready = false;
+
+// ── the three hands ───────────────────────────────────────────
+const hash = s => { let h = 2166136261; for(const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
+
+// pictographs: each drawn in a unit cell (-1..1), stroked
+const SIGNS = {
+  sun(c){ c.beginPath(); c.arc(0, 0, 0.62, 0, 7); c.stroke(); c.beginPath(); c.arc(0, 0, 0.12, 0, 7); c.fill(); },
+  water(c){ c.beginPath(); for(let i=0;i<=8;i++) c.lineTo(-0.9 + i*0.225, i % 2 ? -0.18 : 0.18); c.stroke(); },
+  reed(c, r){ c.beginPath(); c.moveTo(0, 0.9); c.lineTo(0, -0.7); c.stroke();
+    c.beginPath(); c.moveTo(0, -0.2); c.quadraticCurveTo(0.55*(r < .5 ? 1 : -1), -0.55, 0.15*(r < .5 ? 1 : -1), -0.95); c.stroke(); },
+  bird(c){ c.beginPath(); c.ellipse(-0.05, 0.05, 0.5, 0.3, -0.25, 0, 7); c.stroke();
+    c.beginPath(); c.arc(0.42, -0.38, 0.17, 0, 7); c.stroke();
+    c.beginPath(); c.moveTo(0.58, -0.38); c.lineTo(0.85, -0.3); c.stroke();
+    c.beginPath(); c.moveTo(-0.5, 0.15); c.lineTo(-0.9, 0.3); c.stroke();
+    c.beginPath(); c.moveTo(0, 0.35); c.lineTo(-0.05, 0.85); c.moveTo(0.2, 0.32); c.lineTo(0.22, 0.85); c.stroke(); },
+  eye(c){ c.beginPath(); c.moveTo(-0.85, 0); c.quadraticCurveTo(0, -0.6, 0.85, 0); c.quadraticCurveTo(0, 0.5, -0.85, 0); c.stroke();
+    c.beginPath(); c.arc(0, -0.02, 0.2, 0, 7); c.fill();
+    c.beginPath(); c.moveTo(-0.2, 0.25); c.lineTo(-0.35, 0.75); c.stroke(); },
+  loaf(c){ c.beginPath(); c.moveTo(-0.8, 0.35); c.quadraticCurveTo(0, -0.6, 0.8, 0.35); c.closePath(); c.stroke(); },
+  hand(c){ c.beginPath(); c.moveTo(-0.85, 0.2); c.lineTo(0.5, 0.2); c.quadraticCurveTo(0.9, 0.1, 0.85, -0.12); c.lineTo(-0.85, -0.12); c.stroke();
+    c.beginPath(); c.moveTo(0.3, -0.12); c.lineTo(0.55, -0.45); c.stroke(); },
+  house(c){ c.beginPath(); c.moveTo(-0.7, 0.7); c.lineTo(-0.7, -0.6); c.lineTo(0.7, -0.6); c.lineTo(0.7, 0.7); c.stroke();
+    c.beginPath(); c.moveTo(-0.2, 0.7); c.lineTo(-0.2, 0.2); c.lineTo(0.2, 0.2); c.lineTo(0.2, 0.7); c.stroke(); },
+  snake(c){ c.beginPath(); c.moveTo(-0.9, 0.3); c.bezierCurveTo(-0.5, -0.4, -0.1, 0.7, 0.3, 0.0); c.quadraticCurveTo(0.5, -0.4, 0.8, -0.3); c.stroke();
+    c.beginPath(); c.arc(0.78, -0.3, 0.1, 0, 7); c.fill(); },
+  hill(c){ c.beginPath(); c.moveTo(-0.9, 0.5); c.quadraticCurveTo(-0.45, -0.5, 0, 0.5); c.quadraticCurveTo(0.45, -0.5, 0.9, 0.5); c.stroke(); },
+  rope(c){ c.beginPath(); c.arc(0, -0.25, 0.32, 0, 7); c.stroke(); c.beginPath(); c.moveTo(-0.2, 0.05); c.lineTo(-0.35, 0.8); c.moveTo(0.2, 0.05); c.lineTo(0.35, 0.8); c.stroke(); },
+  star(c){ c.beginPath(); for(let i=0;i<5;i++){ const a = i/5*6.283 - 1.57; c.moveTo(0, 0); c.lineTo(Math.cos(a)*0.75, Math.sin(a)*0.75); } c.stroke(); }
+};
+const SIGN_NAMES = Object.keys(SIGNS);
+// tall signs take a whole quadrat; flat ones stack two to a quadrat
+const FLAT = {water:1, loaf:1, hand:1, hill:1, snake:1};
+
+function glyphsFor(word){
+  const out = [], h = hash(word.toLowerCase());
+  const n = Math.min(4, 1 + Math.floor(word.length/3));
+  let r = h;
+  for(let i=0;i<n;i++){ out.push(SIGN_NAMES[r % SIGN_NAMES.length]); r = Math.imul(r ^ (r >>> 13), 2654435761) >>> 0; }
+  return out;
+}
+
+const GREEK = {a:'Α',b:'Β',c:'Κ',d:'Δ',e:'Ε',f:'Φ',g:'Γ',h:'Η',i:'Ι',j:'Ι',k:'Κ',l:'Λ',m:'Μ',n:'Ν',o:'Ο',p:'Π',q:'Κ',r:'Ρ',s:'Σ',t:'Τ',u:'Υ',v:'Β',w:'Ω',x:'Ξ',y:'Υ',z:'Ζ'};
+const toGreek = w => [...w.toLowerCase()].map(c => GREEK[c] || '').join('');
+
+// cursive: each letter a hook, joined, written right to left
+function cursiveWord(c, word, x, y, size){
+  let r = hash(word);
+  const rnd = () => (r = Math.imul(r ^ (r >>> 15), 2246822519) >>> 0, r/4294967296);
+  c.beginPath(); c.moveTo(x, y);
+  let px = x;
+  for(const ch of word){
+    const w = size*(0.35 + rnd()*0.35), up = size*(0.25 + rnd()*0.55)*(rnd() < 0.5 ? -1 : 0.5);
+    c.bezierCurveTo(px - w*0.2, y + up, px - w*0.8, y + up*0.6, px - w, y + (rnd() - 0.5)*size*0.15);
+    px -= w;
+    if(rnd() < 0.25){ c.moveTo(px + w*0.5, y - size*0.55); c.lineTo(px + w*0.42, y - size*0.35); c.moveTo(px, y); }
+  }
+  c.stroke();
+  return x - px;
+}
+
+// ── the stone ─────────────────────────────────────────────────
+function slabShape(){
+  const w = Math.min(DW*0.62, DH*0.74*0.76), h = w/0.76;
+  const x0 = DW/2 - w/2, y0 = Math.max(20, DH/2 - h/2 - 18);
+  const rng = Relief.makeRng(1799);
+  const pts = [];
+  // the break runs down across the top-left, as on the stone
+  const jag = (ax, ay, bx, by, n, amp) => {
+    for(let i=0;i<=n;i++){
+      const t = i/n, nx = -(by - ay), ny = bx - ax, l = Math.hypot(nx, ny) || 1;
+      const d = (rng() - 0.5)*amp + Math.sin(t*9 + rng())*amp*0.4;
+      pts.push([ax + (bx - ax)*t + nx/l*d, ay + (by - ay)*t + ny/l*d]);
+    }
+  };
+  jag(x0, y0 + h*0.30, x0 + w*0.42, y0 + h*0.02, 60, w*0.03);
+  jag(x0 + w*0.42, y0 + h*0.02, x0 + w*0.86, y0, 40, w*0.018);
+  jag(x0 + w*0.86, y0, x0 + w, y0 + h*0.12, 8, w*0.03);
+  jag(x0 + w, y0 + h*0.12, x0 + w*0.99, y0 + h, 30, w*0.012);
+  jag(x0 + w*0.99, y0 + h, x0 + w*0.02, y0 + h*0.995, 26, w*0.014);
+  jag(x0 + w*0.02, y0 + h*0.995, x0, y0 + h*0.30, 30, w*0.012);
+  return {x0, y0, w, h, pts};
+}
+function slabPath(c){ c.beginPath(); slab.pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath(); }
+
+// lays out all three registers; draws the incisions as white strokes
+function inscribe(c){
+  const {x0, y0, w, h} = slab;
+  const list = (words.trim() || 'the sheet remembers').split(/\s+/).filter(Boolean);
+  const m = w*0.07, top = y0 + h*0.12;
+  const regs = [[top, y0 + h*0.42], [y0 + h*0.45, y0 + h*0.66], [y0 + h*0.69, y0 + h*0.95]];
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  // rules between the hands
+  c.lineWidth = w*0.004;
+  [regs[0][1] + h*0.012, regs[1][1] + h*0.012].forEach(y => { c.beginPath(); c.moveTo(x0 + m*0.6, y); c.lineTo(x0 + w - m*0.6, y); c.stroke(); });
+
+  // the clip keeps every sign on the stone, even where it broke away
+  c.save(); slabPath(c); c.clip();
+
+  // 1 · pictographs, in quadrats, rows left to right
+  {
+    const q = w*0.052, gap = q*0.16;
+    c.lineWidth = q*0.075;
+    let x = x0 + m, y = regs[0][0] + q*0.5, k = 0;
+    while(y < regs[0][1] - q*0.5){
+      const wd = list[k % list.length]; k++;
+      const signs = glyphsFor(wd), name = /^[A-Z]/.test(wd);
+      const cells = [];
+      for(let i=0;i<signs.length;i++){
+        if(FLAT[signs[i]] && FLAT[signs[i+1]]){ cells.push([signs[i], signs[i+1]]); i++; } else cells.push([signs[i]]);
+      }
+      const cw = cells.length*(q + gap);
+      if(x + cw > x0 + w - m){ x = x0 + m; y += q + gap*2.6; if(y >= regs[0][1] - q*0.5) break; }
+      if(name){
+        c.beginPath(); c.roundRect(x - gap*0.6, y - q*0.62, cw + gap*0.2, q*1.24, q*0.3); c.stroke();
+        c.beginPath(); c.moveTo(x + cw - gap*0.4, y - q*0.4); c.lineTo(x + cw - gap*0.4, y + q*0.4); c.stroke();
+      }
+      cells.forEach(cell => {
+        cell.forEach((sg, j) => {
+          c.save();
+          const sy = cell.length === 2 ? y + (j ? q*0.24 : -q*0.24) : y;
+          c.translate(x + q/2, sy); c.scale(q*0.46, (cell.length === 2 ? 0.5 : 1)*q*0.46);
+          c.lineWidth = q*0.075/(q*0.46);
+          SIGNS[sg](c, (hash(sg + wd) % 100)/100);
+          c.restore();
+        });
+        x += q + gap;
+      });
+      x += gap*0.6;
+    }
+  }
+  // 2 · cursive, right to left
+  {
+    const size = w*0.036, lead = size*1.55;
+    c.lineWidth = size*0.085;
+    let x = x0 + w - m, y = regs[1][0] + size*0.9, k = 0;
+    while(y < regs[1][1] - size*0.3){
+      const wd = list[k % list.length]; k++;
+      const est = wd.length*size*0.55;
+      if(x - est < x0 + m){ x = x0 + w - m; y += lead; if(y >= regs[1][1] - size*0.3) break; }
+      x -= cursiveWord(c, wd, x, y, size) + size*0.6;
+    }
+  }
+  // 3 · Greek capitals, scriptio continua, edge to edge
+  {
+    const size = w*0.028, lead = size*1.32;
+    c.font = '500 ' + size + 'px Georgia, "Times New Roman", serif';
+    c.textBaseline = 'alphabetic';
+    const text = list.map(toGreek).join('') + '·';
+    let i = 0, y = regs[2][0] + size, row0 = 0;
+    while(y < regs[2][1]){
+      // no two rows cut quite the same size, so the lines never stack into columns
+      c.font = '500 ' + (size*(0.95 + ((row0++*7919) % 11)/100)) + 'px Georgia, "Times New Roman", serif';
+      let x = x0 + m, row = '';
+      while(true){
+        const ch = text[i % text.length];
+        const wch = c.measureText(ch).width + size*0.12;
+        if(x + wch > x0 + w - m) break;
+        row += ch; x += wch; i++;
+      }
+      // spread the row to the margins, as a stonecutter would
+      const chars = [...row], total = chars.reduce((s, ch) => s + c.measureText(ch).width, 0);
+      const sp = (w - 2*m - total)/Math.max(1, chars.length - 1);
+      let xx = x0 + m;
+      // incised capitals are cut as outlines of their strokes
+      chars.forEach(ch => { c.lineWidth = size*0.07; c.strokeText(ch, xx, y); xx += c.measureText(ch).width + sp; });
+      y += lead;
+    }
+  }
+  c.restore();
+}
+
+// ── building the field ────────────────────────────────────────
+function build(){
+  slab = slabShape();
+  const at = c => c.setTransform(SS, 0, 0, SS, 0, 0);
+  const body = F.raster(c => { at(c); slabPath(c); c.fill(); });
+  const cut = F.raster(c => { at(c); c.strokeStyle = '#fff'; c.fillStyle = '#fff'; inscribe(c); });
+  const bodyS = F.blur(body, Math.round(2.2*SS), 2);           // the broken edge is rounded by time
+  const cutS = F.blur(cut, Math.max(1, Math.round(0.9*SS)), 2); // a V, not a trench
+  const n2 = PW*PH;
+  cov = new Float32Array(n2); hgt = new Float32Array(n2); groove = cutS;
+  colorMap = new Uint8ClampedArray(n2*3);
+  const surf = new Float32Array(n2);
+  const base = Relief.hexRgb(STONE), pink = [150, 122, 118], white = [178, 176, 172], black = [26, 26, 28];
+  for(let y=0;y<PH;y++){
+    for(let x=0;x<PW;x++){
+      const i = y*PW + x;
+      cov[i] = body[i];
+      if(body[i] <= 0.003) continue;
+      const X = x/SS, Y = y/SS;
+      // granodiorite: a grey ground flecked pink, white and black at three scales
+      const f1 = noise(X*0.35, Y*0.35), f2 = noise(X*0.9 + 50, Y*0.9), f3 = noise(X*0.22 + 99, Y*0.22 + 7);
+      let col = base.slice();
+      const mixIn = (c, t) => { col[0] += (c[0]-col[0])*t; col[1] += (c[1]-col[1])*t; col[2] += (c[2]-col[2])*t; };
+      if(f1 > 0.66) mixIn(pink, Math.min(1, (f1 - 0.66)*6)*0.8);
+      if(f2 > 0.72) mixIn(white, Math.min(1, (f2 - 0.72)*7)*0.7);
+      if(f2 < 0.26) mixIn(black, Math.min(1, (0.26 - f2)*6)*0.7);
+      mixIn([60, 60, 64], f3*0.25);
+      const g = cutS[i];
+      if(chalk && g > 0.10) mixIn(Relief.hexRgb(CHALK), Math.min(1, (g - 0.10)*3.2)*0.95);
+      colorMap[i*3] = col[0]; colorMap[i*3+1] = col[1]; colorMap[i*3+2] = col[2];
+      // polished face, pitted a little, with every groove sunk into it
+      const pit = noise(X*1.4, Y*1.4) > 0.78 ? -0.02 : 0;
+      surf[i] = bodyS[i]*0.9 + pit + (noise(X*0.05, Y*0.05) - 0.5)*0.05 - g*0.42;
+      hgt[i] = 1 - g*0.55;
+    }
+  }
+  nrm = F.normals(cov, surf, 30*SS);
+  makeLo();
+  need = true;
+}
+
+const LO = 3;
+function makeLo(){
+  const w = Math.floor(PW/LO), h = Math.floor(PH/LO), n = w*h;
+  lo = {W: w, H: h, F: Relief.field(w, h), cov: new Float32Array(n), hgt: new Float32Array(n),
+        nX: new Float32Array(n), nY: new Float32Array(n), nZ: new Float32Array(n), colorMap: new Uint8ClampedArray(n*3)};
+  lo.cv = Relief.makeCanvas(w, h); lo.ctx = lo.cv.getContext('2d');
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const i = y*w + x, a = (y*LO)*PW + x*LO;
+    lo.cov[i] = cov[a]; lo.hgt[i] = hgt[a]; lo.nX[i] = nrm.nX[a]; lo.nY[i] = nrm.nY[a]; lo.nZ[i] = nrm.nZ[a];
+    lo.colorMap[i*3] = colorMap[a*3]; lo.colorMap[i*3+1] = colorMap[a*3+1]; lo.colorMap[i*3+2] = colorMap[a*3+2];
+  }
+}
+
+// polished stone: a little gloss, and the room reflected in it
+const LOOK = {ambient: 0.30, aoLo: 0.40, exposure: 1.28, gloss: 0.34, sheen: 0.08, wrap: 0.30,
+              env: true, envLo: 0.70, envHi: 1.30, contrast: 1.02};
+function shade(preview){
+  const k = preview ? 1/LO : 1, src = preview ? lo : null;
+  (preview ? lo.F : F).shade(preview ? lo.ctx : artCtx, Object.assign({}, LOOK, {
+    cov: preview ? lo.cov : cov, hgt: preview ? lo.hgt : hgt, hMax,
+    nX: preview ? lo.nX : nrm.nX, nY: preview ? lo.nY : nrm.nY, nZ: preview ? lo.nZ : nrm.nZ,
+    colorMap: preview ? lo.colorMap : colorMap,
+    light: {x: lamp.x*SS*k, y: lamp.y*SS*k, h: 260*SS*k, radius: 1400*SS*k, color: '#fff3e2'},
+    tone: {shadow: '#1e1c22', high: '#fffaf0', amount: 0.06}
+  }));
+}
+
+// ── p5 ────────────────────────────────────────────────────────
+function measure(){
+  DW = document.documentElement.clientWidth; DH = window.innerHeight;
+  SS = Math.max(1, Math.min(Math.min(devicePixelRatio || 1, 2), Math.sqrt(4.2e6/(DW*DH))));
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS);
+  F = Relief.field(PW, PH);
+  art = Relief.makeCanvas(PW, PH); artCtx = art.getContext('2d');
+}
+function setup(){
+  pixelDensity(1);
+  measure();
+  createCanvas(PW, PH).parent('stage');
+  fitCanvas();
+  noiseSeed(196);
+  words = document.getElementById('words').value;
+  lamp = {x: DW*0.15, y: DH*0.1}; lampT = {x: DW*0.22, y: DH*0.18};
+  const go = () => { build(); ready = true; };
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(go, go);
+}
+function fitCanvas(){ const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px'; }
+function windowResized(){ measure(); resizeCanvas(PW, PH); fitCanvas(); if(ready) build(); }
+function mouseMoved(){ lampT = {x: mouseX/SS, y: mouseY/SS}; }
+function touchMoved(){ lampT = {x: mouseX/SS, y: mouseY/SS}; }
+
+function draw(){
+  if(!ready) return;
+  const dx = lampT.x - lamp.x, dy = lampT.y - lamp.y;
+  if(Math.abs(dx) + Math.abs(dy) > 0.8){ lamp.x += dx*0.12; lamp.y += dy*0.12; moving = 5; need = true; }
+  if(need){
+    if(moving > 0){ shade(true); moving--; } else { shade(false); need = false; }
+  }
+  const g = drawingContext;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, PW, PH);
+  // the stone stands a little off the paper
+  g.save();
+  g.shadowColor = 'rgba(40,34,28,0.32)'; g.shadowBlur = 26*SS; g.shadowOffsetY = 12*SS; g.shadowOffsetX = 6*SS;
+  g.imageSmoothingQuality = 'high';
+  if(moving > 0 && lo) g.drawImage(lo.cv, 0, 0, PW, PH); else g.drawImage(art, 0, 0);
+  g.restore();
+}
+
+// ── the words ─────────────────────────────────────────────────
+let typing = 0;
+document.getElementById('words').addEventListener('input', e => {
+  clearTimeout(typing);
+  typing = setTimeout(() => { words = e.target.value; if(ready) build(); }, 260);
+});
+document.getElementById('say').addEventListener('submit', e => e.preventDefault());
+document.getElementById('chalk').addEventListener('click', e => {
+  chalk = !chalk; e.target.setAttribute('aria-pressed', chalk); if(ready) build();
+});
+</script>
+</body>
+</html>
