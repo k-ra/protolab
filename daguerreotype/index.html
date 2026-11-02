@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mirror with a Memory — a daguerreotype</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<script src="../lib/flora.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#efece4;color:var(--ink);overflow:hidden;font-family:'Lora',serif}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;cursor:none}
+.bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);font-style:italic;font-size:14px;color:var(--soft)}
+.bar button{font:inherit;color:var(--soft);background:none;border:none;cursor:pointer}
+.bar button:hover,.bar button:focus-visible{color:var(--ink)}
+.back{position:fixed;left:20px;top:18px;font-style:italic;font-size:13px;color:var(--soft);text-decoration:none}
+.back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<div id="stage"></div>
+<div class="bar"><button id="sit">another sitter</button></div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// MIRROR WITH A MEMORY — a daguerreotype, after 1839.
+//
+// A silvered copper plate, fumed with iodine, exposed, developed over
+// mercury. Where light fell, a frost of silver–mercury grains scatters it
+// back white; where it didn't, the plate stays a bare polished mirror, and
+// a mirror is only as dark as whatever it faces. So a daguerreotype is a
+// positive when it reflects a dark room and turns negative the moment it
+// reflects something bright. Owners held them in velvet-lined cases and
+// tilted them until the picture came right.
+//
+// The cursor is a lamp in the room. Where its reflection lands, the
+// mirror-blacks flare and the picture inverts; move it away and it comes
+// back. Tarnish has crept in from the edge of the mat in thin-film colours
+// — straw, magenta, blue — and there are a few spots of foxing.
+// ═══════════════════════════════════════════════════════════════
+
+let DW, DH, SS, ready = false, seed = 1839, species = 'peony';
+let plate, tone = null, TW, TH, img, pcv, pctx, extras;
+let lamp = {x: -1e4, y: -1e4}, lampT = {x: -1e4, y: -1e4}, dirty = true;
+
+function layout(){
+  const h = Math.min(DH*0.78, DW*0.9/0.8), w = h*0.8;
+  plate = {x: (DW - w)/2, y: (DH - h)/2 - 12, w, h};
+  // the picture is computed at half density and smoothed up: the grain lives in the extras
+  TW = Math.round(w*SS*0.5); TH = Math.round(h*SS*0.5);
+  pcv = Relief.makeCanvas(TW, TH); pctx = pcv.getContext('2d'); img = pctx.createImageData(TW, TH);
+}
+
+// the sitter: a flower, lit from a north window, held as tone
+function sit(){
+  const F = Relief.field(TW, TH);
+  const spec = Flora.defaults({seed, species, size: Math.min(TW, TH)*0.26, leaves: 3});
+  const parts = Flora.grow(spec);
+  const h = F.rasterLuma(c => { c.translate(TW/2, TH*0.46); Flora.render(c, parts, spec, 'h'); });
+  const hs = F.blur(h, 2, 2);
+  const cov = new Float32Array(TW*TH).fill(1);
+  const nrm = F.normals(cov, hs, 8);
+  const cv = Relief.makeCanvas(TW, TH), c = cv.getContext('2d', {willReadFrequently: true});
+  F.shade(c, {cov, hgt: hs, hMax: 1, nX: nrm.nX, nY: nrm.nY, nZ: nrm.nZ, color: '#ffffff', matte: true,
+              ambient: 0.28, wrap: 0.35, contrast: 1.1, light: {x: -TW*0.2, y: -TH*0.25, h: TW*0.8, radius: TW*3, color: '#ffffff'}});
+  const d = c.getImageData(0, 0, TW, TH).data;
+  tone = new Float32Array(TW*TH);
+  for(let y=0;y<TH;y++) for(let x=0;x<TW;x++){
+    const i = y*TW + x, inFlower = hs[i] > 0.02;
+    // a plain painted backdrop, lighter behind the head of the sitter
+    const dx = (x - TW/2)/TW, dy = (y - TH*0.42)/TH, back = 0.30 + 0.32*Math.exp(-(dx*dx + dy*dy)*7);
+    tone[i] = inFlower ? Math.min(1, d[i*4]/255*1.05) : back;
+  }
+  makeExtras();
+  dirty = true;
+}
+
+// the things that happen to a plate in 180 years
+function makeExtras(){
+  extras = {tarnish: new Float32Array(TW*TH), hue: new Float32Array(TW*TH), fox: new Float32Array(TW*TH)};
+  const rng = Relief.makeRng(seed + 1), spots = [];
+  for(let k=0;k<26;k++) spots.push([rng()*TW, rng()*TH, (0.6 + rng()*2.2)*SS*0.5]);
+  for(let y=0;y<TH;y++) for(let x=0;x<TW;x++){
+    const i = y*TW + x;
+    // distance inside the oval window
+    const ox = (x - TW/2)/(TW*0.43), oy = (y - TH/2)/(TH*0.45), r = Math.sqrt(ox*ox + oy*oy);
+    const creep = 0.78 + noise(x*0.02, y*0.02)*0.18;
+    extras.tarnish[i] = Math.max(0, Math.min(1, (r - creep)/0.22));
+    extras.hue[i] = noise(x*0.012 + 50, y*0.012)*2.2 + r*1.4;
+    let f = 0; spots.forEach(([sx, sy, sr]) => { const dd = Math.hypot(x - sx, y - sy); if(dd < sr*3) f = Math.max(f, Math.exp(-dd*dd/(sr*sr))); });
+    extras.fox[i] = f;
+  }
+}
+
+// thin-film interference: as a film thickens, straw → magenta → blue → green
+function film(t){
+  const s = [[196, 168, 96], [160, 70, 120], [60, 80, 160], [70, 140, 120], [196, 168, 96]];
+  t = ((t % 1) + 1) % 1; const k = t*4, i = Math.floor(k), f = k - i;
+  return [s[i][0] + (s[i+1][0] - s[i][0])*f, s[i][1] + (s[i+1][1] - s[i][1])*f, s[i][2] + (s[i+1][2] - s[i][2])*f];
+}
+
+function develop(){
+  const d = img.data, P = plate;
+  // where the lamp's reflection falls on the plate, in plate pixels
+  const lx = (lamp.x - P.x)/P.w*TW, ly = (lamp.y - P.y)/P.h*TH;
+  const sig = TW*0.17, inv = 1/(2*sig*sig);
+  for(let y=0;y<TH;y++){
+    for(let x=0;x<TW;x++){
+      const i = y*TW + x, T = tone[i];
+      // the mirror: dark room, plus the lamp's soft reflection
+      const dx = x - lx, dy = y - ly;
+      const R = 0.05 + 0.95*Math.exp(-(dx*dx + dy*dy)*inv);
+      // amalgam frost scatters warm; bare silver reflects cool
+      // frost scatters, so it is never as bright as a mirror catching the lamp
+      const Tg = Math.pow(T, 1.15), frost = Tg*0.70, mirror = (1 - Tg)*R;
+      let r = frost*236 + mirror*228, g = frost*230 + mirror*232, b = frost*214 + mirror*238;
+      // tarnish creeps in from the mat
+      const tn = extras.tarnish[i];
+      if(tn > 0){ const c = film(extras.hue[i]); const a = tn*0.8; r += (c[0]*(0.4 + R) - r)*a; g += (c[1]*(0.4 + R) - g)*a; b += (c[2]*(0.4 + R) - b)*a; }
+      const fx = extras.fox[i]; if(fx > 0){ r *= 1 - fx*0.6; g *= 1 - fx*0.62; b *= 1 - fx*0.7; }
+      const o = i*4; d[o] = r; d[o+1] = g; d[o+2] = b; d[o+3] = 255;
+    }
+  }
+  pctx.putImageData(img, 0, 0);
+}
+
+function paint(){
+  const g = drawingContext, P = plate;
+  g.setTransform(SS, 0, 0, SS, 0, 0);
+  g.clearRect(0, 0, DW, DH);
+  // the case: red velvet behind
+  g.save(); g.shadowColor = 'rgba(40,30,22,0.3)'; g.shadowBlur = 24; g.shadowOffsetY = 10;
+  g.fillStyle = '#4a1e22'; g.fillRect(P.x - P.w*0.07, P.y - P.h*0.06, P.w*1.14, P.h*1.12); g.restore();
+  // the plate
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(pcv, P.x, P.y, P.w, P.h);
+  // the brass mat, with its oval window and a stamped bead border
+  g.save();
+  g.beginPath(); g.rect(P.x - 1, P.y - 1, P.w + 2, P.h + 2);
+  g.moveTo(P.x + P.w/2 + P.w*0.43, P.y + P.h/2);
+  g.ellipse(P.x + P.w/2, P.y + P.h/2, P.w*0.43, P.h*0.45, 0, 0, 7, true);
+  const br = g.createLinearGradient(P.x, P.y, P.x + P.w, P.y + P.h);
+  br.addColorStop(0, '#d9b86a'); br.addColorStop(0.45, '#a7843f'); br.addColorStop(0.55, '#c9a85c'); br.addColorStop(1, '#7c5f2c');
+  g.fillStyle = br; g.fill('evenodd');
+  g.strokeStyle = 'rgba(70,50,20,0.55)'; g.lineWidth = 1.2;
+  g.beginPath(); g.ellipse(P.x + P.w/2, P.y + P.h/2, P.w*0.43 + 3, P.h*0.45 + 3, 0, 0, 7); g.stroke();
+  g.fillStyle = 'rgba(255,236,180,0.55)';
+  for(let k=0;k<120;k++){ const a = k/120*6.283; g.beginPath(); g.arc(P.x + P.w/2 + Math.cos(a)*(P.w*0.43 + 9), P.y + P.h/2 + Math.sin(a)*(P.h*0.45 + 9), 1.1, 0, 7); g.fill(); }
+  g.restore();
+  // the lamp itself, a small warm point where the cursor is
+  if(lamp.x > -1e3){
+    const rg = g.createRadialGradient(lamp.x, lamp.y, 0, lamp.x, lamp.y, 14);
+    rg.addColorStop(0, 'rgba(255,240,200,0.9)'); rg.addColorStop(1, 'rgba(255,240,200,0)');
+    g.fillStyle = rg; g.beginPath(); g.arc(lamp.x, lamp.y, 14, 0, 7); g.fill();
+  }
+}
+
+function setup(){
+  pixelDensity(1);
+  DW = document.documentElement.clientWidth; DH = innerHeight; SS = Math.min(devicePixelRatio || 1, 2);
+  createCanvas(DW*SS, DH*SS).parent('stage'); fitC();
+  noiseSeed(1839);
+  if(DW > 2){ layout(); sit(); ready = true; }
+}
+function fitC(){ const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px'; }
+function windowResized(){
+  DW = document.documentElement.clientWidth; DH = innerHeight;
+  resizeCanvas(DW*SS, DH*SS); fitC();
+  if(DW > 2){ layout(); sit(); ready = true; }
+}
+function mouseMoved(){ lampT = {x: mouseX/SS, y: mouseY/SS}; if(lamp.x < -1e3) lamp = {...lampT}; }
+function touchMoved(){ mouseMoved(); }
+function draw(){
+  if(!ready) return;
+  const dx = lampT.x - lamp.x, dy = lampT.y - lamp.y;
+  if(Math.abs(dx) + Math.abs(dy) > 0.5){ lamp.x += dx*0.2; lamp.y += dy*0.2; dirty = true; }
+  if(dirty){ develop(); paint(); dirty = false; }
+}
+const SPECIES = ['peony', 'rose', 'anemone', 'dahlia', 'tulip', 'ranunculus'];
+document.getElementById('sit').onclick = () => { seed = Math.floor(Math.random()*1e5); species = SPECIES[(SPECIES.indexOf(species) + 1) % SPECIES.length]; sit(); };
+</script>
+</body>
+</html>
