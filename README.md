@@ -26,5 +26,6 @@ running log of experiments in simulating pressings, indentations, print processe
 - [nature printing](nature-print/): a barnsley fern pressed into lead, printed in green
 - [hands on the wall](stencil/): hand stencils blown in ochre on a torchlit cave wall
 - [quipu](quipu/): type numbers and they are tied in knotted cord, decimal and positional
+- [one stitch](sashiko/): hitomezashi sashiko stitched from the bits of two words
 
 `lib/gouache.js` paints any height field the way the round map paints terrain.

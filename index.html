@@ -74,6 +74,7 @@ noscript a{color:var(--soft)}
   <a href="nature-print/" data-k="fern"><span>Nature Printing</span></a>
   <a href="stencil/" data-k="hand"><span>Hands on the Wall</span></a>
   <a href="quipu/" data-k="quipu"><span>Quipu</span></a>
+  <a href="sashiko/" data-k="template"><span>One Stitch</span></a>
 </nav>
 <noscript>
   <a href="protolab/">The sheet</a><a href="canvas/">Clippings</a><a href="flowers/">Specimen</a>
@@ -84,7 +85,7 @@ noscript a{color:var(--soft)}
   <a href="jacquard/">Damask</a><a href="daguerreotype/">Mirror with a Memory</a><a href="chladni/">Sound Figures</a>
   <a href="turing/">Morphogenesis</a><a href="phyllotaxis/">Golden Angle</a>
   <a href="mezzotint/">The Black Manner</a><a href="obscura/">Camera Obscura</a>
-  <a href="nature-print/">Nature Printing</a><a href="stencil/">Hands on the Wall</a><a href="quipu/">Quipu</a>
+  <a href="nature-print/">Nature Printing</a><a href="stencil/">Hands on the Wall</a><a href="quipu/">Quipu</a><a href="sashiko/">One Stitch</a>
 </noscript>
 
 <script>
@@ -609,6 +610,18 @@ const KINDS = {
       });
     }
   },
+  // a sashiko pattern sheet: the stitches printed as dashes, ready to transfer
+  template: {
+    stock: '#f3efe4',
+    height(){},
+    color(ctx, s){
+      const g = s.U*0.1, bits = [1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1];
+      ctx.strokeStyle = '#2c4a86'; ctx.lineWidth = Math.max(0.7, s.U*0.014); ctx.lineCap = 'round';
+      const x0 = -s.hw*0.82, y0 = -s.hh*0.82, nx = Math.floor(s.hw*1.64/g), ny = Math.floor(s.hh*1.64/g);
+      for(let r=1;r<ny;r++) for(let k=0;k<nx;k++) if((k + bits[r % 16]) % 2 === 0){ ctx.beginPath(); ctx.moveTo(x0 + k*g + g*0.15, y0 + r*g); ctx.lineTo(x0 + (k + 1)*g - g*0.15, y0 + r*g); ctx.stroke(); }
+      for(let q=1;q<nx;q++) for(let k=0;k<ny;k++) if((k + bits[(q + 5) % 16]) % 2 === 0){ ctx.beginPath(); ctx.moveTo(x0 + q*g, y0 + k*g + g*0.15); ctx.lineTo(x0 + q*g, y0 + (k + 1)*g - g*0.15); ctx.stroke(); }
+    }
+  },
   // a wax seal on a punched tag
   sigil: {
     stock: STOCK.cotton, wax: true,
@@ -789,11 +802,12 @@ const PILED = {
   girih:     {hw: 0.62, hh: 0.55}, smoked:    {hw: 1.35, hh: 0.32}, card:    {hw: 0.95, hh: 0.42},
   cabinet:   {hw: 0.55, hh: 0.78}, figures:   {hw: 0.70, hh: 0.70}, maze:    {hw: 0.66, hh: 0.56},
   seeds:     {hw: 0.62, hh: 0.62}, velvet:  {hw: 0.55, hh: 0.70}, tracing: {hw: 0.72, hh: 0.56},
-  fern:      {hw: 0.52, hh: 0.76}, hand: {hw: 0.58, hh: 0.66}, quipu: {hw: 0.70, hh: 0.62}
+  fern:      {hw: 0.52, hh: 0.76}, hand: {hw: 0.58, hh: 0.66}, quipu: {hw: 0.70, hh: 0.62},
+  template:  {hw: 0.64, hh: 0.64}
 };
 // painter's order: later slips rest on earlier ones
 // A new study gets a slip here, a kind above, and a place in both layouts.
-const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds', 'velvet', 'tracing', 'fern', 'hand', 'quipu'];
+const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds', 'velvet', 'tracing', 'fern', 'hand', 'quipu', 'template'];
 
 function compose(){
   const L = DW/DH > 1.05 ? LAYOUTS.wide : LAYOUTS.tall;
