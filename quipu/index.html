@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quipu — numbers in knots</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#efece4;color:var(--ink);overflow:hidden;font-family:'Lora',serif}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;cursor:crosshair}
+form{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);display:flex;gap:10px;align-items:baseline;font-style:italic;font-size:14px;color:var(--soft)}
+input{font:inherit;font-style:normal;color:var(--ink);background:transparent;border:none;border-bottom:1px solid rgba(47,42,36,.25);padding:3px 2px;width:min(60vw,360px);outline:none}
+input:focus{border-bottom-color:var(--ink)}
+.back{position:fixed;left:20px;top:18px;font-style:italic;font-size:13px;color:var(--soft);text-decoration:none}
+.back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<div id="stage"></div>
+<form id="f" autocomplete="off"><label for="n">tie</label><input id="n" value="1532, 86, 407, 12, 3, 999, 250, 61, 1100"></form>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// QUIPU — numbers kept in knotted cord, after the Inka records.
+//
+// No writing, and an empire run on accounts: census, tribute, stores,
+// all tied into cords hanging from a main cord. As the Aschers worked out,
+// the numbers are decimal and positional. Each power of ten has its own
+// band down the cord. Tens, hundreds and thousands are clusters of single
+// knots; the units are tied as one long knot with as many turns as the
+// digit, except a one, which is a figure-eight, so you can always tell
+// where a number ends. A zero is a gap.
+//
+// Type numbers and they are tied. The cords are twisted camelid fibre in
+// natural dyes, every knot a real bump, lit by a lamp that follows the
+// cursor.
+// ═══════════════════════════════════════════════════════════════
+
+const DYES = [[222, 206, 172], [128, 86, 52], [56, 70, 112], [152, 56, 44], [196, 152, 72], [92, 100, 62], [72, 56, 46]];
+let DW, DH, SS, PW, PH, F, art, artCtx, lo = null, ready = false, need = false, moving = 0;
+let cov, hgt, nrm, colorMap, nums = [];
+let lamp = {x: 0, y: 0}, lampT = {x: 0, y: 0};
+const grey = v => { const c = Math.round(Math.max(0, Math.min(1, v))*255); return 'rgb(' + c + ',' + c + ',' + c + ')'; };
+
+// a run of twisted ply: a tube, with the twist laid across it on the diagonal
+function cord(c, pts, w, H){
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  const path = () => { c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); };
+  if(H){ c.strokeStyle = grey(0.45); c.lineWidth = w; path(); c.stroke(); c.strokeStyle = grey(0.62); c.lineWidth = w*0.55; path(); c.stroke(); }
+  else { c.strokeStyle = '#fff'; c.lineWidth = w; path(); c.stroke(); }
+  if(!H) return;
+  c.strokeStyle = grey(0.36); c.lineWidth = Math.max(0.6, w*0.12);
+  for(let i=1;i<pts.length;i++){
+    const [x0, y0] = pts[i-1], [x1, y1] = pts[i], L = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0)/L, uy = (y1 - y0)/L;
+    for(let s=0;s<L;s+=w*0.7){
+      const x = x0 + ux*s, y = y0 + uy*s;
+      c.beginPath(); c.moveTo(x - uy*w*0.45 - ux*w*0.2, y + ux*w*0.45 - uy*w*0.2); c.lineTo(x + uy*w*0.45 + ux*w*0.2, y - ux*w*0.45 + uy*w*0.2); c.stroke();
+    }
+  }
+}
+// knots: a single overhand, a long knot of n turns, a figure-eight
+function knot(c, x, y, w, kind, n, H){
+  c.save(); c.translate(x, y);
+  const fill = v => { c.fillStyle = H ? grey(v) : '#fff'; };
+  if(kind === 's'){ fill(0.8); c.beginPath(); c.ellipse(0, 0, w*0.95, w*0.8, 0, 0, 7); c.fill(); if(H){ fill(0.98); c.beginPath(); c.ellipse(-w*0.15, -w*0.1, w*0.5, w*0.4, 0, 0, 7); c.fill(); } }
+  else if(kind === 'l'){
+    const L = w*(0.9 + n*0.55);
+    fill(0.78); c.beginPath(); c.ellipse(0, 0, w*0.85, L/2, 0, 0, 7); c.fill();
+    if(H){ c.strokeStyle = grey(0.5); c.lineWidth = w*0.16;
+      for(let k=0;k<n;k++){ const yy = -L/2 + (k + 0.5)*L/n; c.beginPath(); c.moveTo(-w*0.8, yy - w*0.18); c.lineTo(w*0.8, yy + w*0.18); c.stroke(); } }
+  } else {
+    fill(0.82); c.beginPath(); c.ellipse(0, -w*0.55, w*0.8, w*0.62, 0.3, 0, 7); c.fill(); c.beginPath(); c.ellipse(0, w*0.55, w*0.8, w*0.62, -0.3, 0, 7); c.fill();
+    if(H){ c.strokeStyle = grey(0.5); c.lineWidth = w*0.16; c.beginPath(); c.moveTo(-w*0.6, -w*0.9); c.bezierCurveTo(w*0.8, -w*0.2, -w*0.8, w*0.2, w*0.6, w*0.9); c.stroke(); }
+  }
+  c.restore();
+}
+
+function layout(){
+  const n = Math.max(1, nums.length), top = DH*0.16, left = DW*0.12, right = DW*0.88;
+  const gap = Math.min(70, (right - left)/(n + 1)), w = Math.max(5, Math.min(11, gap*0.18));
+  const L = DH*0.66, band = L/5.2;
+  const cords = nums.map((v, i) => {
+    const x = left + (right - left)/2 - (n - 1)*gap/2 + i*gap, sway = (i % 3 - 1)*gap*0.12;
+    const pts = []; for(let k=0;k<=12;k++){ const t = k/12; pts.push([x + Math.sin(t*2.4 + i)*sway*t, top + t*L]); }
+    const at = t => { const k = Math.min(11, Math.floor(t*12)), f = t*12 - k; return [pts[k][0] + (pts[k+1][0] - pts[k][0])*f, pts[k][1] + (pts[k+1][1] - pts[k][1])*f]; };
+    // thousands, hundreds and tens in bands from the top; units at the foot
+    const digits = String(Math.max(0, Math.min(99999, Math.floor(v)))).split('').reverse().map(Number);
+    const knots = [];
+    digits.forEach((d, p) => {
+      if(!d) return;
+      if(p === 0){ const [kx, ky] = at(0.9); knots.push([kx, ky, d === 1 ? 'e' : 'l', d]); }
+      else { const t0 = 0.9 - p*0.19; for(let k=0;k<d;k++){ const [kx, ky] = at(t0 - 0.02*(k - (d - 1)/2)*1.2); knots.push([kx, ky, 's', 1]); } }
+    });
+    return {pts, knots, color: DYES[(i*3 + (v % 5)) % DYES.length]};
+  });
+  return {cords, top, left: left - gap*0.6, right: right + gap*0.6, w};
+}
+
+function build(){
+  const Lo = layout(), at = c => c.setTransform(SS, 0, 0, SS, 0, 0);
+  const main = [[Lo.left - 30, Lo.top - 8], [DW/2, Lo.top - 2], [Lo.right + 30, Lo.top - 8]];
+  const h = F.rasterLuma(c => {
+    at(c);
+    cord(c, main, Lo.w*1.8, true);
+    Lo.cords.forEach(k => { cord(c, k.pts, Lo.w, true); k.knots.forEach(([x, y, kind, n]) => knot(c, x, y, Lo.w, kind, n, true)); });
+  });
+  const ids = F.rasterColor(c => {
+    at(c);
+    c.strokeStyle = 'rgb(210,196,164)'; c.lineWidth = Lo.w*1.8; c.lineCap = 'round';
+    c.beginPath(); main.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke();
+    Lo.cords.forEach(k => {
+      const col = 'rgb(' + k.color.join(',') + ')';
+      c.strokeStyle = col; c.lineWidth = Lo.w; c.beginPath(); k.pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke();
+      c.fillStyle = col; k.knots.forEach(([x, y, kind, n]) => { c.save(); c.globalAlpha = 1; knot(c, x, y, Lo.w*1.05, kind, n, false); c.restore(); });
+    });
+    // re-colour the knots: drawn white above, so tint them now
+    Lo.cords.forEach(k => { c.fillStyle = 'rgb(' + k.color.map(v => v*0.9).join(',') + ')'; c.globalCompositeOperation = 'source-atop';
+      k.knots.forEach(([x, y]) => { c.beginPath(); c.arc(x, y, Lo.w*3, 0, 7); c.fill(); }); c.globalCompositeOperation = 'source-over'; });
+  });
+  const hs = F.blur(h, Math.max(1, Math.round(0.8*SS)), 2);
+  const n2 = PW*PH;
+  cov = ids.cov; hgt = new Float32Array(n2); colorMap = ids.colorMap;
+  for(let i=0;i<n2;i++) hgt[i] = 0.45 + 0.55*hs[i];
+  nrm = F.normals(cov, hs, 22*SS);
+  makeLo();
+  need = true;
+}
+
+const LO = 3;
+function makeLo(){
+  const w = Math.floor(PW/LO), h = Math.floor(PH/LO), n = w*h;
+  lo = {F: Relief.field(w, h), cov: new Float32Array(n), hgt: new Float32Array(n),
+        nX: new Float32Array(n), nY: new Float32Array(n), nZ: new Float32Array(n), colorMap: new Uint8ClampedArray(n*3)};
+  lo.cv = Relief.makeCanvas(w, h); lo.ctx = lo.cv.getContext('2d');
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const i = y*w + x, a = (y*LO)*PW + x*LO;
+    lo.cov[i] = cov[a]; lo.hgt[i] = hgt[a]; lo.nX[i] = nrm.nX[a]; lo.nY[i] = nrm.nY[a]; lo.nZ[i] = nrm.nZ[a];
+    lo.colorMap[i*3] = colorMap[a*3]; lo.colorMap[i*3+1] = colorMap[a*3+1]; lo.colorMap[i*3+2] = colorMap[a*3+2];
+  }
+}
+function shade(preview){
+  const k = preview ? 1/LO : 1;
+  (preview ? lo.F : F).shade(preview ? lo.ctx : artCtx, {
+    cov: preview ? lo.cov : cov, hgt: preview ? lo.hgt : hgt, hMax: 1,
+    nX: preview ? lo.nX : nrm.nX, nY: preview ? lo.nY : nrm.nY, nZ: preview ? lo.nZ : nrm.nZ,
+    colorMap: preview ? lo.colorMap : colorMap,
+    light: {x: lamp.x*SS*k, y: lamp.y*SS*k, h: 260*SS*k, radius: 1600*SS*k, color: '#fff4e2'},
+    ambient: 0.42, aoLo: 0.5, exposure: 1.18, matte: true, wrap: 0.35, sheen: 0.06, scatter: 0.06});
+}
+
+function setup(){
+  pixelDensity(1);
+  DW = document.documentElement.clientWidth; DH = innerHeight;
+  SS = Math.max(1, Math.min(Math.min(devicePixelRatio || 1, 2), Math.sqrt(3.6e6/(DW*DH))));
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS);
+  createCanvas(PW, PH).parent('stage'); const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px';
+  F = Relief.field(PW, PH); art = Relief.makeCanvas(PW, PH); artCtx = art.getContext('2d');
+  lamp = {x: DW*0.3, y: DH*0.1}; lampT = {x: DW*0.35, y: DH*0.15};
+  read();
+  if(DW > 2){ build(); ready = true; }
+}
+function windowResized(){
+  DW = document.documentElement.clientWidth; DH = innerHeight;
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS); resizeCanvas(PW, PH);
+  const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px';
+  F = Relief.field(PW, PH); art = Relief.makeCanvas(PW, PH); artCtx = art.getContext('2d');
+  if(DW > 2){ build(); ready = true; }
+}
+function read(){ nums = document.getElementById('n').value.split(/[^0-9]+/).filter(Boolean).map(Number).slice(0, 24); }
+function mouseMoved(){ lampT = {x: mouseX/SS, y: mouseY/SS}; }
+function draw(){
+  if(!ready) return;
+  const dx = lampT.x - lamp.x, dy = lampT.y - lamp.y;
+  if(Math.abs(dx) + Math.abs(dy) > 0.8){ lamp.x += dx*0.12; lamp.y += dy*0.12; moving = 5; need = true; }
+  if(need){ if(moving > 0){ shade(true); moving--; } else { shade(false); need = false; } }
+  const g = drawingContext; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, PW, PH);
+  g.save(); g.shadowColor = 'rgba(40,30,20,0.28)'; g.shadowBlur = 6*SS; g.shadowOffsetY = 4*SS; g.shadowOffsetX = 2*SS;
+  g.imageSmoothingQuality = 'high';
+  if(moving > 0 && lo) g.drawImage(lo.cv, 0, 0, PW, PH); else g.drawImage(art, 0, 0);
+  g.restore();
+}
+let tt = 0;
+document.getElementById('n').addEventListener('input', () => { clearTimeout(tt); tt = setTimeout(() => { read(); if(ready) build(); }, 300); });
+document.getElementById('f').addEventListener('submit', e => e.preventDefault());
+</script>
+</body>
+</html>
