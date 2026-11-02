@@ -59,12 +59,16 @@ noscript a{color:var(--soft)}
   <a href="cyanotype/" data-k="cyan"><span>Sun Print</span></a>
   <a href="gilded/" data-k="gilded"><span>Gilded</span></a>
   <a href="burin/" data-k="engraving"><span>One Line</span></a>
+  <a href="kintsugi/" data-k="washi"><span>Kintsugi</span></a>
+  <a href="girih/" data-k="girih"><span>Girih</span></a>
+  <a href="kymograph/" data-k="smoked"><span>Smoked Drum</span></a>
 </nav>
 <noscript>
   <a href="protolab/">The sheet</a><a href="canvas/">Clippings</a><a href="flowers/">Specimen</a>
   <a href="press/">The Press</a><a href="wax-seal/">Sigil Pressure</a>
   <a href="twin-peaks/">San Francisco, Round</a><a href="rosetta/">Three Hands</a><a href="ebru/">Ebru</a>
   <a href="cyanotype/">Sun Print</a><a href="gilded/">Gilded</a><a href="burin/">One Line</a>
+  <a href="kintsugi/">Kintsugi</a><a href="girih/">Girih</a><a href="kymograph/">Smoked Drum</a>
 </noscript>
 
 <script>
@@ -352,6 +356,59 @@ const KINDS = {
       ctx.closePath(); ctx.fillStyle = '#211b18'; ctx.fill();
     }
   },
+  // washi torn across and mended with a raised seam of gold
+  washi: {
+    stock: '#f3eee2', gold: true,
+    tear(ctx, s){
+      const rng = Relief.makeRng(s.seed + 4);
+      ctx.beginPath(); ctx.moveTo(-s.hw*1.05, -s.hh*0.2);
+      for(let i=1;i<=24;i++){ const t = i/24; ctx.lineTo(-s.hw*1.05 + t*s.hw*2.1, -s.hh*0.2 + t*s.hh*0.5 + (rng() - 0.5)*s.hh*0.16); }
+    },
+    height(ctx, s){ ctx.strokeStyle = '#fff'; ctx.globalAlpha = 0.6; ctx.lineWidth = s.U*0.05; ctx.lineJoin = 'round'; KINDS.washi.tear(ctx, s); ctx.stroke(); },
+    color(ctx, s){
+      const rng = Relief.makeRng(s.seed + 6);
+      ctx.strokeStyle = 'rgba(160,140,110,0.35)'; ctx.lineWidth = Math.max(0.5, s.U*0.006);   // long kozo fibres
+      for(let i=0;i<60;i++){ const x = (rng()*2 - 1)*s.hw, y = (rng()*2 - 1)*s.hh, a = rng()*6.28, l = s.U*(0.1 + rng()*0.25);
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + Math.cos(a + 0.5)*l*0.5, y + Math.sin(a + 0.5)*l*0.5, x + Math.cos(a)*l, y + Math.sin(a)*l); ctx.stroke(); }
+      KINDS.washi.mask(ctx, s, '#d0a650');
+    },
+    mask(ctx, s, col){ ctx.strokeStyle = col || '#fff'; ctx.lineWidth = s.U*0.045; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; KINDS.washi.tear(ctx, s); ctx.stroke(); }
+  },
+  // girih stars, blind-embossed into cotton paper
+  girih: {
+    stock: STOCK.cotton,
+    height(ctx, s){
+      ctx.save(); outline(ctx, s); ctx.clip();
+      ctx.strokeStyle = '#fff'; ctx.globalAlpha = 0.6; ctx.lineWidth = s.U*0.032; ctx.lineJoin = 'miter';
+      const c = s.U*0.62;
+      for(let gx=-3; gx<=3; gx++) for(let gy=-2; gy<=2; gy++){
+        const cx = gx*c, cy = gy*c;
+        ctx.beginPath();                                     // an eight-pointed star, {8/3}
+        for(let k=0;k<=8;k++){ const a = k*3*Math.PI*2/8 + Math.PI/8, r = c*0.46; k ? ctx.lineTo(cx + Math.cos(a)*r, cy + Math.sin(a)*r) : ctx.moveTo(cx + Math.cos(a)*r, cy + Math.sin(a)*r); }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  },
+  // a strip cut off the smoked drum and fixed in shellac
+  smoked: {
+    stock: '#2b2116',
+    height(){},
+    color(ctx, s){
+      ctx.strokeStyle = 'rgba(232,220,196,0.9)'; ctx.lineWidth = Math.max(0.7, s.U*0.014); ctx.lineJoin = 'round';
+      ctx.beginPath();
+      for(let x=-s.hw*0.96; x<=s.hw*0.96; x+=0.6){
+        const t = (x + s.hw)/(s.U*0.55), ph = t % 1;
+        const beat = ph < 0.08 ? Math.sin(ph/0.08*Math.PI)*0.75 : (ph < 0.22 ? -Math.sin((ph - 0.08)/0.14*Math.PI)*0.18 : 0);
+        const y = -s.hh*0.15 - (beat + Math.sin(t*0.9)*0.15)*s.hh*0.55;
+        x === -s.hw*0.96 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.lineWidth = Math.max(0.6, s.U*0.01); ctx.beginPath();          // the seconds
+      for(let x=-s.hw*0.96; x<s.hw*0.96; x+=s.U*0.48){ ctx.moveTo(x, s.hh*0.62); ctx.lineTo(x, s.hh*0.50); ctx.lineTo(x + s.U*0.04, s.hh*0.50); ctx.lineTo(x + s.U*0.04, s.hh*0.62); ctx.lineTo(x + s.U*0.48, s.hh*0.62); }
+      ctx.stroke();
+    }
+  },
   // a wax seal on a punched tag
   sigil: {
     stock: STOCK.cotton, wax: true,
@@ -512,30 +569,36 @@ const LAYOUTS = {
       marbled:   {x: 0.63, y: 0.14, r:  4, hw: 0.74, hh: 0.54},
       cyan:      {x: 0.08, y: 0.64, r: -6, hw: 0.62, hh: 0.82},
       gilded:    {x: 0.945, y: 0.47, r:  6, hw: 0.58, hh: 0.80},
-      engraving: {x: 0.455, y: 0.495, r: -2, hw: 0.58, hh: 0.68}
+      engraving: {x: 0.455, y: 0.495, r: -2, hw: 0.58, hh: 0.68},
+      washi:     {x: 0.07, y: 0.13, r: -8, hw: 0.56, hh: 0.50},
+      girih:     {x: 0.93, y: 0.13, r:  5, hw: 0.62, hh: 0.55},
+      smoked:    {x: 0.64, y: 0.915, r: -1.5, hw: 1.35, hh: 0.32}
     }
   },
   tall: {
     mark: {x: 0.50, y: 0.07},
-    U: (w, h) => Math.min(w/430, h/900)*54,
+    U: (w, h) => Math.min(w/430, h/900)*46,
     slips: {
-      sheet:     {x: 0.74, y: 0.19,  r:  7, hw: 0.95, hh: 0.74},
-      specimen:  {x: 0.30, y: 0.25,  r: -5, hw: 1.06, hh: 1.36},
-      map:       {x: 0.72, y: 0.335, r: 16, hw: 0.80, hh: 0.80},
-      press:     {x: 0.29, y: 0.43,  r:  4, hw: 0.82, hh: 1.04},
-      clippings: {x: 0.73, y: 0.485, r: -8, hw: 0.70, hh: 0.92},
-      sigil:     {x: 0.30, y: 0.585, r: 12, hw: 0.56, hh: 0.86},
-      rubbing:   {x: 0.72, y: 0.625, r: -3, hw: 0.80, hh: 0.60},
-      marbled:   {x: 0.71, y: 0.745, r:  4, hw: 0.74, hh: 0.54},
-      cyan:      {x: 0.30, y: 0.725, r: -6, hw: 0.62, hh: 0.82},
-      gilded:    {x: 0.28, y: 0.88,  r:  6, hw: 0.58, hh: 0.80},
-      engraving: {x: 0.69, y: 0.875, r: -2, hw: 0.62, hh: 0.72}
+      sheet:     {x: 0.74, y: 0.155, r:  7, hw: 0.95, hh: 0.74},
+      specimen:  {x: 0.30, y: 0.22,  r: -5, hw: 1.06, hh: 1.36},
+      map:       {x: 0.72, y: 0.277, r: 16, hw: 0.80, hh: 0.80},
+      press:     {x: 0.29, y: 0.384, r:  4, hw: 0.82, hh: 1.04},
+      clippings: {x: 0.73, y: 0.402, r: -8, hw: 0.70, hh: 0.92},
+      sigil:     {x: 0.30, y: 0.52,  r: 12, hw: 0.56, hh: 0.86},
+      rubbing:   {x: 0.72, y: 0.532, r: -3, hw: 0.80, hh: 0.60},
+      marbled:   {x: 0.71, y: 0.630, r:  4, hw: 0.74, hh: 0.54},
+      cyan:      {x: 0.30, y: 0.647, r: -6, hw: 0.62, hh: 0.82},
+      gilded:    {x: 0.28, y: 0.769, r:  6, hw: 0.58, hh: 0.80},
+      engraving: {x: 0.69, y: 0.729, r: -2, hw: 0.62, hh: 0.72},
+      washi:     {x: 0.27, y: 0.877, r: -6, hw: 0.56, hh: 0.50},
+      girih:     {x: 0.71, y: 0.845, r:  5, hw: 0.62, hh: 0.55},
+      smoked:    {x: 0.64, y: 0.932, r: -1.5, hw: 1.75, hh: 0.32}
     }
   }
 };
 // painter's order: later slips rest on earlier ones
 // A new study gets a slip here, a kind above, and a place in both layouts.
-const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving'];
+const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked'];
 
 function compose(){
   const L = DW/DH > 1.05 ? LAYOUTS.wide : LAYOUTS.tall;
