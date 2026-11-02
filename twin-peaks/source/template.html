@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>San Francisco, Round</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@800&text=%E6%A1%91%E6%B8%AF&display=swap" rel="stylesheet">
+<style>
+  :root { --paper:#e9eaec; --sheet:#fbfaf7; --ink:#2b2a28; --red:#c8372d; --muted:#8a857c; }
+  /* a painting on paper: the sheet stays light in both themes */
+  :root { color-scheme: light; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--paper); color:var(--ink); }
+  body { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 16px; font-family:"EB Garamond", Garamond, Georgia, serif; }
+  .sheet { position:relative; width:min(94vw, 94vh, 1100px); aspect-ratio:1; }
+  canvas { width:100%; height:100%; display:block; background:var(--sheet); box-shadow:0 1px 2px rgba(30,34,40,.08), 0 30px 60px -34px rgba(30,34,40,.38); }
+  .status { position:absolute; inset:0; display:grid; place-items:center; color:var(--muted); font-size:14px; letter-spacing:.08em; pointer-events:none; transition:opacity .6s; }
+  canvas { cursor:grab; touch-action:none; outline:none; }
+  canvas.grabbing { cursor:grabbing; }
+  canvas:focus-visible { box-shadow:0 0 0 2px var(--red); border-radius:50%; }
+  .controls { margin-top:12px; display:flex; flex-wrap:wrap; gap:4px 14px; align-items:center; justify-content:center; }
+  .controls button { font:500 12px "Shippori Mincho", Georgia, serif; color:var(--muted); background:none; border:0; border-bottom:1px solid transparent; padding:2px 0; cursor:pointer; letter-spacing:.06em; }
+  .controls button:hover { color:var(--red); border-bottom-color:var(--red); }
+  .controls button:focus-visible { outline:1.5px solid var(--red); outline-offset:3px; }
+  .controls .dot { color:var(--muted); }
+  .sheet { transform-origin:50% 50%; will-change:transform; }
+  .foot { margin-top:14px; color:var(--muted); font-size:12px; letter-spacing:.04em; text-align:center; max-width:640px; line-height:1.6; }
+  .foot b { color:var(--ink); font-weight:700; }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <canvas id="c" width="2400" height="2400"></canvas>
+  <div class="status" id="status">mixing paints…</div>
+</div>
+<script>
+const DATA = "__DATA__";
+(async function(){
+await new Promise(r=>setTimeout(r,50));
+const cv = document.getElementById('c'); let ctx = cv.getContext('2d');
+const SZ = cv.width, CX = SZ/2, CY = SZ/2;
+const N = 1001, S = 0.05, HALF = 500;            // grid: 1001 cells of 50 m, centred on Twin Peaks
+const LAT0 = 37.7531, LON0 = -122.4474;
+const KX = 111.32*Math.cos(LAT0*Math.PI/180), KY = 110.574;
+
+// ---------- data ----------
+const bin = Uint8Array.from(atob(DATA), c => c.charCodeAt(0));
+const raw = new Uint8Array(await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+
+// ---------- helpers ----------
+const clamp=(x,a,b)=>x<a?a:x>b?b:x, mix=(a,b,t)=>a+(b-a)*t;
+const sstep=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
+function blur(src, N, r){ // separable box blur x3 ~ gaussian
+  let a = Float32Array.from(src), b = new Float32Array(N*N);
+  for (let pass=0; pass<3; pass++){
+    for (let y=0;y<N;y++){ let s=0,row=y*N; for(let x=-r;x<=r;x++) s+=a[row+clamp(x,0,N-1)];
+      for(let x=0;x<N;x++){ b[row+x]=s/(2*r+1); s+=a[row+clamp(x+r+1,0,N-1)]-a[row+clamp(x-r,0,N-1)]; } }
+    for (let x=0;x<N;x++){ let s=0; for(let y=-r;y<=r;y++) s+=b[clamp(y,0,N-1)*N+x];
+      for(let y=0;y<N;y++){ a[y*N+x]=s/(2*r+1); s+=b[clamp(y+r+1,0,N-1)*N+x]-b[clamp(y-r,0,N-1)*N+x]; } }
+  }
+  return a;
+}
+const lerp3=(a,b,t)=>[mix(a[0],b[0],t),mix(a[1],b[1],t),mix(a[2],b[2],t)];
+
+// ---------- palette (gouache) ----------
+// lithograph washes after the Taishō round maps: bottle and sage greens, pale straw flats, celadon water, violet shade
+const P = {
+  gDeep:[30,68,66], gMid:[70,116,82], gLight:[138,166,98], gCrest:[196,204,138],
+  ochre:[238,212,134], ochreLt:[246,231,172], ochreDk:[218,184,120],
+  sand:[242,230,200],
+  seaShal:[222,231,219], seaDeep:[186,206,200], lake:[160,192,192],
+  shadow:[70,74,138], lav:[188,178,212], rose:[232,182,176],
+};
+// a slow, uneven wash: two octaves of smooth value noise, so every field of colour breathes a little like pigment in water
+const WASH = (()=>{ const n=72, g=new Float32Array(n*n); let sd=29; const r=()=>((sd=(sd*16807)%2147483647)/2147483647);
+  for (let i=0;i<n*n;i++) g[i]=r()*2-1;
+  const at=(x,y)=>{ x=((x%n)+n)%n; y=((y%n)+n)%n; const x0=x|0,y0=y|0,x1=(x0+1)%n,y1=(y0+1)%n,tx=x-x0,ty=y-y0, sx=tx*tx*(3-2*tx), sy=ty*ty*(3-2*ty);
+    return mix(mix(g[y0*n+x0],g[y0*n+x1],sx), mix(g[y1*n+x0],g[y1*n+x1],sx), sy); };
+  return (X,Y)=> at(X/140,Y/140)*0.65 + at(X/46+17,Y/46+5)*0.35; })();
+
+// ---------- terrain grids (coarse 50 m out to 25 km, fine 12.5 m around Twin Peaks) ----------
+// each cell carries: 0 height, 1 sunlight, 2 hilliness, 3/4 blurred terrace heights, 5-7 water colour, 8 park
+const K = 9, STEP = 24;
+function makeGrid(off, N, S){
+  const i16 = new Int16Array(raw.buffer.slice(off, off+N*N*2));
+  const LC = raw.slice(off+N*N*2, off+N*N*3);
+  const EL = new Float32Array(N*N); for (let i=0;i<N*N;i++) EL[i]=i16[i]/10;
+  const ELp = blur(EL.map(v=>Math.max(v,0)), N, Math.max(1,Math.round(0.05/S)));
+  const B3 = blur(ELp, N, Math.max(2,Math.round(1.6/S)));
+  const SH = blur(Float32Array.from(LC, v=>(v===0)?0:1), N, Math.max(1,Math.round(0.12/S)));
+  const PK = blur(Float32Array.from(LC, v=>v===2?1:0), N, Math.max(1,Math.round(0.04/S)));
+  const T = ELp.map(v=>Math.floor(v/STEP)*STEP);
+  const BT = blur(T, N, Math.max(1,Math.round(0.045/S)));
+  const BTw = blur(T, N, Math.max(1,Math.round(0.16/S)));
+  const F = new Float32Array(N*N*K);
+  const lx=-0.55, ly=0.55, lz=0.63;               // NW sun
+  for (let y=0;y<N;y++) for (let x=0;x<N;x++){
+    const i=y*N+x, c=LC[i], e=ELp[i], f=i*K;
+    const gx=(ELp[y*N+clamp(x+1,0,N-1)]-ELp[y*N+clamp(x-1,0,N-1)])/(2*S*1000);
+    const gy=(ELp[clamp(y-1,0,N-1)*N+x]-ELp[clamp(y+1,0,N-1)*N+x])/(2*S*1000);
+    const nx=-gx*1.6, ny=-gy*1.6, nl=Math.hypot(nx,ny,1);
+    F[f]=e; F[f+1]=(nx*lx+ny*ly+lz)/nl;
+    F[f+2]=Math.max(sstep(40,55,e-B3[i]), sstep(150,170,e));
+    F[f+3]=BT[i]; F[f+4]=BTw[i];
+    let col = c===4 ? P.lake : c===3 ? P.sand : lerp3(P.seaShal, P.seaDeep, Math.sqrt(clamp(-EL[i]/25,0,1)));
+    if (c===0) col = lerp3(col, [236,244,238], sstep(0.04,0.45,SH[i])*0.8);
+    F[f+5]=col[0]; F[f+6]=col[1]; F[f+7]=col[2]; F[f+8]=PK[i];
+  }
+  return {N,S,half:(N-1)/2,F,LC};
+}
+const G0 = makeGrid(0, 1001, 0.05), G1 = makeGrid(1001*1001*3, 641, 0.0125);
+const out = new Float32Array(K), tmp = new Float32Array(K); let outLC = 0;
+function sg(G, wx, wy, o){ // bilinear sample of one grid; returns land-cover code or -1 if outside
+  const fx=wx/G.S+G.half, fy=G.half-wy/G.S; const x0=Math.floor(fx), y0=Math.floor(fy), N=G.N;
+  if (x0<0||y0<0||x0>=N-1||y0>=N-1) return -1;
+  const tx=fx-x0, ty=fy-y0, i=y0*N+x0, F=G.F;
+  const w00=(1-tx)*(1-ty), w10=tx*(1-ty), w01=(1-tx)*ty, w11=tx*ty;
+  const a=i*K, b=a+K, c=(i+N)*K, d=c+K;
+  for (let k=0;k<K;k++) o[k]=F[a+k]*w00+F[b+k]*w10+F[c+k]*w01+F[d+k]*w11;
+  return G.LC[ty<.5 ? (tx<.5?i:i+1) : (tx<.5?i+N:i+N+1)];
+}
+function sample(wx, wy){
+  const m = Math.max(Math.abs(wx),Math.abs(wy));
+  if (m < 3.9){
+    outLC = sg(G1,wx,wy,out);
+    if (m > 3.3){ const l0 = sg(G0,wx,wy,tmp), t=sstep(3.3,3.9,m);
+      for (let k=0;k<K;k++) out[k]=mix(out[k],tmp[k],t); if(t>.5) outLC=l0; }
+    return true;
+  }
+  outLC = sg(G0,wx,wy,out);
+  return outLC >= 0;
+}
+const gradG = (t)=> t<0.5 ? lerp3(P.gDeep,P.gMid,t*2) : (t<0.85? lerp3(P.gMid,P.gLight,(t-0.5)/0.35) : lerp3(P.gLight,P.gCrest,(t-0.85)/0.15));
+const gradU = (t)=> t<0.5 ? lerp3(P.ochreDk,P.ochre,t*2) : lerp3(P.ochre,P.ochreLt,(t-0.5)*2);
+function paint(o, lc, q){   // colour of the sampled surface; q = how far toward the rim (0..1)
+  if (lc===0 || lc===4 || lc===3) return [o[5],o[6],o[7]];
+  const h=o[0], T=Math.floor(h/STEP)*STEP;
+  const terr = 1 - sstep(0.38,0.56,q);           // terraces read from above, fade as we turn to the side view
+  const ao = (clamp((o[3]-T)/STEP*1.6,0,1)*0.6 + clamp((o[4]-T)/STEP,0,1)*0.4)*terr;
+  const rim = clamp((T-o[3])/STEP*2.0,0,1)*terr;
+  const hh = mix(h, T, terr);
+  const sh = o[1]-0.72, park = sstep(0.4,0.6,o[8]);
+  const alt = sstep(0, 300, hh);
+  let t = clamp(0.38 + alt*0.42 + sh*0.75 + rim*0.2 - ao*0.34 + park*0.36, 0, 1);
+  const g = gradG(t);
+  const u = gradU(clamp(0.62 + sh*0.7 + rim*0.18 - ao*0.4, 0, 1));
+  const hilly = Math.max(o[2], park*(lc===2?1:0.6));
+  return lerp3(u, g, sstep(0.3,0.7,hilly));
+}
+
+// ---------- projection: top-down at the centre, curling to a side view at the rim ----------
+const RM = SZ*0.40, D0 = 1.1, DMAX = 24, LN = Math.log(1+DMAX/D0);
+const LIFT = 1.0*RM, DP = 10;
+const r0 = d => RM*Math.log(1+d/D0)/LN;
+const lift = (d,h) => { const q=Math.min(1,r0(d)/RM); const phi = (Math.PI/2)*Math.pow(q,0.6);
+  return LIFT*(h/1000)*Math.sin(phi)*Math.min(1,d/0.8)/(1+d/DP); };
+function sampleH(wx,wy){ return sample(wx,wy) ? out[0] : 0; }
+function project(lat,lon,hOver=0){
+  const wx=(lon-LON0)*KX, wy=(lat-LAT0)*KY, d=Math.hypot(wx,wy), a=Math.atan2(wy,wx);
+  const h=sampleH(wx,wy)+hOver, R=r0(d)+lift(d,h);
+  return {x:CX+R*Math.cos(a), y:CY-R*Math.sin(a), d, R, a, h};
+}
+
+// ---------- the painting pass (polar voxel columns) ----------
+const img = ctx.createImageData(SZ,SZ), px = img.data;
+const DEPTH = new Float32Array(SZ*SZ).fill(1e9);   // world distance of visible surface
+const LCB = new Uint8Array(SZ*SZ).fill(255);       // land cover under each pixel
+const NC = Math.ceil(2*Math.PI*RM*1.25*1.5);
+const DU = 0.4*LN/RM;
+const RIM = new Float32Array(NC);
+for (let c=0;c<NC;c++){
+  const a = c/NC*2*Math.PI, ca=Math.cos(a), sa=Math.sin(a);
+  let maxR = 0, emerged = -1, occl = false, prevH = sampleH(0,0), dCrest = 0, gap = 0;
+  for (let u=0; u<=LN; u+=DU){
+    const d = D0*(Math.exp(u)-1);
+    if (!sample(d*ca, d*sa)) break;
+    const h = out[0], lc = outLC;
+    const q = r0(d)/RM;
+    const R = r0(d) + lift(d,h);
+    if (R <= maxR){ if(!occl){ occl=true; dCrest=d; } prevH=h; continue; }
+    if (occl){ occl=false; emerged = maxR; gap = sstep(0.05, 1.2, d-dCrest); }
+    let [r,g,b] = paint(out, lc, q); const land = lc!==0 && lc!==4;
+    // slopes facing the centre catch light from behind the viewer
+    const at = sstep(0.7,1.0,q)*0.35;      // a little air toward the rim
+    const AIR = land ? lerp3(P.lav, P.rose, 0.45) : [214,218,222];   // distant hills go mauve-rose, distant water goes pearl
+    r=mix(r,AIR[0],at); g=mix(g,AIR[1],at); b=mix(b,AIR[2],at);
+    if (!land){ const f = sstep(0.9,1.0,q)*0.7; r=mix(r,238,f); g=mix(g,236,f); b=mix(b,240,f); }
+    for (let rr = maxR; rr < R; rr += 0.6){
+      let cr=r, cg=g, cb=b;
+      if (emerged>=0 && land){ const s = (Math.exp(-(rr-emerged)/(6+22*q))*0.55 + (rr-emerged<2.2?0.35:0))*gap*sstep(0.05,0.3,q);
+        cr=mix(cr,P.shadow[0],s); cg=mix(cg,P.shadow[1],s); cb=mix(cb,P.shadow[2],s); }
+      const X=(CX+rr*ca)|0, Y=(CY-rr*sa)|0;
+      if (X<0||Y<0||X>=SZ||Y>=SZ) continue;
+      const o=(Y*SZ+X);
+      const w = WASH(X,Y), k = 1 + w*0.07;      // value breathes ±7%, and the wash leans warm where it pools light, cool where dark
+      px[o*4]=clamp(cr*k + w*5,0,255); px[o*4+1]=clamp(cg*k + w*2,0,255); px[o*4+2]=clamp(cb*k - w*3,0,255); px[o*4+3]=255;
+      DEPTH[o]=d; LCB[o]=lc;
+    }
+    maxR = R; prevH = h;
+  }
+  RIM[c]=maxR;
+}
+const terrain = document.createElement('canvas'); terrain.width=terrain.height=SZ;
+terrain.getContext('2d').putImageData(img,0,0);
+
+// ---------- compose: everything that turns with the map goes on one "world" sheet ----------
+const mainCtx = ctx;
+const worldCv = document.createElement('canvas'); worldCv.width = worldCv.height = SZ;
+ctx = worldCv.getContext('2d');
+
+// faraway places, painted on the horizon at their true great-circle bearing from Twin Peaks
+const toR = Math.PI/180;
+function bearingTo(lat,lon){ const f1=LAT0*toR, f2=lat*toR, dl=(lon-LON0)*toR;
+  return Math.atan2(Math.sin(dl)*Math.cos(f2), Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl)); }
+function kmTo(lat,lon){ const f1=LAT0*toR, f2=lat*toR, df=f2-f1, dl=(lon-LON0)*toR;
+  const a=Math.sin(df/2)**2+Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)**2; return 6371*2*Math.asin(Math.sqrt(a)); }
+const rimAt = b => { const a = Math.PI/2 - b; const c = Math.round(((a%(2*Math.PI))+2*Math.PI)%(2*Math.PI)/(2*Math.PI)*NC)%NC;
+  let m=0; for (let k=-25;k<=25;k++) m=Math.max(m, RIM[(c+k+NC)%NC]); return m; };
+const haze = (rgb,t)=>`rgb(${rgb.map((v,i)=>Math.round(mix(v,P.lav[i],t))).join(',')})`;
+const FAR = [], VS = 0.74;   // vignettes are kept small so the sheet keeps its margins
+function horizon(name, lat, lon, height, base, draw){
+  const b = bearingTo(lat,lon), km = kmTo(lat,lon), R = base(rimAt(b));
+  // paint flat on a scrap of paper, then bend it onto the curve of the horizon column by column
+  const OW=760, OH=440, OX=380, OY=320, off=document.createElement('canvas'); off.width=OW; off.height=OH;
+  const oc=off.getContext('2d'); oc.translate(OX,OY); oc.scale(VS,VS); draw(oc);
+  for (let i=0;i<OW;i++){ const x=i-OX; ctx.save(); ctx.translate(CX,CY); ctx.rotate(b + x/R); ctx.translate(0,-R);
+    ctx.drawImage(off, i,0,1,OH, -0.7,-OY,1.4,OH); ctx.restore(); }
+  const tipR = R + height*VS;   // label sits at the top of the vignette
+  FAR.push({name, km, x: CX + Math.sin(b)*tipR, y: CY - Math.cos(b)*tipR});
+}
+const vgrad = (c, y0, y1, a, b) => { const g=c.createLinearGradient(0,y0,0,y1); g.addColorStop(0,a); g.addColorStop(1,b); return g; };
+
+// Hawaiʻi: Diamond Head over Waikīkī, Koko Head and snowy Mauna Kea far behind, painted like the rest of the map
+horizon('Hawaiʻi', 21.3069, -157.8583, 128, r=>Math.min(r,RM)-12, c=>{
+  const BASE = 12;
+  const layer = (pts, top, mid, foot, hz, crest=true)=>{
+    let minY=0; for (const [,y] of pts) minY=Math.min(minY,y);
+    const p=new Path2D(); p.moveTo(pts[0][0],BASE); for (const [x,y] of pts) p.lineTo(x,y); p.lineTo(pts[pts.length-1][0],BASE); p.closePath();
+    const g=c.createLinearGradient(0,minY,0,BASE); g.addColorStop(0,haze(top,hz)); g.addColorStop(0.45,haze(mid,hz)); g.addColorStop(1,haze(foot,hz));
+    c.fillStyle=g; c.fill(p);
+    c.save(); c.clip(p);                                   // cool shadow where the layer meets the one in front
+    const s=c.createLinearGradient(0,BASE-22,0,BASE); s.addColorStop(0,'rgba(66,84,138,0)'); s.addColorStop(1,'rgba(66,84,138,0.38)');
+    c.fillStyle=s; c.fillRect(-400,BASE-22,800,22); c.restore();
+    if (crest){ c.strokeStyle=haze([236,236,170],hz); c.globalAlpha=0.55; c.lineWidth=1.6; c.lineJoin='round';
+      c.beginPath(); pts.slice(1,-1).forEach(([x,y],i)=> i?c.lineTo(x,y+0.8):c.moveTo(x,y+0.8)); c.stroke(); c.globalAlpha=1; }
+    return p;
+  };
+  // Mauna Kea: a broad shield, a dusting of snow, very far off
+  const mk=[]; for (let i=0;i<=24;i++){ const x=-40+i*13; const u=(x-130)/150; mk.push([x, BASE-74*Math.exp(-u*u*2.2)-2]); }
+  layer(mk,[150,160,200],[132,146,190],[120,136,182],0.5,false);
+  c.fillStyle='rgba(250,250,252,0.85)'; c.beginPath(); c.moveTo(96,-52); c.quadraticCurveTo(130,-64.5,164,-52); c.quadraticCurveTo(150,-49,140,-53); c.quadraticCurveTo(128,-47,116,-52); c.quadraticCurveTo(106,-48,96,-52); c.fill();
+  // Koko Head: a low cone between
+  layer([[60,BASE],[86,-6],[112,-26],[132,-36],[146,-33],[160,-38],[176,-28],[198,-8],[222,BASE]],[160,186,120],[110,150,106],[86,126,100],0.3);
+  // Diamond Head (Lēʻahi): the long eastern slope, the jagged crater rim, the summit falling to the sea
+  const dh = layer([[-236,BASE],[-214,-2],[-192,-14],[-168,-28],[-146,-42],[-126,-54],[-110,-60],[-98,-58],[-86,-66],[-74,-63],[-62,-72],[-50,-70],[-38,-84],[-28,-88],[-18,-80],[-8,-58],[4,-34],[18,-12],[34,BASE]],
+    P.gCrest, P.gMid, P.gDeep, 0.12);
+  c.save(); c.clip(dh); c.lineCap='round';            // the eroded ribs that make its profile so recognisable
+  for (const [x0,y0,x1] of [[-146,-40,-160],[-121,-54,-128],[-92,-60,-102],[-70,-65,-70],[-47,-74,-38],[-27,-86,-12]]){
+    const gr=c.createLinearGradient(0,y0,0,BASE); gr.addColorStop(0,'rgba(30,74,66,0.32)'); gr.addColorStop(0.7,'rgba(30,74,66,0.12)'); gr.addColorStop(1,'rgba(30,74,66,0)');
+    c.strokeStyle=gr; c.lineWidth=2.4+((x0*7)%3+3)%3*0.8; c.beginPath(); c.moveTo(x0,y0+3); c.quadraticCurveTo((x0+x1)/2-4,(y0+BASE)/2,x1,BASE); c.stroke();
+    c.strokeStyle='rgba(226,232,160,0.22)'; c.lineWidth=1; c.beginPath(); c.moveTo(x0+4,y0+4); c.quadraticCurveTo((x0+x1)/2+1,(y0+BASE)/2,x1+5,BASE); c.stroke(); }
+  c.restore();
+  // Waikīkī: a bright lagoon line and the beach
+  const lag=c.createLinearGradient(-260,0,60,0); lag.addColorStop(0,'rgba(120,214,206,0)'); lag.addColorStop(0.2,'rgba(120,214,206,0.9)'); lag.addColorStop(1,'rgba(120,214,206,0.6)');
+  c.fillStyle=lag; c.fillRect(-260,BASE-1,330,5);
+  c.fillStyle=haze(P.sand,0.0); c.beginPath(); c.moveTo(-262,BASE-1); c.quadraticCurveTo(-120,BASE-6,40,BASE-1); c.lineTo(40,BASE+1); c.lineTo(-262,BASE+1); c.closePath(); c.fill();
+  // coconut palms, frond by frond
+  const palm=(x,h,lean,sz=1)=>{
+    const tx=x+lean, ty=BASE-4-h;
+    c.fillStyle='#8a7560'; c.beginPath(); c.moveTo(x-2.6*sz,BASE-3); c.quadraticCurveTo(x+lean*0.25-2*sz,BASE-4-h*0.55,tx-1.1*sz,ty); c.lineTo(tx+1.1*sz,ty); c.quadraticCurveTo(x+lean*0.25+2*sz,BASE-4-h*0.55,x+2.6*sz,BASE-3); c.closePath(); c.fill();
+    c.strokeStyle='rgba(60,48,36,0.35)'; c.lineWidth=0.8;
+    for (let k=1;k<10;k++){ const u=k/10, px=mix(x,tx,u)+lean*0.25*Math.sin(u*Math.PI)*0.6, py=mix(BASE-3,ty,u), w=mix(2.6,1.1,u)*sz; c.beginPath(); c.moveTo(px-w,py); c.lineTo(px+w,py+0.8); c.stroke(); }
+    const frond=(a,len,droop,col)=>{ c.strokeStyle=col; c.lineCap='round';
+      const pt=u=>[tx+Math.cos(a)*len*u, ty+Math.sin(a)*len*u+droop*len*u*u];
+      c.lineWidth=1.2*sz; c.beginPath(); for(let i=0;i<=20;i++){ const [px,py]=pt(i/20); i?c.lineTo(px,py):c.moveTo(px,py); } c.stroke();
+      c.lineWidth=0.75*sz;
+      for (let i=3;i<=22;i++){ const u=i/22, [px,py]=pt(u), [qx,qy]=pt(u-0.05), ta=Math.atan2(py-qy,px-qx), L=(10-7*u)*sz;
+        for (const s of [-1,1]){ const b=ta+s*2.25; c.beginPath(); c.moveTo(px,py); c.quadraticCurveTo(px+Math.cos(b)*L*0.6,py+Math.sin(b)*L*0.6, px+Math.cos(b)*L, py+Math.sin(b)*L+L*0.45); c.stroke(); } } };
+    const back=haze(P.gDeep,0.08), front=haze([92,146,88],0.0);
+    for (const [a,l,d] of [[-2.55,28,.6],[-0.6,28,.6],[-1.95,22,.35],[-1.2,22,.35]]) frond(a,l*sz,d,back);
+    for (const [a,l,d] of [[-3.05,34,1.0],[-0.1,34,1.0],[-2.3,28,.75],[-0.85,28,.75],[-1.6,18,.25]]) frond(a,l*sz,d,front);
+    c.fillStyle='#6b5a3a'; for (const dx of [-1.6,1.4]){ c.beginPath(); c.arc(tx+dx*sz,ty+2.2*sz,1.2*sz,0,7); c.fill(); }
+  };
+  palm(-222,64,-10,1.0); palm(-200,80,8,1.05); palm(20,60,12,0.9);
+});
+
+// Mt Fuji, snow cap, a red torii at its foot
+horizon('Mt Fuji', 35.3606, 138.7274, 200, r=>Math.min(r,RM)-14, c=>{
+  c.scale(1.2,1.2);
+  c.fillStyle=vgrad(c,-160,0,haze([96,112,168],0.25),haze([150,150,196],0.3));
+  c.beginPath(); c.moveTo(-200,0); c.quadraticCurveTo(-90,-24,-30,-158); c.lineTo(30,-158); c.quadraticCurveTo(90,-24,200,0); c.closePath(); c.fill();
+  c.fillStyle='#f7f6fb'; c.beginPath(); c.moveTo(-30,-158); c.lineTo(30,-158); c.lineTo(52,-112);
+  for (const [x,y] of [[40,-104],[30,-114],[18,-98],[4,-112],[-10,-100],[-22,-114],[-36,-102],[-52,-112]]) c.lineTo(x,y); c.closePath(); c.fill();
+  c.strokeStyle='#c8372d'; c.lineCap='butt';
+  const tx=-128, ty=-2; c.lineWidth=4; c.beginPath(); c.moveTo(tx-12,ty); c.lineTo(tx-12,ty-30); c.moveTo(tx+12,ty); c.lineTo(tx+12,ty-30); c.stroke();
+  c.lineWidth=5; c.beginPath(); c.moveTo(tx-20,ty-32); c.quadraticCurveTo(tx,ty-29,tx+20,ty-32); c.stroke();
+  c.lineWidth=3; c.beginPath(); c.moveTo(tx-16,ty-24); c.lineTo(tx+16,ty-24); c.stroke();
+});
+
+// Half Dome, peeking over the Berkeley hills
+horizon('Half Dome', 37.7459, -119.5332, 205, r=>r-50, c=>{
+  c.scale(1.2,1.2);
+  c.fillStyle=vgrad(c,-170,0,haze([198,196,214],0.15),haze([150,150,182],0.3));
+  c.beginPath(); c.moveTo(-150,0); c.quadraticCurveTo(-90,-60,-50,-130); c.quadraticCurveTo(-10,-185,38,-150);
+  c.lineTo(40,-60); c.quadraticCurveTo(70,-24,120,0); c.closePath(); c.fill();
+  c.fillStyle='rgba(90,90,130,0.22)'; c.beginPath(); c.moveTo(38,-150); c.lineTo(40,-60); c.lineTo(14,-70); c.quadraticCurveTo(20,-120,38,-150); c.fill();
+  c.fillStyle=haze([40,80,72],0.25);
+  for (const [x,h] of [[-120,26],[-100,34],[-84,22],[70,30],[88,38],[106,24]]){ c.beginPath(); c.moveTo(x-7,0); c.lineTo(x,-h); c.lineTo(x+7,0); c.fill(); }
+});
+
+// South Bay: Mt Hamilton with Lick Observatory, and the valley's old orchards in blossom
+horizon('South Bay', 37.3382, -121.8863, 112, r=>Math.min(r,RM)-16, c=>{
+  c.scale(1.3,1.3);
+  const hill = new Path2D(); hill.moveTo(-170,12); hill.quadraticCurveTo(-110,-30,-50,-74); hill.quadraticCurveTo(-22,-88,8,-78); hill.quadraticCurveTo(90,-44,170,12); hill.closePath();
+  c.fillStyle=vgrad(c,-88,12,haze([156,170,112],0.25),haze([108,140,96],0.2)); c.fill(hill);
+  c.save(); c.clip(hill);
+  for (let row=0; row<5; row++){ const y=4-row*9; for (let x=-170; x<170; x+=11){ const xx=x+(row%2)*5.5;
+    c.fillStyle = (row+Math.round(xx/11))%3===0 ? 'rgba(236,160,176,0.95)' : 'rgba(252,248,244,0.95)'; c.beginPath(); c.arc(xx,y,2.5,0,7); c.fill(); } }
+  c.restore();
+  c.fillStyle='#f8f7f4'; for (const [x,r] of [[-34,9],[-12,6]]){ c.beginPath(); c.arc(x,-82,r,Math.PI,0); c.fill(); c.fillRect(x-r,-82,r*2,5); }
+});
+
+ctx.drawImage(terrain,0,0);
+
+// ---------- overlays: roads, rail, bridges, towers, labels ----------
+// type: EB Garamond throughout; Shippori only draws the two glyphs of the 桑港 seal
+const FT = { label:'"EB Garamond", Garamond, Georgia, serif', lw:600, sub:400 };
+const SERIF = '"EB Garamond", Garamond, Georgia, serif';
+await Promise.all([`${FT.lw} 24px ${FT.label}`, `${FT.sub} 24px ${FT.label}`, `400 24px ${SERIF}`, `italic 400 24px ${SERIF}`, '800 40px "Shippori Mincho"']
+  .map(f=>document.fonts.load(f, f.includes('Shippori')?'桑港':'Ab').catch(()=>{})));
+const RED = '#c8372d';
+function visible(p){ const X=p.x|0, Y=p.y|0; if (X<0||Y<0||X>=SZ||Y>=SZ) return false;
+  let best = 1e9; for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++){ const o=(Y+dy)*SZ+X+dx; if (DEPTH[o]<best) best=DEPTH[o]; }
+  return best >= p.d - (0.12 + 0.05*p.d); }
+const scaleAt = d => RM/(LN*(D0+d));            // px per km, radially
+function densify(pts, stepKm=0.03){
+  const outp=[]; for (let i=0;i<pts.length-1;i++){ const [a1,o1]=pts[i],[a2,o2]=pts[i+1];
+    const km=Math.hypot((o2-o1)*KX,(a2-a1)*KY), n=Math.max(1,Math.ceil(km/stepKm));
+    for (let k=0;k<n;k++) outp.push([mix(a1,a2,k/n),mix(o1,o2,k/n)]); }
+  outp.push(pts[pts.length-1]); return outp; }
+function path(pts, {color, width, hOver=0, dash=null, alpha=1, always=false}){
+  const P2 = densify(pts).map(([a,o])=>project(a,o,hOver));
+  ctx.save(); ctx.strokeStyle=color; ctx.globalAlpha=alpha; ctx.lineCap='round'; ctx.lineJoin='round'; if(dash) ctx.setLineDash(dash);
+  let open=false; ctx.beginPath();
+  for (let i=0;i<P2.length;i++){ const p=P2[i], v = always || visible(p);
+    const w = clamp(width*scaleAt(p.d)/120, width*0.35, width*1.4);
+    if (v){ if(!open){ ctx.stroke(); ctx.beginPath(); ctx.lineWidth=w; ctx.moveTo(p.x,p.y); open=true; } else ctx.lineTo(p.x,p.y);
+      if (i%6===0){ ctx.stroke(); ctx.beginPath(); ctx.lineWidth=w; ctx.moveTo(p.x,p.y);} }
+    else open=false; }
+  ctx.stroke(); ctx.restore(); }
+
+// roads: thin cream paths, the way the old painters drew them
+const ROADS = [
+ [[37.8070,-122.4750],[37.8030,-122.4630],[37.7995,-122.4455],[37.8003,-122.4247],[37.7752,-122.4193],[37.7700,-122.4130],[37.7680,-122.4050],[37.7470,-122.4040],[37.7270,-122.4010],[37.7120,-122.3960],[37.6800,-122.3930],[37.6500,-122.4000],[37.6300,-122.3990]],
+ [[37.7740,-122.3930],[37.7600,-122.3960],[37.7380,-122.4060],[37.7330,-122.4220],[37.7240,-122.4430],[37.7080,-122.4610],[37.6890,-122.4710],[37.6600,-122.4650],[37.6300,-122.4380]],
+ [[37.8050,-122.4750],[37.7860,-122.4725],[37.7720,-122.4720],[37.7660,-122.4770],[37.7300,-122.4750],[37.7160,-122.4720]],
+ [[37.7780,-122.5110],[37.7550,-122.5095],[37.7350,-122.5070],[37.7100,-122.5000]],
+ [[37.7955,-122.3937],[37.7752,-122.4193],[37.7625,-122.4351],[37.7580,-122.4400],[37.7560,-122.4450]],
+ [[37.7880,-122.4060],[37.7840,-122.4300],[37.7820,-122.4500],[37.7800,-122.4900],[37.7790,-122.5080]],
+ [[37.8290,-122.4800],[37.8370,-122.4830],[37.8500,-122.4880],[37.8650,-122.4990],[37.8800,-122.5150],[37.9100,-122.5200]],
+];
+for (const r of ROADS) path(r, {color:'rgba(255,250,236,0.95)', width:3.2});
+
+// rail in red, as on the old maps
+const RAIL = [
+ [[37.7929,-122.3970],[37.7894,-122.4010],[37.7844,-122.4079],[37.7796,-122.4139],[37.7650,-122.4197],[37.7524,-122.4184],[37.7400,-122.4240],[37.7331,-122.4338],[37.7215,-122.4474],[37.7063,-122.4692],[37.6846,-122.4662],[37.6642,-122.4440],[37.6375,-122.4163],[37.6159,-122.3924]],
+ [[37.7766,-122.3947],[37.7575,-122.3926],[37.7350,-122.3960],[37.7092,-122.4014],[37.6800,-122.4020],[37.6557,-122.4049],[37.6300,-122.4115],[37.6000,-122.3867]],
+ [[37.8048,-122.2951],[37.8030,-122.2720],[37.8290,-122.2671],[37.8700,-122.2680]],
+ [[37.8030,-122.2720],[37.7975,-122.2652],[37.7748,-122.2241]],
+ [[37.7849,-122.4077],[37.7956,-122.4101],[37.7990,-122.4180],[37.8063,-122.4206]],
+ [[37.7695,-122.4295],[37.7660,-122.4500],[37.7620,-122.4660],[37.7605,-122.5090]],
+];
+for (const r of RAIL) path(r, {color:RED, width:2.6, alpha:0.9});
+path([[37.7929,-122.3970],[37.8000,-122.3600],[37.8048,-122.2951]], {color:RED, width:2.2, dash:[6,7], alpha:0.6, always:true});
+
+// bridges: we look straight down their length, so the tower portals face us
+function bridge(deck, towers, color, deckH, towerH, span){
+  const D = densify(deck, 0.02).map(([a,o])=>project(a,o,deckH));
+  const tang = p => ({x:-Math.sin(p.a), y:-Math.cos(p.a)});           // across the view direction
+  ctx.save(); ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineCap='round'; ctx.lineJoin='round';
+  // deck, a little wide so it reads as a road in the air
+  const halfW = 4.5;
+  ctx.beginPath(); D.forEach((p,i)=>{ const t=tang(p); const x=p.x+t.x*halfW, y=p.y+t.y*halfW; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  for (let i=D.length-1;i>=0;i--){ const p=D[i], t=tang(p); ctx.lineTo(p.x-t.x*halfW, p.y-t.y*halfW); }
+  ctx.closePath(); ctx.fill();
+  // portals, from the farthest to the nearest
+  const T = towers.map(([a,o])=>({b:project(a,o,deckH*0.15), t:project(a,o,towerH)}));
+  const legs = T.map(({b,t})=>{ const tg=tang(b), w=span; return {
+    L0:{x:b.x+tg.x*w,y:b.y+tg.y*w}, L1:{x:t.x+tg.x*w*0.85,y:t.y+tg.y*w*0.85},
+    R0:{x:b.x-tg.x*w,y:b.y-tg.y*w}, R1:{x:t.x-tg.x*w*0.85,y:t.y-tg.y*w*0.85}}; });
+  // cables: anchor -> tops -> anchor on each side, sagging toward the deck
+  ctx.lineWidth=1.8;
+  for (const side of ['L','R']){ ctx.beginPath(); const s = side==='L'?1:-1;
+    const a0=D[0], a1=D[D.length-1], t0=tang(a0), t1=tang(a1);
+    ctx.moveTo(a0.x+s*t0.x*halfW, a0.y+s*t0.y*halfW);
+    legs.forEach((g,i)=>{ const top=g[side+'1'];
+      if (i===0) ctx.lineTo(top.x,top.y);
+      else { const prev=legs[i-1][side+'1']; const mid=project((towers[i-1][0]+towers[i][0])/2,(towers[i-1][1]+towers[i][1])/2,deckH+10), tm=tang(mid);
+        ctx.quadraticCurveTo(2*(mid.x+s*tm.x*span*0.85)-(prev.x+top.x)/2, 2*(mid.y+s*tm.y*span*0.85)-(prev.y+top.y)/2, top.x, top.y); } });
+    ctx.lineTo(a1.x+s*t1.x*halfW, a1.y+s*t1.y*halfW); ctx.stroke(); }
+  ctx.lineWidth=4.2;
+  for (let i=legs.length-1;i>=0;i--){ const g=legs[i];
+    line(g.L0,g.L1,4.2,color); line(g.R0,g.R1,4.2,color);
+    for (const f of [0.55,0.8,1.0]) line({x:mix(g.L0.x,g.L1.x,f),y:mix(g.L0.y,g.L1.y,f)},{x:mix(g.R0.x,g.R1.x,f),y:mix(g.R0.y,g.R1.y,f)},2.6,color); }
+  ctx.restore();
+}
+const line=(a,b,w,c)=>{ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();};
+bridge([[37.8085,-122.4762],[37.8116,-122.4777],[37.8256,-122.4790],[37.8295,-122.4795]], [[37.8116,-122.4777],[37.8256,-122.4790]], '#d24a2c', 67*0.45, 227*0.45, 8);
+bridge([[37.7880,-122.3890],[37.7935,-122.3830],[37.7985,-122.3775],[37.8030,-122.3720],[37.8090,-122.3660]], [[37.7935,-122.3830],[37.7985,-122.3775],[37.8030,-122.3720]], '#eef0ee', 60*0.45, 150*0.45, 6);
+(()=>{ const D = densify([[37.8155,-122.3590],[37.8167,-122.3565],[37.8210,-122.3330],[37.8257,-122.3080]],0.03).map(([a,o])=>project(a,o,20));
+  ctx.save(); ctx.strokeStyle='#eef0ee'; ctx.lineCap='round'; ctx.lineWidth=4; ctx.beginPath(); D.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke();
+  const b=project(37.8167,-122.3565,18), t=project(37.8167,-122.3565,72); ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.lineTo(t.x,t.y); ctx.stroke(); ctx.restore(); })();
+
+// towers and small landmarks, standing up out of the land
+function tower(lat,lon,H,draw){ const b=project(lat,lon,0), t=project(lat,lon,H*0.4); if(!visible(b)) return; draw(b,t); }
+ctx.save(); ctx.lineCap='round';
+tower(37.7552,-122.4528,298,(b,t)=>{ // Sutro Tower: red & white tripod
+  const nx=-(t.y-b.y), ny=(t.x-b.x), L=Math.hypot(nx,ny)||1, w=L*0.09;
+  for (let k=0;k<6;k++){ const a={x:mix(b.x,t.x,k/6),y:mix(b.y,t.y,k/6)}, c={x:mix(b.x,t.x,(k+1)/6),y:mix(b.y,t.y,(k+1)/6)};
+    const s1=(1-k/6)*w+2, s2=(1-(k+1)/6)*w+2;
+    ctx.fillStyle = k%2? '#f4f1ea':'#c8372d'; ctx.beginPath();
+    ctx.moveTo(a.x+nx/L*s1,a.y+ny/L*s1); ctx.lineTo(c.x+nx/L*s2,c.y+ny/L*s2); ctx.lineTo(c.x-nx/L*s2,c.y-ny/L*s2); ctx.lineTo(a.x-nx/L*s1,a.y-ny/L*s1); ctx.fill(); }
+  line(t,{x:t.x+nx/L*w*0.9,y:t.y+ny/L*w*0.9},2,'#c8372d'); line(t,{x:t.x-nx/L*w*0.9,y:t.y-ny/L*w*0.9},2,'#c8372d');
+});
+// downtown: a little cluster of pale slabs, farthest first so they overlap nicely
+const slab=(b,t,w,fill)=>{ const nx=-(t.y-b.y),ny=(t.x-b.x),L=Math.hypot(nx,ny)||1; ctx.fillStyle=fill; ctx.strokeStyle='rgba(70,70,90,.45)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(b.x+nx/L*w,b.y+ny/L*w); ctx.lineTo(t.x+nx/L*w,t.y+ny/L*w); ctx.lineTo(t.x-nx/L*w,t.y-ny/L*w); ctx.lineTo(b.x-nx/L*w,b.y-ny/L*w); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='rgba(90,100,140,.22)'; ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.lineTo(t.x,t.y); ctx.lineTo(t.x-nx/L*w,t.y-ny/L*w); ctx.lineTo(b.x-nx/L*w,b.y-ny/L*w); ctx.closePath(); ctx.fill(); };
+const TOWERS=[[37.7918,-122.3990,150,4,'#f1eee6'],[37.7928,-122.4035,180,4.5,'#e6e4dc'],[37.7908,-122.4000,200,5,'#f4f1ea'],[37.7880,-122.3960,170,4,'#ecebe4'],
+ [37.7937,-122.3955,130,4,'#f4f1ea'],[37.7900,-122.4040,120,4,'#e9e6de'],[37.7860,-122.3990,140,4,'#f4f1ea'],[37.7898,-122.3969,326,6,'#dfe4e8']];
+TOWERS.sort((a,b)=>project(b[0],b[1]).d-project(a[0],a[1]).d);
+for (const [la,lo,H,w,f] of TOWERS) tower(la,lo,H*0.6,(b,t)=>slab(b,t,w,f));
+tower(37.7952,-122.4028,260*0.6,(b,t)=>{ const nx=-(t.y-b.y),ny=(t.x-b.x),L=Math.hypot(nx,ny)||1,w=6;
+  ctx.fillStyle='#fbf8f1'; ctx.strokeStyle='rgba(60,60,70,.45)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(b.x+nx/L*w,b.y+ny/L*w); ctx.lineTo(t.x,t.y); ctx.lineTo(b.x-nx/L*w,b.y-ny/L*w); ctx.closePath(); ctx.fill(); ctx.stroke(); });
+tower(37.8024,-122.4058,64,(b,t)=>{ line(b,t,Math.max(5,scaleAt(b.d)/40),'#f6f3ec'); });
+tower(37.8267,-122.4230,40,(b,t)=>{ line(b,t,4,'#f6f3ec'); ctx.fillStyle='#f2c14e'; ctx.beginPath(); ctx.arc(t.x,t.y,3.5,0,7); ctx.fill(); });
+tower(37.7793,-122.4193,94,(b,t)=>{ ctx.fillStyle='#e9c55b'; ctx.beginPath(); ctx.arc((b.x+t.x)/2,(b.y+t.y)/2,Math.max(4,scaleAt(b.d)/26),0,7); ctx.fill(); });
+ctx.restore();
+
+ctx = mainCtx;
+
+// ---------- labels, compass and title are drawn upright on top of the turning world ----------
+const L = [
+ ['Golden Gate Bridge',37.8190,-122.4785,1], ['Presidio',37.7990,-122.4630,1], ['Golden Gate Park',37.7694,-122.4862,1],
+ ['Ocean Beach',37.7600,-122.5105,1], ['Lands End',37.7870,-122.5050,2], ['Sutro Tower',37.7552,-122.4528,1],
+ ['Mt Davidson',37.7383,-122.4537,1], ['Lake Merced',37.7260,-122.4935,1],
+ ['Mission',37.7600,-122.4148,1], ['Castro',37.7609,-122.4350,2], ['Haight',37.7692,-122.4481,2], ['Noe Valley',37.7502,-122.4337,2],
+ ['Bernal Heights',37.7432,-122.4148,1], ['Potrero Hill',37.7590,-122.4000,2], ['SoMa',37.7785,-122.4056,2],
+ ['Financial District',37.7946,-122.3999,2], ['North Beach',37.8006,-122.4103,2],
+ ['Coit Tower',37.8024,-122.4058,2], ["Fisherman's Wharf",37.8080,-122.4177,2], ['Marina',37.8030,-122.4370,2],
+ ['Richmond',37.7800,-122.4800,2], ['Sunset',37.7520,-122.4950,2], ['Bayview',37.7300,-122.3900,2], ['Ferry Building',37.7955,-122.3937,2],
+ ['Alcatraz',37.8267,-122.4230,1], ['Angel Island',37.8620,-122.4320,1], ['Treasure Island',37.8240,-122.3710,2], ['Bay Bridge',37.8000,-122.3740,1],
+ ['Sausalito',37.8591,-122.4853,1], ['Tiburon',37.8735,-122.4566,2], ['Marin Headlands',37.8300,-122.5100,1], ['Mt Tamalpais',37.9235,-122.5965,1],
+ ['Oakland',37.8044,-122.2712,1], ['Berkeley',37.8716,-122.2727,1], ['Alameda',37.7652,-122.2416,2],
+ ['Daly City',37.6879,-122.4702,2], ['San Bruno Mtn',37.6930,-122.4330,1], ['South San Francisco',37.6547,-122.4077,2], ['SFO',37.6213,-122.3790,2],
+];
+const WATER = [['Pacific Ocean',37.7700,-122.6200],['San Francisco Bay',37.7800,-122.3300],['Golden Gate',37.8150,-122.5050]];
+const SLIPS = [], WLAB = [];
+const font = (pr,S=1)=>`${FT.lw} ${(pr<=1?25:22)*S}px ${FT.label}`;
+for (const f of FAR){ ctx.font=font(0); const n=`${f.name} · ${Math.round(f.km).toLocaleString('en-US')} km`;
+  SLIPS.push({n, x:f.x, y:f.y, pr:0, far:true, w:ctx.measureText(n).width+12}); }
+for (const [n,la,lo,pr] of L){ const p=project(la,lo,0); ctx.font=font(pr); SLIPS.push({n, x:p.x, y:p.y, pr, w:ctx.measureText(n).width+12}); }
+for (const [n,la,lo] of WATER){ const p=project(la,lo,0); ctx.font=`italic 400 30px ${SERIF}`; WLAB.push({n,x:p.x,y:p.y,w:ctx.measureText(n).width+10}); }
+
+const TITLE_BOX = {x:90,y:100,w:640,h:150};
+let theta = 0;   // map rotation, radians clockwise
+let zoom = 1, panX = 0, panY = 0;   // pinch / wheel zoom, in canvas pixels
+function rot(p){ const c=Math.cos(theta), s=Math.sin(theta), dx=p.x-CX, dy=p.y-CY; return {x:CX+panX+(dx*c-dy*s)*zoom, y:CY+panY+(dx*s+dy*c)*zoom}; }
+
+// ---------- paper: fine cotton tooth and a few long fibres, very quiet (no ageing, no stains) ----------
+const PAPER = (()=>{ const pc=document.createElement('canvas'); pc.width=pc.height=SZ; const p=pc.getContext('2d');
+  p.fillStyle='rgb(128,128,128)'; p.fillRect(0,0,SZ,SZ);
+  let seed=11; const rnd=()=>((seed=(seed*16807)%2147483647)/2147483647);
+  const noiseLayer=(cells, amp, alpha)=>{ const n=document.createElement('canvas'); n.width=n.height=cells; const nc=n.getContext('2d'), id=nc.createImageData(cells,cells);
+    for (let i=0;i<cells*cells;i++){ const v=128+(rnd()-0.5)*2*amp; id.data[i*4]=id.data[i*4+1]=id.data[i*4+2]=v; id.data[i*4+3]=255; }
+    nc.putImageData(id,0,0); p.globalAlpha=alpha; p.imageSmoothingEnabled=true; p.imageSmoothingQuality='high'; p.drawImage(n,0,0,SZ,SZ); p.globalAlpha=1; };
+  noiseLayer(SZ/40|0, 28, 0.4);     // the sheet's formation: soft, uneven cloud
+  noiseLayer(SZ/10|0, 70, 0.55);    // cotton tooth, coarse enough to survive downscaling
+  noiseLayer(SZ/5|0, 50, 0.3);
+  p.lineCap='round';
+  for (let i=0;i<9000;i++){ const x=rnd()*SZ, y=rnd()*SZ, a=rnd()*Math.PI, L=10+rnd()*46, bend=(rnd()-0.5)*14, light=rnd()<0.62;
+    p.strokeStyle = light ? `rgba(255,255,255,${0.10+rnd()*0.14})` : `rgba(60,60,60,${0.05+rnd()*0.07})`; p.lineWidth=0.9+rnd()*1.4;
+    p.beginPath(); p.moveTo(x,y); p.quadraticCurveTo(x+Math.cos(a)*L/2-Math.sin(a)*bend, y+Math.sin(a)*L/2+Math.cos(a)*bend, x+Math.cos(a)*L, y+Math.sin(a)*L); p.stroke(); }
+  return pc; })();
+
+function render(){
+  const c = ctx;
+  c.setTransform(1,0,0,1,0,0);
+  c.fillStyle='#fbfaf7'; c.fillRect(0,0,SZ,SZ);
+  c.save(); c.translate(CX+panX,CY+panY); c.scale(zoom,zoom); c.translate(-CX,-CY);
+  const halo = c.createRadialGradient(CX,CY,RM*0.9,CX,CY,RM*1.3);
+  halo.addColorStop(0,'rgba(240,214,150,0.55)'); halo.addColorStop(0.45,'rgba(236,190,170,0.28)'); halo.addColorStop(1,'rgba(251,250,247,0)');
+  c.fillStyle=halo; c.beginPath(); c.arc(CX,CY,RM*1.32,0,7); c.fill();
+  c.translate(CX,CY); c.rotate(theta); c.translate(-CX,-CY); c.drawImage(worldCv,0,0); c.restore();
+
+  const boxes=[TITLE_BOX];
+  const hit = (b)=> boxes.some(o=> b.x < o.x+o.w+4 && b.x+b.w+4 > o.x && b.y < o.y+o.h+4 && b.y+b.h+4 > o.y);
+  c.textBaseline='middle'; c.textAlign='left';
+  // labels grow as you zoom in: gently on a big screen, and on a phone enough to reach ~14 css px
+  const k = (cv.clientWidth||SZ)/SZ, S = zoom<=1.001 ? 1 : Math.max(Math.sqrt(zoom), Math.min(zoom, 14/(23*k)));
+  for (const l of WLAB){ const p=rot(l); const b={x:p.x-l.w*S/2,y:p.y-13*S,w:l.w*S,h:26*S}; boxes.push(b);
+    c.font=`italic 400 ${30*S}px ${SERIF}`; c.fillStyle='rgba(60,96,120,0.75)'; c.fillText(l.n, b.x+5*S, p.y); }
+  for (const pr of [0,1,2]) for (const l of SLIPS){ if (l.pr!==pr) continue;
+    const p=rot(l), fs = (pr<=1?25:22)*S, h=fs+8*S, w=l.w*S;
+    const ox=p.x-CX, oy=p.y-CY, ol=Math.hypot(ox,oy)||1;
+    const cands = l.far ? [[ox/ol*(h+10*S), oy/ol*(h+10*S)],[0,-h-8*S],[0,h+8*S],[w/2+12*S,0],[-w/2-12*S,0],[w/2+12*S,h+8*S],[-w/2-12*S,h+8*S],[w/2+12*S,-h-8*S],[-w/2-12*S,-h-8*S],[-ox/ol*(h+30*S), -oy/ol*(h+30*S)]]
+                        : [[0,-h-8*S],[0,h+8*S],[w/2+12*S,0],[-w/2-12*S,0],[ox/ol*(h+14*S), oy/ol*(h+14*S)],[0,-h*2-10*S],[0,h*2+10*S]];
+    let placed=null; for (const [dx,dy] of cands){ const b={x:p.x+dx-w/2,y:p.y+dy-h/2,w,h};
+      if (S<1.05){ if (b.x<4||b.y<4||b.x+w>SZ-4||b.y+h>SZ-4) continue; } else { if (p.x<0||p.y<0||p.x>SZ||p.y>SZ) break; b.x=clamp(b.x,4,SZ-4-w); b.y=clamp(b.y,4,SZ-4-h); } if(!hit(b)){placed=b;break;} }
+    if (!placed) continue; boxes.push(placed);
+    c.strokeStyle=RED; c.lineWidth=1.6*S; c.beginPath(); c.moveTo(p.x,p.y); c.lineTo(clamp(p.x,placed.x,placed.x+w), clamp(p.y,placed.y,placed.y+h)); c.stroke();
+    c.fillStyle=RED; c.beginPath(); c.arc(p.x,p.y,3.2*S,0,7); c.fill();
+    c.fillStyle = '#fffdf8'; c.fillRect(placed.x,placed.y,w,h);
+    c.lineWidth=2.4*S; c.strokeRect(placed.x+1.2*S,placed.y+1.2*S,w-2.4*S,h-2.4*S);
+    c.font=font(pr,S); c.fillStyle = '#2b2a28'; c.fillText(l.n, placed.x+6*S, placed.y+h/2+S);
+  }
+
+  // compass: the rose turns with the land, the letters stay upright
+  const r=58, KX0=CX+panX, KY0=CY+panY; c.save(); c.translate(KX0,KY0); c.scale(S,S);
+  c.fillStyle='rgba(255,253,247,0.94)'; c.beginPath(); c.arc(0,0,r,0,7); c.fill();
+  c.strokeStyle=RED; c.lineWidth=7; c.beginPath(); c.arc(0,0,r-3.5,0,7); c.stroke();
+  c.save(); c.rotate(theta);
+  c.lineWidth=2; c.beginPath(); c.moveTo(0,-30); c.lineTo(0,30); c.moveTo(-30,0); c.lineTo(30,0); c.stroke();
+  c.fillStyle=RED; for (const a of [0,1,2,3]){ c.save(); c.rotate(a*Math.PI/2); c.beginPath(); c.moveTo(0,-30); c.lineTo(-5,-20); c.lineTo(5,-20); c.fill(); c.restore(); }
+  c.beginPath(); c.moveTo(0,-34); c.lineTo(-7,-20); c.lineTo(7,-20); c.fill();
+  c.restore();
+  c.font=`${FT.lw} 18px ${FT.label}`; c.textAlign='center'; c.fillStyle='#2b2a28';
+  [['N',0],['E',Math.PI/2],['S',Math.PI],['W',-Math.PI/2]].forEach(([t,a])=>{ const A=a+theta; c.fillText(t, Math.sin(A)*42, -Math.cos(A)*42+1); });
+  c.restore();
+  const n='Twin Peaks · 282 m'; c.font=`${FT.lw} ${22*S}px ${FT.label}`; const w=c.measureText(n).width+16*S;
+  const bx=KX0+(r+10)*S, by=KY0-(r+6)*S; c.fillStyle='#2f4d5a'; c.fillRect(bx,by,w,34*S); c.fillStyle='#fffdf8'; c.textAlign='left'; c.fillText(n,bx+8*S,by+18*S);
+
+  // title & seal
+  const x=110, y=120;
+  c.fillStyle=RED; c.fillRect(x, y, 96, 96);
+  c.fillStyle='#fffaf0'; c.font='800 40px "Shippori Mincho", serif'; c.textAlign='center';
+  c.fillText('桑',x+48,y+28); c.fillText('港',x+48,y+70);
+  c.textAlign='left'; c.fillStyle='#2b2a28'; c.font=`500 64px ${SERIF}`; c.fillText('San Francisco', x+120, y+38);
+  c.font=`italic ${FT.sub} 26px ${FT.label}`; c.fillStyle='#6b665e';
+  c.fillText('a bird’s-eye view from Twin Peaks', x+124, y+78);
+  // the sheet itself
+  c.save(); c.globalCompositeOperation='soft-light'; c.globalAlpha=0.75; c.drawImage(PAPER,0,0); c.globalCompositeOperation='multiply'; c.globalAlpha=0.10; c.drawImage(PAPER,0,0); c.restore();
+}
+render();
+
+// ---------- turning and tilting ----------
+// drag sideways to spin the land under the compass; drag up to lay the sheet back into a perspective view
+const sheet = document.querySelector('.sheet');
+let tilt = 0, spinning=null, vel=0, tvel=0;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function applyTilt(){ const s=1-0.14*(tilt/62); sheet.style.transform = `perspective(2400px) rotateX(${tilt.toFixed(2)}deg) scale(${s.toFixed(3)})`;
+  const k = tilt/60; sheet.style.filter = k>0.01 ? `drop-shadow(0 ${(18*k).toFixed(1)}px ${(26*k).toFixed(1)}px rgba(60,50,40,${(0.16*k).toFixed(3)}))` : 'none'; }
+let raf=0; const schedule=()=>{ if(!raf) raf=requestAnimationFrame(()=>{ raf=0; render(); applyTilt(); }); };
+// one finger: spin and tilt (or pan when zoomed in) · two fingers: pinch to zoom · wheel / trackpad pinch: zoom
+const pts = new Map(); let drag=null, pinch=null, lastTap=0;
+const toCanvas = (x,y)=>{ const r=cv.getBoundingClientRect(); return {x:(x-r.left)/r.width*SZ, y:(y-r.top)/r.height*SZ}; };
+function clampPan(){ if (zoom<=1.001){ zoom=1; panX=panY=0; return; } const m=(zoom-1)*SZ/2+SZ*0.1; panX=clamp(panX,-m,m); panY=clamp(panY,-m,m); }
+function zoomAt(cx, cy, z){ const wx=(cx-CX-panX)/zoom, wy=(cy-CY-panY)/zoom; zoom=clamp(z,1,6); panX=cx-CX-wx*zoom; panY=cy-CY-wy*zoom; clampPan(); }
+function startPinch(){ const [a,b]=[...pts.values()]; const m=toCanvas((a.x+b.x)/2,(a.y+b.y)/2);
+  pinch={d0:Math.hypot(a.x-b.x,a.y-b.y)||1, z0:zoom, wx:(m.x-CX-panX)/zoom, wy:(m.y-CY-panY)/zoom}; drag=null; vel=0; }
+cv.addEventListener('pointerdown', e=>{ pts.set(e.pointerId,{x:e.clientX,y:e.clientY}); cv.setPointerCapture(e.pointerId);
+  cancelAnimationFrame(spinning); spinning=null; vel=tvel=0; cv.classList.add('grabbing');
+  if (pts.size===2) startPinch(); else if (pts.size===1) drag={x:e.clientX,y:e.clientY,t:performance.now()};
+  const now=performance.now(); if (pts.size===1 && e.pointerType==='touch' && now-lastTap<300){       // double-tap: zoom in there, or back out
+    const c=toCanvas(e.clientX,e.clientY); const z0=zoom, target=zoom>1.5?1:2.6; const s=performance.now();
+    const step=(n)=>{ const k=Math.min(1,(n-s)/260); zoomAt(c.x,c.y,mix(z0,target,k*(2-k))); render(); if(k<1) requestAnimationFrame(step); }; requestAnimationFrame(step); drag=null; }
+  lastTap=now; });
+cv.addEventListener('pointermove', e=>{ if(!pts.has(e.pointerId)) return; pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if (pinch && pts.size>=2){ const [a,b]=[...pts.values()]; const m=toCanvas((a.x+b.x)/2,(a.y+b.y)/2);
+    zoom=clamp(pinch.z0*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d0,1,6); panX=m.x-CX-pinch.wx*zoom; panY=m.y-CY-pinch.wy*zoom; clampPan(); schedule(); return; }
+  if(!drag) return; const r=sheet.getBoundingClientRect(), now=performance.now();
+  if (zoom>1.02){ const k=SZ/r.width; panX+=(e.clientX-drag.x)*k; panY+=(e.clientY-drag.y)*k; clampPan(); drag={x:e.clientX,y:e.clientY,t:now}; schedule(); return; }
+  const dx=(e.clientX-drag.x)/r.width, dy=(e.clientY-drag.y)/r.height;
+  const dth = dx*Math.PI*1.2 * (e.clientY - (r.top+r.height/2) > 0 ? -1 : 1);     // spin follows the hand, top or bottom half
+  theta += dth; tilt = clamp(tilt - dy*110, 0, 62);
+  vel = dth/Math.max(8,now-drag.t)*16; drag={x:e.clientX,y:e.clientY,t:now}; schedule(); });
+const endDrag=(e)=>{ pts.delete(e.pointerId);
+  if (pts.size===1){ pinch=null; const [p]=[...pts.values()]; drag={x:p.x,y:p.y,t:performance.now()}; vel=0; return; }   // lift one finger of a pinch: carry on smoothly
+  if (pts.size>0) return; pinch=null; if(!drag){ cv.classList.remove('grabbing'); return; } drag=null; cv.classList.remove('grabbing');
+  if (reduce || Math.abs(vel)<0.002 || zoom>1.02) return;
+  const step=()=>{ vel*=0.94; theta+=vel; render(); spinning = Math.abs(vel)>0.0008 ? requestAnimationFrame(step) : null; }; spinning=requestAnimationFrame(step); };
+cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+cv.addEventListener('wheel', e=>{ e.preventDefault(); const c=toCanvas(e.clientX,e.clientY); zoomAt(c.x,c.y,zoom*Math.exp(-e.deltaY*(e.ctrlKey?0.01:0.0015))); schedule(); }, {passive:false});
+['gesturestart','gesturechange'].forEach(n=>cv.addEventListener(n, e=>e.preventDefault()));   // Safari: keep the page still while the map zooms
+function easeTo(targetTheta, targetTilt, resetZoom=false){ cancelAnimationFrame(spinning); vel=0; const z0=zoom, px0=panX, py0=panY;
+  let d=targetTheta-theta; d=((d+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
+  const s0=theta, t0=tilt, start=performance.now(), dur=reduce?0:900;
+  const step=(now)=>{ const k=dur?Math.min(1,(now-start)/dur):1, e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    theta=s0+d*e; tilt=mix(t0,targetTilt,e); if (resetZoom){ zoom=mix(z0,1,e); panX=mix(px0,0,e); panY=mix(py0,0,e); } render(); applyTilt(); spinning = k<1 ? requestAnimationFrame(step) : null; };
+  spinning=requestAnimationFrame(step); }
+(document.getElementById('flat')||{}).onclick=()=>easeTo(0,0,true);
+(document.getElementById('persp')||{}).onclick=()=>easeTo(theta, tilt>20?0:52);
+document.querySelectorAll('[data-face]').forEach(b=>b.onclick=()=>{ const f=FAR.find(f=>f.name===b.dataset.face); if(!f) return;
+  easeTo(-Math.atan2(f.x-CX, -(f.y-CY)), Math.max(tilt,48), true); });   // bring that place to the far edge and lean in
+cv.tabIndex=0; cv.addEventListener('keydown', e=>{ const k=e.key;
+  if(k==='ArrowLeft'){easeTo(theta-Math.PI/12,tilt);e.preventDefault();} if(k==='ArrowRight'){easeTo(theta+Math.PI/12,tilt);e.preventDefault();}
+  if(k==='+'||k==='='){zoomAt(CX,CY,zoom*1.4);schedule();} if(k==='-'){zoomAt(CX,CY,zoom/1.4);schedule();}
+  if(k==='ArrowUp'){easeTo(theta,Math.min(62,tilt+10));e.preventDefault();} if(k==='ArrowDown'){easeTo(theta,Math.max(0,tilt-10));e.preventDefault();} });
+window.__turn = (deg, tl=0, z=1, cx=CX, cy=CY)=>{ theta = deg*Math.PI/180; tilt=tl; zoom=1; panX=panY=0; if(z>1) zoomAt(cx,cy,z); render(); applyTilt(); };
+
+window.__SF = {ctx, project, DEPTH, LCB, SZ, CX, CY, RM, r0, lift, P, RIM, NC};
+document.getElementById('status').style.opacity=0;
+window.__done = true;
+})();
+</script>
+</body>
+</html>
