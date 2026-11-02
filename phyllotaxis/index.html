@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Golden Angle — a seed head</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#efece4;color:var(--ink);overflow:hidden;font-family:'Lora',serif}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;cursor:ew-resize;touch-action:none}
+.bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:16px;font-style:italic;font-size:14px;color:var(--soft);white-space:nowrap}
+.bar button{font:inherit;color:var(--soft);background:none;border:none;cursor:pointer}
+.bar button:hover,.bar button:focus-visible{color:var(--ink)}
+#deg{font-style:normal;font-variant-numeric:tabular-nums;color:var(--ink)}
+.back{position:fixed;left:20px;top:18px;font-style:italic;font-size:13px;color:var(--soft);text-decoration:none}
+.back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<div id="stage"></div>
+<div class="bar"><span>divergence <span id="deg"></span></span><button id="golden">back to the golden angle</button></div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// GOLDEN ANGLE — a sunflower head, after Helmut Vogel's model (1979).
+//
+// Each new seed is placed a fixed turn from the last, and a little further
+// out: angle n·θ, radius c·√n. If θ is the golden angle — 360°/φ², about
+// 137.508° — no two seeds ever line up, the head packs evenly to the rim,
+// and the eye finds 34 spirals one way and 55 the other: consecutive
+// Fibonacci numbers, as on a real sunflower. Change θ by a tenth of a
+// degree and the packing fails into straight spokes and gaps.
+//
+// Every seed is a small dome in the height field, so the head is lit by a
+// raking lamp. Drag sideways to turn the divergence angle; the lamp sits
+// where the cursor last rested.
+// ═══════════════════════════════════════════════════════════════
+
+const GOLD = 360/((1 + Math.sqrt(5))/2)**2;
+let theta = GOLD, DW, DH, SS, PW, PH, F, art, artCtx, ready = false, need = false;
+let cov, hgt, nrm, colorMap, lamp = {x: 0, y: 0}, lampT = {x: 0, y: 0}, moving = 0;
+
+function build(){
+  const cx = DW/2, cy = DH/2 - 14, R = Math.min(DW, DH)*0.40, N = 1500;
+  const c = R/Math.sqrt(N)*0.98, th = theta*Math.PI/180;
+  const at = g => g.setTransform(SS, 0, 0, SS, 0, 0);
+  const seeds = [];
+  for(let n=1;n<=N;n++){ const r = c*Math.sqrt(n), a = n*th; seeds.push([cx + Math.cos(a)*r, cy + Math.sin(a)*r, r/R, a]); }
+  const disc = F.raster(g => { at(g); g.beginPath(); g.arc(cx, cy, R*1.04, 0, 7); g.fill(); });
+  // each seed a teardrop pointing out from the centre, domed, sitting in a pit
+  const h = F.rasterLuma(g => {
+    at(g);
+    g.fillStyle = 'rgb(70,70,70)'; g.beginPath(); g.arc(cx, cy, R*1.04, 0, 7); g.fill();
+    seeds.forEach(([x, y, q, a]) => {
+      const s = c*0.60*(0.80 + q*0.35);
+      g.save(); g.translate(x, y); g.rotate(a);
+      const gr = g.createRadialGradient(-s*0.15, 0, 0, 0, 0, s);
+      gr.addColorStop(0, 'rgb(250,250,250)'); gr.addColorStop(0.7, 'rgb(170,170,170)'); gr.addColorStop(1, 'rgb(90,90,90)');
+      g.fillStyle = gr;
+      g.beginPath(); g.ellipse(0, 0, s*1.15, s*0.82, 0, 0, 7); g.fill();
+      g.restore();
+    });
+  });
+  const n2 = PW*PH;
+  cov = disc; hgt = new Float32Array(n2); colorMap = new Uint8ClampedArray(n2*3);
+  const surf = F.blur(h, Math.max(1, Math.round(0.6*SS)), 1);
+  for(let y=0;y<PH;y++) for(let x=0;x<PW;x++){
+    const i = y*PW + x, o = i*3;
+    if(disc[i] < 0.01) continue;
+    const X = x/SS, Y = y/SS, q = Math.hypot(X - cx, Y - cy)/R, v = h[i]/1;
+    // ripe at the rim, still green-gold at the centre where the florets are young
+    const ripe = Math.min(1, Math.max(0, (q - 0.18)/0.5));
+    let r = 150 + (98 - 150)*ripe, gg = 140 + (68 - 140)*ripe, b = 62 + (38 - 62)*ripe;
+    // each seed has a pale stripe down it, as sunflower seeds do
+    const k = 0.55 + v*0.9;
+    r *= k; gg *= k; b *= k;
+    if(v > 0.62 && noise(X*0.6, Y*0.6) > 0.55){ r += 50; gg += 44; b += 30; }
+    colorMap[o] = r; colorMap[o+1] = gg; colorMap[o+2] = b;
+    hgt[i] = 0.35 + 0.65*v;
+  }
+  nrm = F.normals(cov, surf, 26*SS);
+  need = true;
+  document.getElementById('deg').textContent = theta.toFixed(3) + '°';
+}
+function shade(){
+  F.shade(artCtx, {cov, hgt, hMax: 1, nX: nrm.nX, nY: nrm.nY, nZ: nrm.nZ, colorMap,
+    light: {x: lamp.x*SS, y: lamp.y*SS, h: 300*SS, radius: 1500*SS, color: '#fff3dc'},
+    ambient: 0.34, aoLo: 0.4, exposure: 1.25, gloss: 0.22, sheen: 0.06, wrap: 0.3,
+    tone: {shadow: '#1e140c', high: '#fff6e0', amount: 0.06}});
+}
+
+function setup(){
+  pixelDensity(1);
+  DW = document.documentElement.clientWidth; DH = innerHeight;
+  SS = Math.max(1, Math.min(Math.min(devicePixelRatio || 1, 2), Math.sqrt(3.4e6/(DW*DH))));
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS);
+  createCanvas(PW, PH).parent('stage'); const cvs = document.querySelector('#stage canvas'); cvs.style.width = DW + 'px'; cvs.style.height = DH + 'px';
+  F = Relief.field(PW, PH); art = Relief.makeCanvas(PW, PH); artCtx = art.getContext('2d');
+  noiseSeed(1979);
+  lamp = {x: DW*0.25, y: DH*0.15}; lampT = lamp;
+  if(DW > 2){ build(); ready = true; }
+}
+function windowResized(){
+  DW = document.documentElement.clientWidth; DH = innerHeight;
+  SS = Math.max(1, Math.min(Math.min(devicePixelRatio || 1, 2), Math.sqrt(3.4e6/(DW*DH))));
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS);
+  resizeCanvas(PW, PH); const cvs = document.querySelector('#stage canvas'); cvs.style.width = DW + 'px'; cvs.style.height = DH + 'px';
+  F = Relief.field(PW, PH); art = Relief.makeCanvas(PW, PH); artCtx = art.getContext('2d');
+  if(DW > 2){ build(); ready = true; }
+}
+let drag = null, rb = 0;
+function mousePressed(e){ if(e && e.target && e.target.tagName === 'CANVAS') drag = {x: mouseX, t: theta}; }
+function mouseReleased(){ drag = null; }
+function mouseDragged(){
+  if(!drag) return;
+  // a whole window's width is a degree and a half: the interesting part is tiny
+  theta = drag.t + (mouseX - drag.x)/(width)*1.5;
+  clearTimeout(rb); rb = setTimeout(build, 30);
+}
+function mouseMoved(){ lampT = {x: mouseX/SS, y: mouseY/SS}; }
+function draw(){
+  if(!ready) return;
+  const dx = lampT.x - lamp.x, dy = lampT.y - lamp.y;
+  if(Math.abs(dx) + Math.abs(dy) > 1){ lamp.x += dx*0.15; lamp.y += dy*0.15; need = true; }
+  if(need){ shade(); need = false; }
+  const g = drawingContext; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, PW, PH);
+  g.save(); g.shadowColor = 'rgba(40,30,18,0.3)'; g.shadowBlur = 22*SS; g.shadowOffsetY = 10*SS;
+  g.drawImage(art, 0, 0); g.restore();
+}
+document.getElementById('golden').onclick = () => { theta = GOLD; build(); };
+</script>
+</body>
+</html>
