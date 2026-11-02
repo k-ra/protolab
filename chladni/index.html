@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sound Figures — after Chladni</title>
+<script src="../lib/relief.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#efece4;color:var(--ink);overflow:hidden;font-family:'Lora',serif}
+canvas{position:fixed;inset:0;display:block;touch-action:none;cursor:ew-resize}
+.bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:16px;align-items:baseline;font-style:italic;font-size:14px;color:var(--soft);white-space:nowrap}
+.bar button{font:inherit;color:var(--soft);background:none;border:none;cursor:pointer}
+.bar button:hover,.bar button:focus-visible{color:var(--ink)}
+#mode{min-width:7em;text-align:center}
+.back{position:fixed;left:20px;top:18px;font-style:italic;font-size:13px;color:var(--soft);text-decoration:none}
+.back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<canvas id="c"></canvas>
+<div class="bar"><span id="mode"></span><button id="pour">pour more sand</button><button id="damp">damp the plate</button></div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// SOUND FIGURES — sand on a bowed plate, after Ernst Chladni (1787).
+//
+// Chladni scattered sand on a brass plate clamped at its centre and drew a
+// violin bow along its edge. The plate rang in one of its modes; where it
+// moved, the sand was thrown about, and where it stayed still — the nodal
+// lines — the sand came to rest. Each note drew its own figure. Napoleon
+// paid for a prize to explain them; Sophie Germain won it.
+//
+// For a free square plate the modes are well approximated by
+//   cos(nπx)cos(mπy) − cos(mπx)cos(nπy)
+// and every grain here takes random hops whose size is the plate's
+// amplitude under it. Nothing tells the sand where the lines are; it only
+// stops moving where the plate does.
+//
+// Drag across the plate to bow it higher or lower.
+// ═══════════════════════════════════════════════════════════════
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const MODES = [];
+for(let n=1;n<=9;n++) for(let m=n+1;m<=10;m++) MODES.push({n, m, f: n*n + m*m});
+MODES.sort((a, b) => a.f - b.f);
+let DW, DH, SS, P, N = 42000, gx, gy, bowing = 0.0, mode = 18, mix = 1, damped = false;
+let plateCv = null, img = null, sandCv = null, sctx = null;
+
+const amp = (x, y, M) => {
+  const a = Math.cos(M.n*Math.PI*x)*Math.cos(M.m*Math.PI*y) - Math.cos(M.m*Math.PI*x)*Math.cos(M.n*Math.PI*y);
+  return Math.abs(a)*0.5;
+};
+
+// a fresh, even scattering of sand over the whole plate
+function pour(){ for(let i=0;i<N;i++){ gx[i] = Math.random(); gy[i] = Math.random(); } }
+
+function layout(){
+  const s = Math.min(DW*0.78, DH*0.74);
+  P = {x: (DW - s)/2, y: (DH - s)/2 - 16, s};
+  // the plate: brass, lathe-brushed in rings from the clamp at its centre
+  const S = Math.round(s*SS);
+  plateCv = Relief.makeCanvas(S, S);
+  const c = plateCv.getContext('2d'), id = c.createImageData(S, S), d = id.data, rng = Relief.makeRng(1787);
+  for(let y=0;y<S;y++) for(let x=0;x<S;x++){
+    const dx = x - S/2, dy = y - S/2, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+    const ring = Math.sin(r*0.9 + Math.sin(a*3)*0.6)*0.5 + 0.5;
+    const sweep = 0.5 + 0.5*Math.cos(a*2 - 0.7);          // the brushing catches the light in two lobes
+    const v = 0.55 + 0.18*sweep + ring*0.05 + (rng() - 0.5)*0.05;
+    const i = (y*S + x)*4;
+    d[i] = 150*v + 30; d[i+1] = 118*v + 22; d[i+2] = 62*v + 10; d[i+3] = 255;
+  }
+  c.putImageData(id, 0, 0);
+  // the clamp at the centre
+  c.fillStyle = '#5a4423'; c.beginPath(); c.arc(S/2, S/2, S*0.025, 0, 7); c.fill();
+  c.fillStyle = '#c9a75e'; c.beginPath(); c.arc(S/2 - S*0.005, S/2 - S*0.005, S*0.015, 0, 7); c.fill();
+  sandCv = Relief.makeCanvas(S, S); sctx = sandCv.getContext('2d'); img = sctx.createImageData(S, S);
+}
+
+function step(){
+  const A = MODES[mode], B = MODES[Math.max(0, mode - 1)];
+  const vib = damped ? 0 : 0.032*(0.7 + 0.3*bowing);
+  for(let i=0;i<N;i++){
+    // between notes the plate rings in both for a moment
+    let a = amp(gx[i], gy[i], A);
+    if(mix < 1) a = a*mix + amp(gx[i], gy[i], B)*(1 - mix);
+    const k = vib*a;
+    gx[i] += (Math.random() - 0.5)*k; gy[i] += (Math.random() - 0.5)*k;
+    // what bounces off the edge is gone; it is poured back somewhere random
+    if(gx[i] < 0 || gx[i] > 1 || gy[i] < 0 || gy[i] > 1){ gx[i] = Math.random(); gy[i] = Math.random(); }
+  }
+  if(mix < 1) mix = Math.min(1, mix + 0.02);
+  bowing *= 0.97;
+}
+
+function render(){
+  const S = sandCv.width, d = img.data;
+  d.fill(0);
+  for(let i=0;i<N;i++){
+    const x = (gx[i]*(S - 3))|0, y = (gy[i]*(S - 3))|0;
+    // a grain and its shadow: the sand sits on the plate, it isn't printed on it
+    const o = (y*S + x)*4, sh = ((y + 1)*S + x + 1)*4;
+    if(d[sh + 3] < 120){ d[sh] = 40; d[sh+1] = 28; d[sh+2] = 14; d[sh+3] = 120; }
+    const t = 210 + ((i*37) % 40);
+    d[o] = t + 18; d[o+1] = t + 10; d[o+2] = t - 14; d[o+3] = 255;
+    if(SS > 1.5){ const o2 = o + 4; d[o2] = t + 8; d[o2+1] = t; d[o2+2] = t - 22; d[o2+3] = 255; }
+  }
+  sctx.putImageData(img, 0, 0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.save(); ctx.shadowColor = 'rgba(40,30,18,0.32)'; ctx.shadowBlur = 22*SS; ctx.shadowOffsetY = 10*SS;
+  ctx.drawImage(plateCv, P.x*SS, P.y*SS); ctx.restore();
+  ctx.drawImage(sandCv, P.x*SS, P.y*SS);
+  const M = MODES[mode];
+  document.getElementById('mode').textContent = 'mode ' + M.n + ' · ' + M.m;
+}
+
+function frame(){ for(let k=0;k<3;k++) step(); render(); requestAnimationFrame(frame); }
+
+let drag = null;
+cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); drag = {x: e.clientX, m: mode}; damped = false; bowing = 1; });
+cv.addEventListener('pointermove', e => {
+  if(!drag) return;
+  const nm = Math.max(0, Math.min(MODES.length - 1, drag.m + Math.round((e.clientX - drag.x)/(P.s/14))));
+  if(nm !== mode){ mode = nm; mix = 0; }
+  bowing = 1;
+});
+cv.addEventListener('pointerup', () => { drag = null; });
+document.getElementById('pour').onclick = () => { pour(); damped = false; };
+document.getElementById('damp').onclick = e => { damped = !damped; e.target.textContent = damped ? 'let it ring' : 'damp the plate'; };
+
+function size(){
+  DW = innerWidth; DH = innerHeight; SS = Math.min(devicePixelRatio || 1, 2);
+  cv.width = Math.round(DW*SS); cv.height = Math.round(DH*SS); cv.style.width = DW + 'px'; cv.style.height = DH + 'px';
+  if(DW > 2) layout();
+}
+gx = new Float32Array(N); gy = new Float32Array(N); pour();
+let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(size, 200); });
+size();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
