@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Stitch — hitomezashi sashiko</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#efece4;color:#2f2a24;overflow:hidden;font-family:'Lora',serif}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;cursor:crosshair}
+form{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:10px;align-items:baseline;font-style:italic;font-size:14px;color:#6a645b;
+  background:#efece4;padding:7px 16px;border-radius:2px;box-shadow:0 1px 2px rgba(47,42,36,.14),0 8px 22px -10px rgba(47,42,36,.4)}
+input{font:inherit;font-style:normal;color:#2f2a24;background:transparent;border:none;border-bottom:1px solid rgba(47,42,36,.25);padding:2px;width:9em;outline:none}
+input:focus{border-bottom-color:#2f2a24}
+.back{position:fixed;left:16px;top:14px;font-style:italic;font-size:13px;color:#6a645b;text-decoration:none;background:#efece4;padding:4px 10px;border-radius:2px;box-shadow:0 1px 2px rgba(47,42,36,.14)}
+.back:hover{color:#2f2a24}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<div id="stage"></div>
+<form id="f" autocomplete="off">
+  <label for="a">across</label><input id="a" value="protolab">
+  <label for="b">down</label><input id="b" value="paper">
+</form>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// ONE STITCH — hitomezashi sashiko.
+//
+// Sashiko is the running stitch Japanese farming families used to quilt and
+// mend indigo cotton, white thread on blue. Hitomezashi, "one stitch", is
+// the kind worked on a grid: every row is a line of running stitches, every
+// column too, and the only choice for each line is whether it starts with
+// a stitch or a gap. From those single bits — nothing else — come crosses,
+// steps, stars and labyrinths.
+//
+// Here the bits are your words: each letter's character code, read in
+// binary, sets whether a row (across) or a column (down) begins with a
+// stitch. The thread stands up from the twill and catches a lamp that
+// follows the cursor.
+// ═══════════════════════════════════════════════════════════════
+
+let DW, DH, SS, PW, PH, F, art, artCtx, lo = null, ready = false, need = false, moving = 0;
+let cov, hgt, nrm, colorMap, lamp = {x: 0, y: 0}, lampT = {x: 0, y: 0};
+const grey = v => { const c = Math.round(Math.max(0, Math.min(1, v))*255); return 'rgb(' + c + ',' + c + ',' + c + ')'; };
+const bitsOf = s => [...(s || 'a')].flatMap(ch => ch.charCodeAt(0).toString(2).padStart(7, '0').split('').map(Number));
+
+function build(){
+  const across = bitsOf(document.getElementById('a').value), down = bitsOf(document.getElementById('b').value);
+  const g = Math.max(12, Math.round(Math.min(DW, DH)/46)), cols = Math.ceil(DW/g) + 1, rows = Math.ceil(DH/g) + 1;
+  const at = c => c.setTransform(SS, 0, 0, SS, 0, 0);
+  // a stitch: the thread is a short, plump, twisted run with the cloth pulled in at each end
+  const stitch = (c, x0, y0, x1, y1, H) => {
+    const len = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0)/len, uy = (y1 - y0)/len, inset = g*0.12;
+    const ax = x0 + ux*inset, ay = y0 + uy*inset, bx = x1 - ux*inset, by = y1 - uy*inset;
+    c.lineCap = 'round';
+    c.strokeStyle = H ? grey(0.78) : '#fff'; c.lineWidth = g*0.2; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
+    if(H){ c.strokeStyle = grey(0.95); c.lineWidth = g*0.09; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
+      c.strokeStyle = grey(0.6); c.lineWidth = g*0.03;                       // the ply's twist
+      for(let s=g*0.14;s<len - g*0.28;s+=g*0.11){ const px = ax + ux*s, py = ay + uy*s; c.beginPath(); c.moveTo(px - uy*g*0.09, py + ux*g*0.09); c.lineTo(px + uy*g*0.09 + ux*g*0.05, py - ux*g*0.09 + uy*g*0.05); c.stroke(); } }
+  };
+  const draw = H => c => {
+    at(c);
+    if(H){ c.fillStyle = grey(0.4); c.fillRect(0, 0, DW, DH); }
+    for(let r=1;r<rows;r++){ const b = across[r % across.length]; for(let k=0;k<cols;k++) if((k + b) % 2 === 0) stitch(c, k*g, r*g, (k + 1)*g, r*g, H); }
+    for(let q=1;q<cols;q++){ const b = down[q % down.length]; for(let k=0;k<rows;k++) if((k + b) % 2 === 0) stitch(c, q*g, k*g, q*g, (k + 1)*g, H); }
+  };
+  const h0 = F.rasterLuma(draw(true));
+  const thread = F.raster(draw(false));
+  const n2 = PW*PH; cov = new Float32Array(n2).fill(1); hgt = new Float32Array(n2); colorMap = new Uint8ClampedArray(n2*3);
+  const surf = new Float32Array(n2);
+  const hs = F.blur(h0, Math.max(1, Math.round(0.6*SS)), 1);
+  for(let y=0;y<PH;y++) for(let x=0;x<PW;x++){
+    const i = y*PW + x, X = x/SS, Y = y/SS, t = thread[i];
+    // indigo twill: diagonal wales, and the dye never quite even
+    const twill = ((Math.floor(X*1.4) + Math.floor(Y*1.4)) % 4 < 2) ? 0.012 : -0.012;
+    const dye = 0.9 + (noise(X*0.01, Y*0.01) - 0.5)*0.25 + (noise(X*0.3, Y*0.05) - 0.5)*0.06;
+    surf[i] = hs[i]*0.6 + (1 - t)*twill;
+    hgt[i] = 0.45 + 0.55*hs[i];
+    const r = 34*dye, gg = 48*dye, b = 92*dye;
+    colorMap[i*3] = r + (236 - r)*t; colorMap[i*3+1] = gg + (230 - gg)*t; colorMap[i*3+2] = b + (214 - b)*t;
+  }
+  nrm = F.normals(cov, surf, 30*SS);
+  makeLo(); need = true;
+}
+
+const LO = 3;
+function makeLo(){
+  const w = Math.floor(PW/LO), h = Math.floor(PH/LO), n = w*h;
+  lo = {F: Relief.field(w, h), cov: new Float32Array(n).fill(1), hgt: new Float32Array(n),
+        nX: new Float32Array(n), nY: new Float32Array(n), nZ: new Float32Array(n), colorMap: new Uint8ClampedArray(n*3)};
+  lo.cv = Relief.makeCanvas(w, h); lo.ctx = lo.cv.getContext('2d');
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const i = y*w + x, a = (y*LO)*PW + x*LO;
+    lo.hgt[i] = hgt[a]; lo.nX[i] = nrm.nX[a]; lo.nY[i] = nrm.nY[a]; lo.nZ[i] = nrm.nZ[a];
+    lo.colorMap[i*3] = colorMap[a*3]; lo.colorMap[i*3+1] = colorMap[a*3+1]; lo.colorMap[i*3+2] = colorMap[a*3+2];
+  }
+}
+function shade(preview){
+  const k = preview ? 1/LO : 1;
+  (preview ? lo.F : F).shade(preview ? lo.ctx : artCtx, {
+    cov: preview ? lo.cov : cov, hgt: preview ? lo.hgt : hgt, hMax: 1,
+    nX: preview ? lo.nX : nrm.nX, nY: preview ? lo.nY : nrm.nY, nZ: preview ? lo.nZ : nrm.nZ,
+    colorMap: preview ? lo.colorMap : colorMap,
+    light: {x: lamp.x*SS*k, y: lamp.y*SS*k, h: 240*SS*k, radius: 1700*SS*k, color: '#fff5e4'},
+    ambient: 0.40, aoLo: 0.45, exposure: 1.2, matte: true, wrap: 0.35, sheen: 0.06, scatter: 0.05});
+}
+
+function setup(){
+  pixelDensity(1);
+  DW = document.documentElement.clientWidth; DH = innerHeight;
+  SS = Math.max(1, Math.min(Math.min(devicePixelRatio || 1, 2), Math.sqrt(3.6e6/(DW*DH))));
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS);
+  createCanvas(PW, PH).parent('stage'); const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px';
+  F = Relief.field(PW, PH); art = Relief.makeCanvas(PW, PH); artCtx = art.getContext('2d');
+  noiseSeed(1700);
+  lamp = {x: DW*0.3, y: DH*0.2}; lampT = {x: DW*0.35, y: DH*0.25};
+  if(DW > 2){ build(); ready = true; }
+}
+function windowResized(){
+  DW = document.documentElement.clientWidth; DH = innerHeight;
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS); resizeCanvas(PW, PH);
+  const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px';
+  F = Relief.field(PW, PH); art = Relief.makeCanvas(PW, PH); artCtx = art.getContext('2d');
+  if(DW > 2){ build(); ready = true; }
+}
+function mouseMoved(){ lampT = {x: mouseX/SS, y: mouseY/SS}; }
+function draw(){
+  if(!ready) return;
+  const dx = lampT.x - lamp.x, dy = lampT.y - lamp.y;
+  if(Math.abs(dx) + Math.abs(dy) > 0.8){ lamp.x += dx*0.12; lamp.y += dy*0.12; moving = 5; need = true; }
+  if(need){ if(moving > 0){ shade(true); moving--; } else { shade(false); need = false; } }
+  const g = drawingContext; g.setTransform(1, 0, 0, 1, 0, 0);
+  g.imageSmoothingQuality = 'high';
+  if(moving > 0 && lo) g.drawImage(lo.cv, 0, 0, PW, PH); else g.drawImage(art, 0, 0);
+}
+let tt = 0;
+['a', 'b'].forEach(id => document.getElementById(id).addEventListener('input', () => { clearTimeout(tt); tt = setTimeout(() => { if(ready) build(); }, 250); }));
+document.getElementById('f').addEventListener('submit', e => e.preventDefault());
+</script>
+</body>
+</html>
