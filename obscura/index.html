@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camera Obscura — a dark room</title>
+<script src="../lib/relief.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#1b1612;color:#d8cfbf;overflow:hidden;font-family:'Lora',serif}
+canvas{position:fixed;inset:0;display:block;touch-action:none;cursor:crosshair}
+.bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:16px;align-items:center;font-style:italic;font-size:14px;color:#b8ad9b;white-space:nowrap}
+.bar button{font:inherit;color:#b8ad9b;background:none;border:none;cursor:pointer}
+.bar button:hover,.bar button:focus-visible{color:#f0e8da}
+.bar input{accent-color:#b8ad9b;width:120px}
+.back{position:fixed;left:20px;top:18px;font-style:italic;font-size:13px;color:#b8ad9b;text-decoration:none}
+.back:hover{color:#f0e8da}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<canvas id="c"></canvas>
+<div class="bar">
+  <label for="hole">pinhole</label><input id="hole" type="range" min="1" max="14" step="0.5" value="4">
+  <button id="shutter">close the shutter</button>
+  <button id="clear">a fresh sheet</button>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CAMERA OBSCURA — a dark room with a hole in one wall.
+//
+// Known to Mozi and Alhazen, built into tents and closets by the view
+// painters: light from outside comes through a small hole and lands on the
+// far wall as the world, upside down, in colour, and moving — leaves
+// stirring, clouds going over. A smaller hole gives a sharper picture and a
+// dimmer one; a larger hole, brighter and softer. That trade is the whole
+// of optics before the lens, and it is what the slider does.
+//
+// The painters traced it. Draw on the sheet with the cursor to trace in
+// pencil; close the shutter to see what you have drawn without the
+// picture under it.
+// ═══════════════════════════════════════════════════════════════
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+let DW, DH, SS, S, scene, sctx, small, mctx, trace, tctx, hole = 4, open = true, t = 0, last = 0;
+let land = null;
+
+function layout(){
+  const h = Math.min(DH*0.74, DW*0.86/1.3), w = h*1.3;
+  S = {x: (DW - w)/2, y: (DH - h)/2 - 14, w, h};
+  scene = Relief.makeCanvas(Math.round(w*0.5), Math.round(h*0.5)); sctx = scene.getContext('2d');
+  trace = Relief.makeCanvas(Math.round(w*SS), Math.round(h*SS)); tctx = trace.getContext('2d');
+  tctx.scale(SS, SS);
+  growLand();
+}
+
+// the view outside: hills, a meadow, one tree near the hole
+function growLand(){
+  const rng = Relief.makeRng(1490), W = scene.width, H = scene.height;
+  const hills = [0.45, 0.55, 0.64].map((y, k) => {
+    const pts = []; let v = 0; for(let x=0;x<=W;x+=4){ v = v*0.9 + (rng() - 0.5)*6; pts.push([x, H*y + v*(1.6 - k*0.4)]); } return pts;
+  });
+  const branches = [];
+  const grow = (x, y, a, len, w, d) => {
+    const nx = x + Math.cos(a)*len, ny = y + Math.sin(a)*len;
+    branches.push({x, y, nx, ny, w, d});
+    if(d > 6) return;
+    const k = 2 + (rng() < 0.3 ? 1 : 0);
+    for(let i=0;i<k;i++) grow(nx, ny, a + (rng() - 0.5)*1.1, len*(0.68 + rng()*0.12), w*0.68, d + 1);
+  };
+  grow(W*0.66, H*0.92, -Math.PI/2 + 0.05, H*0.2, W*0.022, 0);
+  const leaves = branches.filter(b => b.d >= 4).flatMap(b => Array.from({length: 9}, () => ({x: b.nx + (rng() - 0.5)*W*0.06, y: b.ny + (rng() - 0.5)*W*0.05, r: W*(0.006 + rng()*0.009), c: rng(), ph: rng()*6.28})));
+  const clouds = Array.from({length: 5}, () => ({x: rng()*W, y: H*(0.08 + rng()*0.2), r: W*(0.05 + rng()*0.06)}));
+  land = {hills, branches, leaves, clouds};
+}
+
+function paintScene(){
+  const W = scene.width, H = scene.height, c = sctx;
+  const sky = c.createLinearGradient(0, 0, 0, H*0.6);
+  sky.addColorStop(0, '#7fa3c4'); sky.addColorStop(1, '#dfe6e2');
+  c.fillStyle = sky; c.fillRect(0, 0, W, H);
+  // clouds drift
+  c.fillStyle = 'rgba(255,255,255,0.7)';
+  land.clouds.forEach(cl => { const x = (cl.x + t*6) % (W + cl.r*2) - cl.r; c.beginPath(); c.ellipse(x, cl.y, cl.r, cl.r*0.42, 0, 0, 7); c.fill(); c.beginPath(); c.ellipse(x + cl.r*0.5, cl.y - cl.r*0.15, cl.r*0.6, cl.r*0.35, 0, 0, 7); c.fill(); });
+  ['#9fb2a4', '#7f9a6e', '#5f8248'].forEach((col, k) => {
+    c.fillStyle = col; c.beginPath(); c.moveTo(0, H); land.hills[k].forEach(([x, y]) => c.lineTo(x, y)); c.lineTo(W, H); c.closePath(); c.fill();
+  });
+  c.fillStyle = '#6e9a46'; c.fillRect(0, H*0.8, W, H*0.2);
+  // the tree, moving in the wind: the higher the twig, the further it sways
+  const sway = Math.sin(t*1.3)*0.6 + Math.sin(t*3.1)*0.25;
+  c.strokeStyle = '#3b2c20'; c.lineCap = 'round';
+  land.branches.forEach(b => {
+    const k = b.d*b.d*0.12*sway;
+    c.lineWidth = Math.max(0.6, b.w); c.beginPath(); c.moveTo(b.x + (b.d - 1)*(b.d - 1)*0.12*sway, b.y); c.lineTo(b.nx + k, b.ny); c.stroke();
+  });
+  land.leaves.forEach(l => {
+    const k = 36*0.12*sway + Math.sin(t*5 + l.ph)*0.8;
+    c.fillStyle = l.c < 0.5 ? '#3f6b2e' : (l.c < 0.8 ? '#5a8a3a' : '#86ad52');
+    c.beginPath(); c.arc(l.x + k, l.y, l.r, 0, 7); c.fill();
+  });
+}
+
+function frame(now){
+  const dt = Math.min(0.05, (now - last)/1000 || 0); last = now; t += dt;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#1b1612'; ctx.fillRect(0, 0, cv.width, cv.height);
+  // the sheet pinned to the far wall
+  const X = S.x*SS, Y = S.y*SS, Wd = S.w*SS, Hd = S.h*SS;
+  // without the picture, the sheet is only lit by what spills around it
+  ctx.fillStyle = open ? '#3a332b' : '#8d8476'; ctx.fillRect(X, Y, Wd, Hd);
+  if(open){
+    paintScene();
+    // a pinhole blurs by its own size: render small, bring it back up soft
+    const k = Math.max(1, hole*0.55);
+    const sw = Math.max(8, Math.round(scene.width/k)), sh = Math.max(6, Math.round(scene.height/k));
+    if(!small || small.width !== sw){ small = Relief.makeCanvas(sw, sh); mctx = small.getContext('2d'); }
+    mctx.imageSmoothingQuality = 'high'; mctx.drawImage(scene, 0, 0, sw, sh);
+    ctx.save();
+    ctx.translate(X + Wd, Y + Hd); ctx.rotate(Math.PI);               // the world, upside down
+    // a bigger hole lets in more light
+    ctx.globalAlpha = Math.min(1, 0.25 + hole*0.06);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(small, 0, 0, Wd, Hd);
+    ctx.restore();
+    // the edges fall off in brightness: the light reaches them at a slant
+    const v = ctx.createRadialGradient(X + Wd/2, Y + Hd/2, Hd*0.2, X + Wd/2, Y + Hd/2, Wd*0.65);
+    v.addColorStop(0, 'rgba(27,22,18,0)'); v.addColorStop(1, 'rgba(27,22,18,0.75)');
+    ctx.fillStyle = v; ctx.fillRect(X, Y, Wd, Hd);
+  }
+  // the pencil
+  ctx.drawImage(trace, X, Y, Wd, Hd);
+  // paper tooth
+  ctx.save(); ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = 0.3; ctx.fillStyle = grain; ctx.fillRect(X, Y, Wd, Hd); ctx.restore();
+  requestAnimationFrame(frame);
+}
+
+let pen = null;
+cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); pen = {x: e.clientX - S.x, y: e.clientY - S.y}; });
+cv.addEventListener('pointermove', e => {
+  if(!pen) return;
+  const x = e.clientX - S.x, y = e.clientY - S.y;
+  tctx.strokeStyle = 'rgba(52,48,46,0.75)'; tctx.lineWidth = 1.1; tctx.lineCap = 'round';
+  tctx.beginPath(); tctx.moveTo(pen.x, pen.y); tctx.lineTo(x + (Math.random() - 0.5)*0.4, y + (Math.random() - 0.5)*0.4); tctx.stroke();
+  pen = {x, y};
+});
+cv.addEventListener('pointerup', () => { pen = null; });
+document.getElementById('hole').addEventListener('input', e => { hole = +e.target.value; });
+const sh = document.getElementById('shutter');
+sh.onclick = () => { open = !open; sh.textContent = open ? 'close the shutter' : 'open the shutter'; };
+document.getElementById('clear').onclick = () => { tctx.save(); tctx.setTransform(1, 0, 0, 1, 0, 0); tctx.clearRect(0, 0, trace.width, trace.height); tctx.restore(); };
+
+let grain;
+function size(){
+  DW = innerWidth; DH = innerHeight; SS = Math.min(devicePixelRatio || 1, 2);
+  cv.width = Math.round(DW*SS); cv.height = Math.round(DH*SS); cv.style.width = DW + 'px'; cv.style.height = DH + 'px';
+  grain = ctx.createPattern(Relief.grainTile(256, 7, 30), 'repeat');
+  if(DW > 2) layout();
+}
+let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(size, 200); });
+size();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
