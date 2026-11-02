@@ -73,6 +73,7 @@ noscript a{color:var(--soft)}
   <a href="obscura/" data-k="tracing"><span>Camera Obscura</span></a>
   <a href="nature-print/" data-k="fern"><span>Nature Printing</span></a>
   <a href="stencil/" data-k="hand"><span>Hands on the Wall</span></a>
+  <a href="quipu/" data-k="quipu"><span>Quipu</span></a>
 </nav>
 <noscript>
   <a href="protolab/">The sheet</a><a href="canvas/">Clippings</a><a href="flowers/">Specimen</a>
@@ -83,7 +84,7 @@ noscript a{color:var(--soft)}
   <a href="jacquard/">Damask</a><a href="daguerreotype/">Mirror with a Memory</a><a href="chladni/">Sound Figures</a>
   <a href="turing/">Morphogenesis</a><a href="phyllotaxis/">Golden Angle</a>
   <a href="mezzotint/">The Black Manner</a><a href="obscura/">Camera Obscura</a>
-  <a href="nature-print/">Nature Printing</a><a href="stencil/">Hands on the Wall</a>
+  <a href="nature-print/">Nature Printing</a><a href="stencil/">Hands on the Wall</a><a href="quipu/">Quipu</a>
 </noscript>
 
 <script>
@@ -589,6 +590,25 @@ const KINDS = {
       ctx.restore();
     }
   },
+  // a quipu drawn up on squared paper, the way it was first read
+  quipu: {
+    stock: '#f2eee3',
+    height(){},
+    color(ctx, s){
+      const g = s.U*0.08;
+      ctx.strokeStyle = 'rgba(120,150,170,0.35)'; ctx.lineWidth = 0.5;
+      for(let x=-s.hw; x<=s.hw; x+=g){ ctx.beginPath(); ctx.moveTo(x, -s.hh); ctx.lineTo(x, s.hh); ctx.stroke(); }
+      for(let y=-s.hh; y<=s.hh; y+=g){ ctx.beginPath(); ctx.moveTo(-s.hw, y); ctx.lineTo(s.hw, y); ctx.stroke(); }
+      ctx.strokeStyle = '#3b2e26'; ctx.fillStyle = '#3b2e26'; ctx.lineWidth = Math.max(0.8, s.U*0.014);
+      ctx.beginPath(); ctx.moveTo(-s.hw*0.85, -s.hh*0.7); ctx.lineTo(s.hw*0.85, -s.hh*0.7); ctx.stroke();
+      [3, 1, 4, 1, 5].forEach((d, k) => {
+        const x = -s.hw*0.6 + k*s.hw*0.3;
+        ctx.beginPath(); ctx.moveTo(x, -s.hh*0.7); ctx.lineTo(x, s.hh*0.75); ctx.stroke();
+        for(let j=0;j<d;j++){ ctx.beginPath(); ctx.arc(x, -s.hh*0.15 + j*s.U*0.06, s.U*0.028, 0, 7); ctx.fill(); }
+        ctx.beginPath(); ctx.ellipse(x, s.hh*0.55, s.U*0.03, s.U*0.07, 0, 0, 7); ctx.fill();
+      });
+    }
+  },
   // a wax seal on a punched tag
   sigil: {
     stock: STOCK.cotton, wax: true,
@@ -769,11 +789,11 @@ const PILED = {
   girih:     {hw: 0.62, hh: 0.55}, smoked:    {hw: 1.35, hh: 0.32}, card:    {hw: 0.95, hh: 0.42},
   cabinet:   {hw: 0.55, hh: 0.78}, figures:   {hw: 0.70, hh: 0.70}, maze:    {hw: 0.66, hh: 0.56},
   seeds:     {hw: 0.62, hh: 0.62}, velvet:  {hw: 0.55, hh: 0.70}, tracing: {hw: 0.72, hh: 0.56},
-  fern:      {hw: 0.52, hh: 0.76}, hand: {hw: 0.58, hh: 0.66}
+  fern:      {hw: 0.52, hh: 0.76}, hand: {hw: 0.58, hh: 0.66}, quipu: {hw: 0.70, hh: 0.62}
 };
 // painter's order: later slips rest on earlier ones
 // A new study gets a slip here, a kind above, and a place in both layouts.
-const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds', 'velvet', 'tracing', 'fern', 'hand'];
+const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds', 'velvet', 'tracing', 'fern', 'hand', 'quipu'];
 
 function compose(){
   const L = DW/DH > 1.05 ? LAYOUTS.wide : LAYOUTS.tall;
