@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rings — a tree since 1770</title>
+<title>Rings — a tree since 1800</title>
 <script src="../vendor/p5.min.js"></script>
 <script src="../lib/relief.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,7 +27,7 @@ body{background:#efece4;color:#2f2a24;overflow:hidden;font-family:'Lora',serif}
 <div id="year" aria-live="polite"></div>
 <script>
 // ═══════════════════════════════════════════════════════════════
-// RINGS — a cross-section of a tree that started growing in 1770.
+// RINGS — a cross-section of a tree that started growing in 1800.
 //
 // A. E. Douglass, an astronomer looking for sunspots, found the climate
 // written in pine: a wet year makes a wide ring, a dry or cold one a
@@ -36,22 +36,21 @@ body{background:#efece4;color:#2f2a24;overflow:hidden;font-family:'Lora',serif}
 // as a run of cold, thin rings everywhere at once.
 //
 // This slice was grown year by year from a climate that wanders on its own,
-// with the known cold years pressed in: 1783 (Laki),
+// with the known cold years pressed in:
 // 1816 (Tambora — the year without a summer), 1883 (Krakatoa), and the
 // Dust Bowl. The end grain has weathered: the soft earlywood has worn back,
 // the dense latewood stands up, so the rings are a relief under the lamp.
 // Hover a ring to read its year.
 // ═══════════════════════════════════════════════════════════════
 
-const START = 1770, END = 2026;
-const EVENTS = {1601: [0.32, 'Huaynaputina'], 1602: [0.6, ''], 1783: [0.45, 'Laki'], 1784: [0.7, ''],
-  1816: [0.28, 'the year without a summer'], 1817: [0.6, ''], 1883: [0.5, 'Krakatoa'], 1884: [0.75, ''],
+const START = 1800, END = 2026;
+const EVENTS = {1601: [0.32, 'Huaynaputina'], 1602: [0.6, ''], 1816: [0.28, 'the year without a summer'], 1817: [0.6, ''], 1883: [0.5, 'Krakatoa'], 1884: [0.75, ''],
   1934: [0.5, 'the Dust Bowl'], 1935: [0.55, 'the Dust Bowl'], 1936: [0.5, 'the Dust Bowl']};
 let DW, DH, SS, PW, PH, F, art, artCtx, lo = null, ready = false, need = false, moving = 0;
 let cov, hgt, nrm, colorMap, radii, C, lamp = {x: 0, y: 0}, lampT = {x: 0, y: 0};
 
 function grow(){
-  noiseSeed(1770);
+  noiseSeed(1800);
   const widths = [];
   for(let y=START;y<=END;y++){
     const age = y - START;
@@ -60,7 +59,7 @@ function grow(){
     if(EVENTS[y]) w *= EVENTS[y][0];
     widths.push(Math.max(0.15, w));
   }
-  const total = widths.reduce((a, b) => a + b, 0), R = Math.min(DW, DH)*0.42;
+  const total = widths.reduce((a, b) => a + b, 0), R = Math.min(DW, DH)*0.45;
   radii = []; let acc = 0; widths.forEach(w => { acc += w/total*R; radii.push(acc); });
   C = {x: DW/2, y: DH/2 - 10, R};
 }
@@ -90,20 +89,19 @@ function build(){
       colorMap[o] = 74*fur + 40; colorMap[o+1] = 54*fur + 30; colorMap[o+2] = 40*fur + 22;
       surf[i] = 0.55 + fur*0.25; hgt[i] = 0.6 + fur*0.4; continue;
     }
-    const late = k.f > 0.6 ? Math.min(1, (k.f - 0.6)/0.18) : 0;
+    // a smooth ramp into the latewood, so even thin rings stay above a pixel
+    const late = Math.max(0, Math.min(1, (k.f - 0.45)/0.35))*Math.min(1, (1 - k.f)/0.12 + 0.4);
     const t = k.i/radii.length;                                 // heartwood darker, sapwood paler
     const heart = t < 0.82 ? 1 : Math.max(0, 1 - (t - 0.82)/0.06);
     let r = 222 - heart*26, g = 190 - heart*30, b = 144 - heart*34;
     r -= late*72; g -= late*66; b -= late*52;
     // pores and the odd ray running outward
-    const ray = Math.abs(Math.sin(k.a*90 + noise(k.r*0.05)*3)) > 0.995 ? 10 : 0;
-    r += ray; g += ray*0.8; b += ray*0.5;
     let h = 0.5 + late*0.06 + (noise(X*0.8, Y*0.8) - 0.5)*0.01;
     // checks: the slice split as it dried, from the bark inward
     cracks.forEach(ca => { const d = Math.abs(Math.atan2(Math.sin(k.a - ca), Math.cos(k.a - ca))); const reach = t > 0.35; if(reach && d*dist < 1.6*(t - 0.3)*3){ r *= 0.45; g *= 0.42; b *= 0.4; h -= 0.08; } });
     colorMap[o] = r; colorMap[o+1] = g; colorMap[o+2] = b; surf[i] = h; hgt[i] = 0.7 + 0.3*late;
   }
-  nrm = F.normals(cov, F.blur(surf, Math.max(1, Math.round(SS*0.6)), 1), 30*SS);
+  nrm = F.normals(cov, F.blur(surf, Math.max(1, Math.round(SS*0.8)), 2), 26*SS);
   makeLo(); need = true;
 }
 
