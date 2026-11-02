@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hands on the Wall — a cave</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#0e0b09;color:#c9b9a2;overflow:hidden;font-family:'Lora',serif}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;cursor:none;touch-action:none}
+.bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:16px;font-style:italic;font-size:14px;color:#a8977f;white-space:nowrap}
+.bar button{font:inherit;color:#a8977f;background:none;border:none;cursor:pointer}
+.bar button[aria-pressed="true"]{color:#efe2cc;text-decoration:underline;text-underline-offset:4px}
+.bar button:hover,.bar button:focus-visible{color:#efe2cc}
+.back{position:fixed;left:20px;top:18px;font-style:italic;font-size:13px;color:#a8977f;text-decoration:none}
+.back:hover{color:#efe2cc}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<div id="stage"></div>
+<div class="bar">
+  <button id="ochre" aria-pressed="true">red ochre</button>
+  <button id="manganese" aria-pressed="false">manganese</button>
+  <button id="wall">another wall</button>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// HANDS ON THE WALL — after the caves of El Castillo, Lascaux and the
+// Cueva de las Manos.
+//
+// Some of the oldest pictures anyone made are hands: a palm pressed to the
+// rock and pigment — red ochre, or black manganese — blown around it through
+// a hollow bone or straight from the mouth. What stays is the negative of a
+// hand, in a halo of colour, on a wall that was only ever seen by torchlight.
+//
+// The wall is a height field of limestone, lit by a torch that follows the
+// cursor and gutters as torches do. Press and hold to blow pigment around
+// your hand; the pigment settles thicker in the hollows of the rock.
+// ═══════════════════════════════════════════════════════════════
+
+let DW, DH, SS, Q = 2, W, H, F, cov, hgt, nrm, base, colorMap, pig, pctx, out, octx, ready = false, seed = 40000;
+let torch = {x: 0, y: 0}, torchT = {x: 0, y: 0}, pigment = [140, 52, 30], blowing = false, hand = null, surf;
+
+function wall(){
+  W = Math.ceil(DW*SS/Q); H = Math.ceil(DH*SS/Q);
+  F = Relief.field(W, H);
+  const n = W*H; cov = new Float32Array(n).fill(1); hgt = new Float32Array(n); surf = new Float32Array(n);
+  base = new Uint8ClampedArray(n*3); colorMap = new Uint8ClampedArray(n*3);
+  noiseSeed(seed);
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const i = y*W + x, X = x*Q/SS, Y = y*Q/SS;
+    // limestone: big swells, smaller knobs, the odd crack
+    let h = noise(X*0.004, Y*0.004)*0.7 + noise(X*0.018, Y*0.018)*0.22 + noise(X*0.07, Y*0.07)*0.03;
+    const crack = Math.abs(noise(X*0.006 + 30, Y*0.006) - 0.5);
+    if(crack < 0.012) h -= (0.012 - crack)*8;
+    surf[i] = h; hgt[i] = 0.5 + 0.5*h;
+    const tint = noise(X*0.01 + 70, Y*0.01);
+    base[i*3] = 196 + tint*30 - 20; base[i*3+1] = 176 + tint*24 - 18; base[i*3+2] = 148 + tint*18 - 16;
+    // a flowstone sheen of calcite here and there
+    if(noise(X*0.003 + 9, Y*0.003) > 0.68){ base[i*3] += 18; base[i*3+1] += 18; base[i*3+2] += 20; }
+  }
+  nrm = F.normals(cov, surf, 34);
+  pig = Relief.makeCanvas(W, H); pctx = pig.getContext('2d', {willReadFrequently: true});
+  out = Relief.makeCanvas(W, H); octx = out.getContext('2d');
+  mix();
+}
+
+// pigment sits on the rock, thicker in its hollows
+function mix(){
+  const d = pctx.getImageData(0, 0, W, H).data;
+  for(let i=0;i<W*H;i++){
+    const a = Math.min(1, d[i*4 + 3]/255*1.5*(0.8 + (0.5 - surf[i])*0.6));
+    const pr = d[i*4], pg = d[i*4+1], pb = d[i*4+2];
+    colorMap[i*3]   = base[i*3]   + (pr - base[i*3])*a;
+    colorMap[i*3+1] = base[i*3+1] + (pg - base[i*3+1])*a;
+    colorMap[i*3+2] = base[i*3+2] + (pb - base[i*3+2])*a;
+  }
+}
+
+// a hand, pressed flat: palm and five fingers, a little different each time
+function makeHand(){
+  const rng = Math.random, s = Math.min(DW, DH)*0.11*(0.9 + rng()*0.2)*SS/Q, spread = 0.12 + rng()*0.1, tilt = (rng() - 0.5)*0.6;
+  const c = Relief.makeCanvas(Math.ceil(s*3), Math.ceil(s*3.4)), x = c.getContext('2d');
+  x.translate(c.width/2, c.height*0.62); x.rotate(tilt); x.fillStyle = '#fff'; x.lineCap = 'round';
+  x.beginPath(); x.ellipse(0, 0, s*0.46, s*0.55, 0, 0, 7); x.fill();
+  x.fillRect(-s*0.3, s*0.3, s*0.6, s*0.8);                                   // the wrist
+  const fingers = [[-0.36, 0.75, -2.0 - spread*2], [-0.2, 1.0, -1.7 - spread], [0, 1.08, -1.57], [0.19, 1.0, -1.42 + spread*0.6], [0.34, 0.8, -1.25 + spread*1.4]];
+  fingers.forEach(([fx, len, a], k) => {
+    x.lineWidth = s*(k === 0 ? 0.24 : 0.19);
+    const bx = fx*s, by = -s*0.35 + (k === 0 ? s*0.35 : 0);
+    x.beginPath(); x.moveTo(bx, by); x.lineTo(bx + Math.cos(a)*len*s*0.95, by + Math.sin(a)*len*s*0.95); x.stroke();
+  });
+  return c;
+}
+
+function blow(){
+  const hx = torchT.x*SS/Q, hy = torchT.y*SS/Q;
+  if(!hand) hand = makeHand();
+  // the spray: many fine droplets around the hand, thinning outward
+  pctx.save();
+  const R = hand.width*0.62, rgb = 'rgba(' + pigment.join(',') + ',';
+  for(let i=0;i<2200;i++){
+    const a = Math.random()*6.283, r = Math.pow(Math.random(), 0.7)*R;
+    pctx.fillStyle = rgb + (0.10 + Math.random()*0.14) + ')';
+    const z = 1.2 + Math.random()*2.2;
+    pctx.fillRect(hx + Math.cos(a)*r, hy + Math.sin(a)*r, z, z);
+  }
+  // the hand keeps the rock clean beneath it
+  pctx.globalCompositeOperation = 'destination-out';
+  pctx.drawImage(hand, hx - hand.width/2, hy - hand.height*0.62);
+  pctx.restore();
+  mix();
+}
+
+function setup(){
+  pixelDensity(1);
+  DW = document.documentElement.clientWidth; DH = innerHeight; SS = Math.min(devicePixelRatio || 1, 2);
+  createCanvas(DW*SS, DH*SS).parent('stage'); const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px';
+  torch = {x: DW*0.5, y: DH*0.4}; torchT = {...torch};
+  if(DW > 2){ wall(); ready = true; }
+}
+function windowResized(){
+  DW = document.documentElement.clientWidth; DH = innerHeight;
+  resizeCanvas(DW*SS, DH*SS); const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px';
+  if(DW > 2){ wall(); ready = true; }
+}
+function mouseMoved(){ torchT = {x: mouseX/SS, y: mouseY/SS}; }
+function mouseDragged(){ mouseMoved(); }
+function touchMoved(){ mouseMoved(); return false; }
+function mousePressed(e){ if(e && e.target && e.target.tagName === 'CANVAS'){ mouseMoved(); blowing = true; hand = makeHand(); } }
+function mouseReleased(){ blowing = false; }
+function draw(){
+  if(!ready) return;
+  const t = millis()/1000;
+  torch.x += (torchT.x - torch.x)*0.2; torch.y += (torchT.y - torch.y)*0.2;
+  if(blowing) blow();
+  // a torch gutters: its brightness and reach waver, and it moves a little on its own
+  const fl = 0.82 + 0.18*noise(t*3.1, 7) + 0.06*Math.sin(t*23);
+  F.shade(octx, {cov, hgt, hMax: 1, nX: nrm.nX, nY: nrm.nY, nZ: nrm.nZ, colorMap,
+    light: {x: (torch.x + (noise(t*1.3, 1) - 0.5)*8)*SS/Q, y: (torch.y - 30 + (noise(t*1.1, 2) - 0.5)*6)*SS/Q,
+            h: 120*SS/Q, radius: 340*fl*SS/Q, color: '#ffb36a'},
+    ambient: 0.05, aoLo: 0.5, exposure: 1.45*fl, wrap: 0.2, matte: true, sheen: 0.05, scatter: 0.04,
+    tone: {shadow: '#0a0705', high: '#fff0d8', amount: 0.1}});
+  const g = drawingContext; g.setTransform(1, 0, 0, 1, 0, 0);
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  g.drawImage(out, 0, 0, width, height);
+  // the flame itself
+  const fx = torch.x*SS, fy = (torch.y - 30)*SS, fr = 26*SS*fl;
+  const rg = g.createRadialGradient(fx, fy, 0, fx, fy, fr);
+  rg.addColorStop(0, 'rgba(255,236,190,0.85)'); rg.addColorStop(0.4, 'rgba(255,160,70,0.35)'); rg.addColorStop(1, 'rgba(255,120,40,0)');
+  g.fillStyle = rg; g.beginPath(); g.arc(fx, fy, fr, 0, 7); g.fill();
+}
+const setP = (rgb, id) => { pigment = rgb; ['ochre', 'manganese'].forEach(k => document.getElementById(k).setAttribute('aria-pressed', k === id)); };
+document.getElementById('ochre').onclick = () => setP([140, 52, 30], 'ochre');
+document.getElementById('manganese').onclick = () => setP([30, 24, 22], 'manganese');
+document.getElementById('wall').onclick = () => { seed = Math.floor(Math.random()*1e5); wall(); };
+</script>
+</body>
+</html>
