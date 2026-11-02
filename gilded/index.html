@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gilded — an illuminated initial</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#efece4;color:var(--ink);overflow:hidden;font-family:'Lora',serif}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;cursor:crosshair}
+.bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;align-items:baseline;
+  font-style:italic;font-size:14px;color:var(--soft)}
+.bar input{font:600 18px 'Lora',serif;width:1.6em;text-align:center;color:var(--ink);background:transparent;border:none;
+  border-bottom:1px solid rgba(47,42,36,.25);outline:none;text-transform:uppercase}
+.bar input:focus{border-bottom-color:var(--ink)}
+.bar button{font:inherit;color:var(--soft);background:none;border:none;cursor:pointer}
+.bar button:hover,.bar button:focus-visible{color:var(--ink)}
+.back{position:fixed;left:20px;top:18px;font-style:italic;font-size:13px;color:var(--soft);text-decoration:none}
+.back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<div id="stage"></div>
+<div class="bar">
+  <label for="letter">initial</label><input id="letter" maxlength="1" value="P">
+  <button id="grow">grow again</button>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// GILDED — an illuminated initial, after the Gothic books of hours.
+//
+// The letter is laid in gold leaf over raised gesso, so it is a real bump
+// in the height field and burnished: it catches the lamp, flares and goes
+// dark again as the cursor moves, the way gold on a page only comes alive
+// when the book is turned in the light. Its field is lapis with white
+// filigree; the border is tooled with a punch. Acanthus scrolls grow out of
+// the frame as logarithmic spirals, leafed in vermilion and verdigris, and
+// end in raised gold bezants. Beside it, a text block of minims in iron-gall
+// ink, the first lines rubricated.
+//
+// Each material answers the same lamp differently: gold is glossy and
+// reflects the room, paint is chalky and matte, vellum has a soft sheen.
+// ═══════════════════════════════════════════════════════════════
+
+const VELLUM = '#efe5cf', GOLD = '#caa04a', LAPIS = '#26458a', VERM = '#b8432f', VERD = '#4f7d5f', IRON = '#4a3526', WHITE = '#f4efe2';
+const MATS = [
+  {ambient: 0.52, aoLo: 0.6, exposure: 1.02, gloss: 0.06, sheen: 0.05, scatter: 0.04},                // vellum
+  {ambient: 0.20, aoLo: 0.35, exposure: 1.30, gloss: 0.78, sheen: 0.16, env: true, envLo: 0.35, envHi: 1.75}, // burnished gold
+  {ambient: 0.56, aoLo: 0.6, exposure: 1.0, gloss: 0, sheen: 0.02},                                   // paint
+  {ambient: 0.6, aoLo: 0.7, exposure: 1.0, gloss: 0.05, sheen: 0.03}                                  // ink
+];
+
+let DW, DH, SS, PW, PH, F, art, artCtx, lo = null, ready = false, need = false, moving = 0;
+let cov, hgt, nrm, colorMap, matMap, letter = 'P', seed = 1420;
+let lamp = {x: 0, y: 0}, lampT = {x: 0, y: 0};
+
+// ── the page ──────────────────────────────────────────────────
+function pageBox(){
+  const h = Math.min(DH*0.86, DW*0.92/0.72), w = h*0.72;
+  return {x: (DW - w)/2, y: (DH - h)/2 - 12, w, h};
+}
+
+// one acanthus scroll: a spiral that sheds leaves and side-scrolls
+function acanthus(c, x, y, a, len, w, rng, depth, out){
+  const turns = 1.1 + rng()*0.6, dir = rng() < 0.5 ? 1 : -1, steps = 60;
+  let px = x, py = y, pa = a;
+  const pts = [];
+  for(let i=0;i<steps;i++){
+    const t = i/steps;
+    const step = len/steps*(1.25 - t*0.9);                  // tightening as it winds in
+    pa += dir*(turns*Math.PI*2/steps)*(0.08 + 3.2*t*t*t);   // runs long, then curls
+    px += Math.cos(pa)*step; py += Math.sin(pa)*step;
+    pts.push([px, py, w*(1 - t*0.8), pa]);
+  }
+  out.stems.push(pts);
+  // leaves along the outer side, alternating colours
+  for(let i=6;i<steps - 10;i+=7){
+    const [lx, ly, lw, la] = pts[i];
+    out.leaves.push({x: lx, y: ly, a: la - dir*Math.PI*0.5 + (rng() - 0.5)*0.3, L: lw*6 + len*0.06, c: (i/7) % 2 ? VERM : VERD});
+  }
+  const end = pts[steps - 1];
+  out.bezants.push({x: end[0], y: end[1], r: Math.max(2.2, w*1.4)});
+  if(depth < 2){
+    for(let k=0;k<2;k++){
+      const at = pts[10 + Math.floor(rng()*20)];
+      acanthus(c, at[0], at[1], at[3] + dir*(0.9 + rng()*0.6), len*0.48, w*0.6, rng, depth + 1, out);
+    }
+  }
+}
+
+function design(){
+  const P = pageBox(), rng = Relief.makeRng(seed);
+  const s = P.w*0.36;                                       // the initial's square
+  const fx = P.x + P.w*0.12, fy = P.y + P.h*0.12;
+  const out = {stems: [], leaves: [], bezants: []};
+  // scrolls run out of the frame's corners into the margins
+  acanthus(null, fx, fy + s, Math.PI*0.5 + 0.2, P.h*0.42, P.w*0.010, rng, 0, out);
+  acanthus(null, fx + s, fy, -0.15, P.w*0.46, P.w*0.009, rng, 0, out);
+  acanthus(null, fx, fy, -Math.PI*0.75, P.w*0.22, P.w*0.008, rng, 1, out);
+  // a vine down the outer margin
+  acanthus(null, P.x + P.w*0.93, fy + s*1.2, Math.PI*0.5, P.h*0.5, P.w*0.008, rng, 1, out);
+  return {P, s, fx, fy, out, rng};
+}
+
+// ── the field ─────────────────────────────────────────────────
+function build(){
+  const D = design(), {P, s, fx, fy, out} = D;
+  const at = c => c.setTransform(SS, 0, 0, SS, 0, 0);
+  // the vines keep to the margins: the text block is cut out of where they may go
+  const tx1 = P.x + P.w*0.86 + 4, ty1 = P.y + P.h*0.88;
+  const margins = c => { c.beginPath(); c.rect(P.x, P.y, P.w, P.h); c.rect(fx - 4, fy - 6, tx1 - fx + 4, ty1 - fy + 6); c.clip('evenodd'); };
+  const page = F.raster(c => { at(c); c.fillRect(P.x, P.y, P.w, P.h); });
+  // gold: the letter, the frame's rule, the bezants
+  const gold = F.raster(c => {
+    at(c);
+    c.lineWidth = s*0.035; c.strokeRect(fx, fy, s, s);
+    c.font = '600 ' + (s*0.86) + 'px Lora, Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(letter, fx + s/2, fy + s*0.53);
+    c.save(); margins(c);
+    out.bezants.forEach(b => { c.beginPath(); c.arc(b.x, b.y, b.r, 0, 7); c.fill(); });
+    c.restore();
+  });
+  // the punch: a ring of small dents tooled into the gold rule
+  const punch = F.raster(c => {
+    at(c);
+    const n = Math.round(s/7);
+    for(let i=0;i<n;i++){
+      const t = (i + 0.5)/n;
+      [[fx + t*s, fy], [fx + t*s, fy + s], [fx, fy + t*s], [fx + s, fy + t*s]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, s*0.006, 0, 7); c.fill(); });
+    }
+  });
+  const lapis = F.raster(c => { at(c); c.fillRect(fx + s*0.02, fy + s*0.02, s*0.96, s*0.96); });
+  const filigree = F.raster(c => {
+    at(c); c.lineWidth = s*0.004; c.lineCap = 'round';
+    const r = Relief.makeRng(seed + 2);
+    for(let i=0;i<46;i++){
+      const x = fx + s*(0.08 + r()*0.84), y = fy + s*(0.08 + r()*0.84), rr = s*(0.02 + r()*0.03);
+      c.beginPath(); c.arc(x, y, rr, r()*6, r()*6 + 3.5); c.stroke();
+      c.beginPath(); c.arc(x + rr*1.2, y, s*0.004, 0, 7); c.fill();
+    }
+  });
+  const stems = F.raster(c => {
+    at(c); c.lineCap = 'round'; c.save(); margins(c);
+    out.stems.forEach(pts => { for(let i=1;i<pts.length;i++){ c.lineWidth = pts[i][2]; c.beginPath(); c.moveTo(pts[i-1][0], pts[i-1][1]); c.lineTo(pts[i][0], pts[i][1]); c.stroke(); } });
+    c.restore();   // the raster context is shared: a clip left on it would cut the next pass
+  });
+  const leafCol = F.rasterColor(c => {
+    at(c); c.save(); margins(c);
+    out.leaves.forEach(L => {
+      c.save(); c.translate(L.x, L.y); c.rotate(L.a);
+      c.fillStyle = L.c;
+      c.beginPath(); c.moveTo(0, 0);
+      c.bezierCurveTo(L.L*0.45, -L.L*0.35, L.L*0.9, -L.L*0.15, L.L, -L.L*0.45);   // the acanthus lobe curls back
+      c.bezierCurveTo(L.L*0.8, L.L*0.05, L.L*0.4, L.L*0.25, 0, 0);
+      c.fill();
+      c.strokeStyle = 'rgba(255,245,225,0.55)'; c.lineWidth = Math.max(0.6, L.L*0.05);  // white highlight line
+      c.beginPath(); c.moveTo(L.L*0.15, -L.L*0.02); c.quadraticCurveTo(L.L*0.55, -L.L*0.18, L.L*0.85, -L.L*0.36); c.stroke();
+      c.restore();
+    });
+    c.restore();
+  });
+  // the text block: ruled, minims in iron-gall, the first lines in red
+  const txt = F.rasterColor(c => {
+    at(c);
+    const x0 = fx + s + P.w*0.05, x1 = P.x + P.w*0.86, lh = P.h*0.026, minim = lh*0.48;
+    const r = Relief.makeRng(seed + 9);
+    let y = fy + lh*0.8, line = 0;
+    while(y < P.y + P.h*0.88){
+      const left = y > fy + s + lh*0.6 ? fx : x0;           // the text wraps under the initial
+      c.strokeStyle = 'rgba(150,120,90,0.25)'; c.lineWidth = 0.5;
+      c.beginPath(); c.moveTo(left, y + minim*0.1); c.lineTo(x1, y + minim*0.1); c.stroke();
+      c.fillStyle = line < 2 ? VERM : IRON;
+      let x = left;
+      while(x < x1 - minim){
+        const word = 2 + Math.floor(r()*7);
+        for(let k=0;k<word && x < x1 - minim*0.5;k++){
+          // a minim: a short upright with lozenge feet, the stroke textura is built from
+          const asc = r() < 0.12 ? minim*0.7 : 0, desc = r() < 0.07 ? minim*0.6 : 0;
+          c.beginPath();
+          c.moveTo(x, y - minim - asc); c.lineTo(x + minim*0.28, y - minim - asc - minim*0.12);
+          c.lineTo(x + minim*0.22, y + desc); c.lineTo(x, y + minim*0.12 + desc); c.closePath(); c.fill();
+          x += minim*0.56;
+        }
+        x += minim*0.75;
+      }
+      y += lh; line++;
+    }
+  });
+
+  const n2 = PW*PH;
+  cov = new Float32Array(n2); hgt = new Float32Array(n2); colorMap = new Uint8ClampedArray(n2*3); matMap = new Uint8Array(n2);
+  const surf = new Float32Array(n2);
+  const gesso = F.blur(gold, Math.round(2.4*SS), 3);        // gesso swells under the leaf
+  const goldS = F.blur(gold, Math.max(1, Math.round(0.8*SS)), 2);
+  const punchS = F.blur(punch, 1, 1);
+  const paintS = F.blur(stems, 1, 1);
+  const cv = Relief.hexRgb(VELLUM), cg = Relief.hexRgb(GOLD), cl = Relief.hexRgb(LAPIS), cs = Relief.hexRgb(VERD), cw = Relief.hexRgb(WHITE);
+  for(let y=0;y<PH;y++){
+    for(let x=0;x<PW;x++){
+      const i = y*PW + x, X = x/SS, Y = y/SS;
+      cov[i] = page[i];
+      if(page[i] <= 0.003) continue;
+      // vellum: warm, a little cockled, with hair-side flecks
+      const fl = noise(X*0.6, Y*0.6);
+      let col = [cv[0] - (fl > 0.72 ? 14 : 0), cv[1] - (fl > 0.72 ? 16 : 0), cv[2] - (fl > 0.72 ? 20 : 0)];
+      let m = 0, h = 0.5 + (noise(X*0.006, Y*0.006) - 0.5)*0.35;
+      const mixIn = (c2, t) => { col[0] += (c2[0]-col[0])*t; col[1] += (c2[1]-col[1])*t; col[2] += (c2[2]-col[2])*t; };
+      // text and leaves sit flat on the skin
+      const ti = i*3;
+      if(txt.cov[i] > 0.02){ mixIn([txt.colorMap[ti], txt.colorMap[ti+1], txt.colorMap[ti+2]], txt.cov[i]*0.78); if(txt.cov[i] > 0.5) m = 3; }
+      if(lapis[i] > 0.02){
+        mixIn(cl, lapis[i]); m = 2; h += 0.02;
+        // azurite is coarse: let the grain of the pigment show
+        const gr = noise(X*1.8, Y*1.8); mixIn(gr > 0.5 ? [44, 76, 146] : [26, 50, 104], 0.35);
+        if(filigree[i] > 0.05) mixIn(cw, filigree[i]*0.9);
+      }
+      if(paintS[i] > 0.05){ mixIn(cs, paintS[i]); m = 2; h += paintS[i]*0.03; }
+      if(leafCol.cov[i] > 0.02){ mixIn([leafCol.colorMap[ti], leafCol.colorMap[ti+1], leafCol.colorMap[ti+2]], leafCol.cov[i]); m = 2; h += leafCol.cov[i]*0.03; }
+      if(goldS[i] > 0.02){
+        mixIn(cg, Math.min(1, goldS[i]*1.4));
+        if(goldS[i] > 0.4) m = 1;
+        // raised on gesso, the leaf crazed a little where it was pressed down
+        h += gesso[i]*0.38 + (noise(X*0.9, Y*0.9) - 0.5)*0.012*goldS[i] - punchS[i]*0.16;
+      }
+      colorMap[ti] = col[0]; colorMap[ti+1] = col[1]; colorMap[ti+2] = col[2];
+      matMap[i] = m; surf[i] = h; hgt[i] = 1 - punchS[i]*0.5;
+    }
+  }
+  nrm = F.normals(cov, surf, 34*SS);
+  makeLo();
+  need = true;
+}
+
+const LO = 3;
+function makeLo(){
+  const w = Math.floor(PW/LO), h = Math.floor(PH/LO), n = w*h;
+  lo = {F: Relief.field(w, h), cov: new Float32Array(n), hgt: new Float32Array(n), matMap: new Uint8Array(n),
+        nX: new Float32Array(n), nY: new Float32Array(n), nZ: new Float32Array(n), colorMap: new Uint8ClampedArray(n*3)};
+  lo.cv = Relief.makeCanvas(w, h); lo.ctx = lo.cv.getContext('2d');
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const i = y*w + x, a = (y*LO)*PW + x*LO;
+    lo.cov[i] = cov[a]; lo.hgt[i] = hgt[a]; lo.matMap[i] = matMap[a];
+    lo.nX[i] = nrm.nX[a]; lo.nY[i] = nrm.nY[a]; lo.nZ[i] = nrm.nZ[a];
+    lo.colorMap[i*3] = colorMap[a*3]; lo.colorMap[i*3+1] = colorMap[a*3+1]; lo.colorMap[i*3+2] = colorMap[a*3+2];
+  }
+}
+function shade(preview){
+  const k = preview ? 1/LO : 1;
+  (preview ? lo.F : F).shade(preview ? lo.ctx : artCtx, {
+    cov: preview ? lo.cov : cov, hgt: preview ? lo.hgt : hgt, hMax: 1,
+    nX: preview ? lo.nX : nrm.nX, nY: preview ? lo.nY : nrm.nY, nZ: preview ? lo.nZ : nrm.nZ,
+    colorMap: preview ? lo.colorMap : colorMap, matMap: preview ? lo.matMap : matMap, materials: MATS,
+    light: {x: lamp.x*SS*k, y: lamp.y*SS*k, h: 300*SS*k, radius: 1600*SS*k, color: '#fff4e0'},
+    wrap: 0.4, contrast: 1.0, specColor: '#fff2cc',
+    tone: {shadow: '#2a2118', high: '#fffaf0', amount: 0.05}
+  });
+}
+
+// ── p5 ────────────────────────────────────────────────────────
+function measure(){
+  DW = document.documentElement.clientWidth; DH = window.innerHeight;
+  SS = Math.max(1, Math.min(Math.min(devicePixelRatio || 1, 2), Math.sqrt(4.2e6/(DW*DH))));
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS);
+  F = Relief.field(PW, PH); art = Relief.makeCanvas(PW, PH); artCtx = art.getContext('2d');
+}
+function setup(){
+  pixelDensity(1); measure();
+  createCanvas(PW, PH).parent('stage'); fit();
+  noiseSeed(1420);
+  lamp = {x: DW*0.3, y: DH*0.2}; lampT = {x: DW*0.36, y: DH*0.26};
+  const go = () => { if(DW > 2){ build(); ready = true; } };
+  (document.fonts ? document.fonts.load('600 80px Lora').then(() => document.fonts.ready) : Promise.resolve()).then(go, go);
+}
+function fit(){ const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px'; }
+function windowResized(){ measure(); resizeCanvas(PW, PH); fit(); if(DW > 2){ build(); ready = true; } }
+function mouseMoved(){ lampT = {x: mouseX/SS, y: mouseY/SS}; }
+function touchMoved(){ lampT = {x: mouseX/SS, y: mouseY/SS}; }
+function draw(){
+  if(!ready) return;
+  const dx = lampT.x - lamp.x, dy = lampT.y - lamp.y;
+  if(Math.abs(dx) + Math.abs(dy) > 0.8){ lamp.x += dx*0.12; lamp.y += dy*0.12; moving = 5; need = true; }
+  if(need){ if(moving > 0){ shade(true); moving--; } else { shade(false); need = false; } }
+  const g = drawingContext;
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, PW, PH);
+  g.save(); g.shadowColor = 'rgba(40,34,28,0.22)'; g.shadowBlur = 20*SS; g.shadowOffsetY = 8*SS;
+  g.imageSmoothingQuality = 'high';
+  if(moving > 0 && lo) g.drawImage(lo.cv, 0, 0, PW, PH); else g.drawImage(art, 0, 0);
+  g.restore();
+}
+document.getElementById('letter').addEventListener('input', e => {
+  const v = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+  if(v){ letter = v; if(ready) build(); }
+});
+document.getElementById('grow').onclick = () => { seed = Math.floor(Math.random()*1e6); if(ready) build(); };
+</script>
+</body>
+</html>
