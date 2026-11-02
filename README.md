@@ -27,5 +27,6 @@ running log of experiments in simulating pressings, indentations, print processe
 - [hands on the wall](stencil/): hand stencils blown in ochre on a torchlit cave wall
 - [quipu](quipu/): type numbers and they are tied in knotted cord, decimal and positional
 - [one stitch](sashiko/): hitomezashi sashiko stitched from the bits of two words
+- [rings](rings/): a tree since 1770; hover a ring for its year, the volcanic winters run thin
 
 `lib/gouache.js` paints any height field the way the round map paints terrain.
