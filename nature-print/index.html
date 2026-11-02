@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nature Printing — a fern in lead</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#efece4;color:var(--ink);overflow:hidden;font-family:'Lora',serif}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;cursor:crosshair}
+.bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:16px;font-style:italic;font-size:14px;color:var(--soft);white-space:nowrap}
+.bar button{font:inherit;color:var(--soft);background:none;border:none;cursor:pointer}
+.bar button:hover,.bar button:focus-visible{color:var(--ink)}
+.back{position:fixed;left:20px;top:18px;font-style:italic;font-size:13px;color:var(--soft);text-decoration:none}
+.back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<div id="stage"></div>
+<div class="bar"><button id="pull">pull a print</button><button id="frond">press another frond</button></div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// NATURE PRINTING — a fern pressed into lead, after Alois Auer (1853).
+//
+// At the Imperial printing house in Vienna, Auer laid real plants between a
+// steel plate and a soft lead one and ran them through rollers: the plant
+// pressed its own likeness, every vein, into the lead, which was then
+// electrotyped and printed. "Naturselbstdruck" — nature printing itself.
+// Henry Bradbury used it for The Ferns of Great Britain and Ireland (1855).
+//
+// The fern here is Barnsley's (1988): four affine maps chosen at random,
+// over and over, and a frond appears — another kind of nature printing
+// itself. Its points are pressed into a lead plate as a height field, lit
+// by a lamp that follows the cursor. Pull a print to see the impression in
+// green on paper, reversed.
+// ═══════════════════════════════════════════════════════════════
+
+let DW, DH, SS, PW, PH, F, art, artCtx, ready = false, need = false, view = 'plate', seed = 1853;
+let cov, hgt, nrm, colorMap, fern, plate;
+let lamp = {x: 0, y: 0}, lampT = {x: 0, y: 0};
+
+function layout(){
+  const h = Math.min(DH*0.80, DW*0.86/0.72), w = h*0.72;
+  plate = {x: (DW - w)/2, y: (DH - h)/2 - 12, w, h};
+}
+
+// Barnsley's four maps, a little different for each frond
+function press(){
+  const rng = Relief.makeRng(seed), j = () => (rng() - 0.5)*0.06;
+  const M = [
+    [0, 0, 0, 0.16, 0, 0, 0.01],
+    [0.85 + j()*0.3, 0.04 + j(), -0.04 + j(), 0.85, 0, 1.6, 0.85],
+    [0.20, -0.26 + j(), 0.23 + j(), 0.22, 0, 1.6, 0.07],
+    [-0.15, 0.28 + j(), 0.26 + j(), 0.24, 0, 0.44, 0.07]
+  ];
+  const lean = (rng() - 0.5)*0.4;
+  fern = F.raster(c => {
+    c.setTransform(SS, 0, 0, SS, 0, 0);
+    const P = plate, sx = P.h*0.088, ox = P.x + P.w/2, oy = P.y + P.h*0.95;
+    let x = 0, y = 0;
+    c.fillStyle = 'rgba(255,255,255,0.55)';
+    for(let i=0;i<260000;i++){
+      const r = rng(); let m = M[3];
+      if(r < M[0][6]) m = M[0]; else if(r < M[0][6] + M[1][6]) m = M[1]; else if(r < M[0][6] + M[1][6] + M[2][6]) m = M[2];
+      const nx = m[0]*x + m[1]*y + m[4], ny = m[2]*x + m[3]*y + m[5];
+      x = nx; y = ny;
+      if(i > 20){
+        const px = ox + (x + y*lean*0.1)*sx, py = oy - y*sx;
+        c.fillRect(px, py, 1/SS*1.2, 1/SS*1.2);
+      }
+    }
+  });
+  build();
+}
+
+function build(){
+  const P = plate, at = c => c.setTransform(SS, 0, 0, SS, 0, 0);
+  const body = F.raster(c => { at(c); c.fillRect(P.x, P.y, P.w, P.h); });
+  const dent = F.blur(fern, Math.max(1, Math.round(0.8*SS)), 2);
+  const n2 = PW*PH;
+  cov = body; hgt = new Float32Array(n2); colorMap = new Uint8ClampedArray(n2*3);
+  const surf = new Float32Array(n2);
+  for(let y=0;y<PH;y++) for(let x=0;x<PW;x++){
+    const i = y*PW + x, o = i*3;
+    if(body[i] < 0.01) continue;
+    const X = x/SS, Y = y/SS, d = Math.min(1, dent[i]*1.4);
+    if(view === 'plate'){
+      // soft lead: grey, a little mottled, pressed into wherever the frond lay
+      const m = 0.92 + (noise(X*0.03, Y*0.03) - 0.5)*0.16;
+      colorMap[o] = 140*m; colorMap[o+1] = 144*m; colorMap[o+2] = 150*m;
+      surf[i] = 0.5 - d*0.45 + (noise(X*0.5, Y*0.5) - 0.5)*0.01;
+      hgt[i] = 1 - d*0.5;
+    } else {
+      // the print, reversed: green ink where the plate was pressed, paper elsewhere
+      const xm = Math.round((2*P.x + P.w)*SS - x - 1), j = y*PW + Math.max(0, Math.min(PW - 1, xm));
+      const dm = Math.min(1, dent[j]*1.6)*(0.85 + (noise(X*0.4, Y*0.4) - 0.5)*0.3);
+      colorMap[o] = 246 + (46 - 246)*dm; colorMap[o+1] = 242 + (80 - 242)*dm; colorMap[o+2] = 230 + (46 - 230)*dm;
+      surf[i] = 0.5 + dm*0.08;                                  // ink stands a hair proud
+      hgt[i] = 1;
+    }
+  }
+  nrm = F.normals(cov, surf, (view === 'plate' ? 38 : 14)*SS);
+  need = true;
+}
+function shade(){
+  const plateLook = view === 'plate';
+  F.shade(artCtx, {cov, hgt, hMax: 1, nX: nrm.nX, nY: nrm.nY, nZ: nrm.nZ, colorMap,
+    light: {x: lamp.x*SS, y: lamp.y*SS, h: 240*SS, radius: 1600*SS, color: '#fff6e8'},
+    ambient: plateLook ? 0.30 : 0.6, aoLo: 0.45, exposure: plateLook ? 1.25 : 1.0, gloss: plateLook ? 0.36 : 0,
+    sheen: plateLook ? 0.08 : 0.02, env: plateLook, envLo: 0.6, envHi: 1.4, matte: !plateLook, wrap: 0.35});
+}
+
+function setup(){
+  pixelDensity(1);
+  DW = document.documentElement.clientWidth; DH = innerHeight;
+  SS = Math.max(1, Math.min(Math.min(devicePixelRatio || 1, 2), Math.sqrt(3.4e6/(DW*DH))));
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS);
+  createCanvas(PW, PH).parent('stage'); const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px';
+  F = Relief.field(PW, PH); art = Relief.makeCanvas(PW, PH); artCtx = art.getContext('2d');
+  noiseSeed(1853);
+  lamp = {x: DW*0.25, y: DH*0.15}; lampT = {x: DW*0.3, y: DH*0.2};
+  if(DW > 2){ layout(); press(); ready = true; }
+}
+function windowResized(){
+  DW = document.documentElement.clientWidth; DH = innerHeight;
+  SS = Math.max(1, Math.min(Math.min(devicePixelRatio || 1, 2), Math.sqrt(3.4e6/(DW*DH))));
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS);
+  resizeCanvas(PW, PH); const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px';
+  F = Relief.field(PW, PH); art = Relief.makeCanvas(PW, PH); artCtx = art.getContext('2d');
+  if(DW > 2){ layout(); press(); ready = true; }
+}
+function mouseMoved(){ lampT = {x: mouseX/SS, y: mouseY/SS}; }
+let moving = 0;
+function draw(){
+  if(!ready) return;
+  const dx = lampT.x - lamp.x, dy = lampT.y - lamp.y;
+  if(Math.abs(dx) + Math.abs(dy) > 1){ lamp.x += dx*0.14; lamp.y += dy*0.14; need = true; }
+  if(need && frameCount % 2 === 0){ shade(); need = false; }
+  const g = drawingContext; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, PW, PH);
+  g.save(); g.shadowColor = 'rgba(40,32,24,0.26)'; g.shadowBlur = 20*SS; g.shadowOffsetY = 8*SS;
+  g.drawImage(art, 0, 0); g.restore();
+}
+const pull = document.getElementById('pull');
+pull.onclick = () => { view = view === 'plate' ? 'print' : 'plate'; pull.textContent = view === 'plate' ? 'pull a print' : 'back to the plate'; build(); };
+document.getElementById('frond').onclick = () => { seed = Math.floor(Math.random()*1e5); press(); };
+</script>
+</body>
+</html>
