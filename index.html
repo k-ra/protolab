@@ -36,7 +36,9 @@ body.holding,body.holding #slips a{cursor:grabbing}
   font-family:'Lora',serif;font-style:italic;font-size:13px;line-height:1;color:var(--soft);
   white-space:nowrap;opacity:0;transition:opacity .5s ease;pointer-events:none}
 #slips a.near span,#slips a:focus-visible span{opacity:1}
-@media (hover:none){#slips a span{opacity:.9}}
+#slips a.piled span{opacity:0}
+#slips a.piled:hover span,#slips a.piled:focus-visible span{opacity:1}
+@media (hover:none){#slips a span{opacity:.9}#slips a.piled span{opacity:0}}
 @media (prefers-reduced-motion:reduce){#slips a span{transition:none}}
 
 noscript{position:fixed;inset:0;display:grid;place-content:center;gap:12px;text-align:center;
@@ -62,6 +64,9 @@ noscript a{color:var(--soft)}
   <a href="kintsugi/" data-k="washi"><span>Kintsugi</span></a>
   <a href="girih/" data-k="girih"><span>Girih</span></a>
   <a href="kymograph/" data-k="smoked"><span>Smoked Drum</span></a>
+  <a href="jacquard/" data-k="card"><span>Damask</span></a>
+  <a href="daguerreotype/" data-k="cabinet"><span>Mirror with a Memory</span></a>
+  <a href="chladni/" data-k="figures"><span>Sound Figures</span></a>
 </nav>
 <noscript>
   <a href="protolab/">The sheet</a><a href="canvas/">Clippings</a><a href="flowers/">Specimen</a>
@@ -69,6 +74,7 @@ noscript a{color:var(--soft)}
   <a href="twin-peaks/">San Francisco, Round</a><a href="rosetta/">Three Hands</a><a href="ebru/">Ebru</a>
   <a href="cyanotype/">Sun Print</a><a href="gilded/">Gilded</a><a href="burin/">One Line</a>
   <a href="kintsugi/">Kintsugi</a><a href="girih/">Girih</a><a href="kymograph/">Smoked Drum</a>
+  <a href="jacquard/">Damask</a><a href="daguerreotype/">Mirror with a Memory</a><a href="chladni/">Sound Figures</a>
 </noscript>
 
 <script>
@@ -409,6 +415,66 @@ const KINDS = {
       ctx.stroke();
     }
   },
+  // one card off a Jacquard chain: a row of holes, laced at the ends
+  card: {
+    stock: '#e6d8b8',
+    height(ctx, s){
+      ctx.fillStyle = '#000'; ctx.globalAlpha = 0.9;
+      const rng = Relief.makeRng(s.seed + 12), cols = 14, rows = 3;
+      for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+        if(rng() < 0.45) continue;
+        ctx.beginPath(); ctx.arc(-s.hw*0.78 + (c + 0.5)*s.hw*1.56/cols, -s.hh*0.45 + r*s.hh*0.45, s.U*0.032, 0, 7); ctx.fill();
+      }
+    },
+    color(ctx, s){
+      const rng = Relief.makeRng(s.seed + 12), cols = 14, rows = 3;
+      ctx.fillStyle = '#3a3026';
+      for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+        if(rng() < 0.45) continue;
+        ctx.beginPath(); ctx.arc(-s.hw*0.78 + (c + 0.5)*s.hw*1.56/cols, -s.hh*0.45 + r*s.hh*0.45, s.U*0.032, 0, 7); ctx.fill();
+      }
+      ctx.strokeStyle = '#8a6f4a'; ctx.lineWidth = Math.max(0.6, s.U*0.012);
+      [-1, 1].forEach(sd => { ctx.beginPath(); ctx.moveTo(sd*s.hw*0.93, -s.hh*0.9); ctx.lineTo(sd*s.hw*0.93, s.hh*0.9); ctx.stroke(); });
+    }
+  },
+  // a cabinet card: an oval photograph in sepia, ruled in gilt on card
+  cabinet: {
+    stock: '#e9dfca',
+    height(ctx, s){ ctx.strokeStyle = '#000'; ctx.globalAlpha = 0.3; ctx.lineWidth = s.U*0.02; ctx.beginPath(); ctx.ellipse(0, -s.hh*0.08, s.hw*0.66, s.hh*0.70, 0, 0, 7); ctx.stroke(); },
+    color(ctx, s){
+      ctx.save(); ctx.beginPath(); ctx.ellipse(0, -s.hh*0.08, s.hw*0.62, s.hh*0.66, 0, 0, 7); ctx.clip();
+      const g = ctx.createRadialGradient(0, -s.hh*0.2, 0, 0, -s.hh*0.08, s.hh*0.7);
+      g.addColorStop(0, '#c9ab84'); g.addColorStop(1, '#5e4630'); ctx.fillStyle = g; ctx.fillRect(-s.hw, -s.hh, s.hw*2, s.hh*2);
+      // the sitter: a flower on a long stem, in the warm browns of albumen
+      ctx.strokeStyle = '#3b2a1c'; ctx.lineWidth = s.U*0.03; ctx.beginPath(); ctx.moveTo(0, -s.hh*0.15); ctx.quadraticCurveTo(s.U*0.08, s.hh*0.3, 0, s.hh*0.6); ctx.stroke();
+      ctx.fillStyle = '#ead6b4';
+      for(let k=0;k<7;k++){ const a = k/7*6.283; ctx.beginPath(); ctx.ellipse(Math.cos(a)*s.U*0.11, -s.hh*0.22 + Math.sin(a)*s.U*0.11, s.U*0.10, s.U*0.05, a, 0, 7); ctx.fill(); }
+      ctx.fillStyle = '#6e4e30'; ctx.beginPath(); ctx.arc(0, -s.hh*0.22, s.U*0.05, 0, 7); ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = '#b8954a'; ctx.lineWidth = Math.max(0.8, s.U*0.014);
+      ctx.beginPath(); ctx.ellipse(0, -s.hh*0.08, s.hw*0.66, s.hh*0.70, 0, 0, 7); ctx.stroke();
+      ctx.fillStyle = '#8a6f4a'; ctx.fillRect(-s.hw*0.3, s.hh*0.80, s.hw*0.6, Math.max(0.6, s.U*0.01));
+    }
+  },
+  // a plate from Chladni's book: four figures, engraved
+  figures: {
+    stock: '#f3eee2',
+    height(){},
+    color(ctx, s){
+      const modes = [[1, 3], [2, 5], [3, 4], [1, 6]], q = Math.min(s.hw, s.hh)*0.82;
+      ctx.fillStyle = '#2a2420';
+      modes.forEach(([n, m], k) => {
+        const ox = (k % 2 ? 0.08 : -1.0)*q, oy = (k < 2 ? -1.0 : 0.08)*q, size = q*0.92;
+        ctx.strokeStyle = '#2a2420'; ctx.lineWidth = Math.max(0.5, s.U*0.008); ctx.strokeRect(ox, oy, size, size);
+        const step = Math.max(0.7, size/70);
+        for(let y=0;y<size;y+=step) for(let x=0;x<size;x+=step){
+          const u = x/size, v = y/size;
+          const f = Math.cos(n*Math.PI*u)*Math.cos(m*Math.PI*v) - Math.cos(m*Math.PI*u)*Math.cos(n*Math.PI*v);
+          if(Math.abs(f) < 0.07) ctx.fillRect(ox + x, oy + y, step, step);
+        }
+      });
+    }
+  },
   // a wax seal on a punched tag
   sigil: {
     stock: STOCK.cotton, wax: true,
@@ -557,48 +623,41 @@ function paintPlate(F, s, at){
 const LAYOUTS = {
   wide: {
     mark: {x: 0.50, y: 0.34},
-    U: (w, h) => Math.min(w/1440, h/880)*104,
+    U: (w, h) => Math.min(w/1440, h/880)*108,
+    pile: {x: 0.150, y: 0.72},
     slips: {
       sheet:     {x: 0.20, y: 0.30, r:  5, hw: 0.95, hh: 0.74},
-      specimen:  {x: 0.32, y: 0.70, r: -4, hw: 1.06, hh: 1.36},
-      press:     {x: 0.52, y: 0.74, r:  3, hw: 0.82, hh: 1.04},
-      sigil:     {x: 0.68, y: 0.63, r: 11, hw: 0.56, hh: 0.86},
+      specimen:  {x: 0.35, y: 0.70, r: -4, hw: 1.06, hh: 1.36},
+      press:     {x: 0.545, y: 0.74, r:  3, hw: 0.82, hh: 1.04},
+      sigil:     {x: 0.695, y: 0.63, r: 11, hw: 0.56, hh: 0.86},
       clippings: {x: 0.815, y: 0.32, r: -7, hw: 0.70, hh: 0.92},
-      map:       {x: 0.855, y: 0.74, r: 18, hw: 0.86, hh: 0.86},
-      rubbing:   {x: 0.37, y: 0.13, r: -3, hw: 0.80, hh: 0.60},
-      marbled:   {x: 0.63, y: 0.14, r:  4, hw: 0.74, hh: 0.54},
-      cyan:      {x: 0.08, y: 0.64, r: -6, hw: 0.62, hh: 0.82},
-      gilded:    {x: 0.945, y: 0.47, r:  6, hw: 0.58, hh: 0.80},
-      engraving: {x: 0.455, y: 0.495, r: -2, hw: 0.58, hh: 0.68},
-      washi:     {x: 0.07, y: 0.13, r: -8, hw: 0.56, hh: 0.50},
-      girih:     {x: 0.93, y: 0.13, r:  5, hw: 0.62, hh: 0.55},
-      smoked:    {x: 0.64, y: 0.915, r: -1.5, hw: 1.35, hh: 0.32}
+      map:       {x: 0.865, y: 0.74, r: 18, hw: 0.86, hh: 0.86}
     }
   },
   tall: {
-    mark: {x: 0.50, y: 0.07},
-    U: (w, h) => Math.min(w/430, h/900)*46,
+    mark: {x: 0.50, y: 0.12},
+    U: (w, h) => Math.min(w/430, h/900)*60,
+    pile: {x: 0.70, y: 0.86},
     slips: {
-      sheet:     {x: 0.74, y: 0.155, r:  7, hw: 0.95, hh: 0.74},
-      specimen:  {x: 0.30, y: 0.22,  r: -5, hw: 1.06, hh: 1.36},
-      map:       {x: 0.72, y: 0.277, r: 16, hw: 0.80, hh: 0.80},
-      press:     {x: 0.29, y: 0.384, r:  4, hw: 0.82, hh: 1.04},
-      clippings: {x: 0.73, y: 0.402, r: -8, hw: 0.70, hh: 0.92},
-      sigil:     {x: 0.30, y: 0.52,  r: 12, hw: 0.56, hh: 0.86},
-      rubbing:   {x: 0.72, y: 0.532, r: -3, hw: 0.80, hh: 0.60},
-      marbled:   {x: 0.71, y: 0.630, r:  4, hw: 0.74, hh: 0.54},
-      cyan:      {x: 0.30, y: 0.647, r: -6, hw: 0.62, hh: 0.82},
-      gilded:    {x: 0.28, y: 0.769, r:  6, hw: 0.58, hh: 0.80},
-      engraving: {x: 0.69, y: 0.729, r: -2, hw: 0.62, hh: 0.72},
-      washi:     {x: 0.27, y: 0.877, r: -6, hw: 0.56, hh: 0.50},
-      girih:     {x: 0.71, y: 0.845, r:  5, hw: 0.62, hh: 0.55},
-      smoked:    {x: 0.64, y: 0.932, r: -1.5, hw: 1.75, hh: 0.32}
+      sheet:     {x: 0.75, y: 0.25, r:  7, hw: 0.95, hh: 0.74},
+      specimen:  {x: 0.32, y: 0.33, r: -5, hw: 1.06, hh: 1.36},
+      map:       {x: 0.72, y: 0.45, r: 16, hw: 0.80, hh: 0.80},
+      press:     {x: 0.30, y: 0.56, r:  4, hw: 0.82, hh: 1.04},
+      clippings: {x: 0.73, y: 0.64, r: -8, hw: 0.70, hh: 0.92},
+      sigil:     {x: 0.30, y: 0.80, r: 12, hw: 0.56, hh: 0.86}
     }
   }
 };
+// the night's studies, gathered in one loose pile: sizes only, the pile places them
+const PILED = {
+  rubbing:   {hw: 0.80, hh: 0.60}, marbled:   {hw: 0.74, hh: 0.54}, cyan:    {hw: 0.62, hh: 0.82},
+  gilded:    {hw: 0.58, hh: 0.80}, engraving: {hw: 0.62, hh: 0.72}, washi:   {hw: 0.56, hh: 0.50},
+  girih:     {hw: 0.62, hh: 0.55}, smoked:    {hw: 1.35, hh: 0.32}, card:    {hw: 0.95, hh: 0.42},
+  cabinet:   {hw: 0.55, hh: 0.78}, figures:   {hw: 0.70, hh: 0.70}
+};
 // painter's order: later slips rest on earlier ones
 // A new study gets a slip here, a kind above, and a place in both layouts.
-const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked'];
+const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures'];
 
 function compose(){
   const L = DW/DH > 1.05 ? LAYOUTS.wide : LAYOUTS.tall;
@@ -607,7 +666,9 @@ function compose(){
   const old = {};
   slips.forEach((s, z) => { old[s.k] = s; s.z = z; });
   slips = ORDER.map((k, i) => {
-    const p = L.slips[k];
+    // piled slips are dropped loosely on one spot, each a little turned
+    const piled = !L.slips[k];
+    const p = piled ? Object.assign({x: L.pile.x + (rng() - 0.5)*0.07, y: L.pile.y + (rng() - 0.5)*0.08, r: (rng() - 0.5)*44}, PILED[k]) : L.slips[k];
     const o = old[k] && old[k].placed ? old[k] : null;     // somewhere you put it stays put
     const s = {
       k, U, kind: KINDS[k],
@@ -615,7 +676,7 @@ function compose(){
       x: (p.x + (rng() - 0.5)*0.03)*DW,
       y: (p.y + (rng() - 0.5)*0.03)*DH,
       rot: (p.r + (rng() - 0.5)*5)*Math.PI/180,
-      placed: o ? true : false, z: old[k] ? old[k].z : i,
+      placed: o ? true : false, z: old[k] ? old[k].z : i, piled: piled && !o,
       hw: p.hw*U, hh: p.hh*U, rough: 0.02,
       el: document.querySelector('#slips a[data-k="'+k+'"]'),
       lift: old[k] ? old[k].lift : 60, liftT: 2, order: i
@@ -635,6 +696,7 @@ function compose(){
     return s;
   });
   slips.sort((a, b) => a.z - b.z);
+  markPile();
   wm = makeWordmark(L.mark.x*DW, L.mark.y*DH, U);
 }
 
@@ -1057,12 +1119,19 @@ function pickUp(s, e){
   slips.splice(slips.indexOf(s), 1); slips.push(s);   // whatever you pick up comes to the top
   placeLinks();
 }
+// only the slip on top of the pile can be named; the rest are under it
+function markPile(){
+  const pile = slips.filter(s => s.piled);
+  slips.forEach(s => { s.el.classList.toggle('piled', !!s.piled); s.el.classList.remove('top'); });
+}
+
 function setDown(){
   const h = held; held = null;
   document.body.classList.remove('holding');
   if(!h || !h.moved) return;
   const s = h.s;
   s.placed = true; s.fx = s.x/DW; s.fy = s.y/DH;
+  s.piled = false; markPile();                                    // taken off the pile, it is its own clipping now
   if(!REDUCED) s.glide = {vx: h.vx, vy: h.vy, w: h.w};
   s.justMoved = true;
 }
@@ -1106,7 +1175,7 @@ function nearness(){
       const dx = pointer.x - s.x, dy = pointer.y - s.y;
       const c = Math.cos(-s.rot), n = Math.sin(-s.rot);
       const lx = Math.abs(dx*c - dy*n) - s.hw, ly = Math.abs(dx*n + dy*c) - s.hh;
-      near = Math.hypot(Math.max(0, lx), Math.max(0, ly)) < 70;
+      near = Math.hypot(Math.max(0, lx), Math.max(0, ly)) < (s.piled ? 0 : 70);
     }
     s.el.classList.toggle('near', near);
   });
