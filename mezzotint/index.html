@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Black Manner — mezzotint</title>
+<script src="../lib/relief.js"></script>
+<script src="../lib/flora.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#efece4;color:var(--ink);overflow:hidden;font-family:'Lora',serif}
+canvas{position:fixed;inset:0;display:block;touch-action:none;cursor:crosshair}
+.bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:16px;font-style:italic;font-size:14px;color:var(--soft);white-space:nowrap}
+.bar button{font:inherit;color:var(--soft);background:none;border:none;cursor:pointer}
+.bar button:hover,.bar button:focus-visible{color:var(--ink)}
+.back{position:fixed;left:20px;top:18px;font-style:italic;font-size:13px;color:var(--soft);text-decoration:none}
+.back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<canvas id="c"></canvas>
+<div class="bar">
+  <button id="pull">pull a print</button>
+  <button id="rock">rock the plate again</button>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// THE BLACK MANNER — mezzotint, after Ludwig von Siegen (1642).
+//
+// Every other way of printing works from light toward dark. A mezzotint
+// works backwards: the whole copper plate is first worked over with a
+// rocker, a curved toothed blade, until it is pitted so evenly that it would
+// print a soft, velvet black. The picture is then burnished out of the dark
+// — the pits pressed smooth where light should be, a little for a half
+// tone, flat for white. It is the only intaglio that gives true continuous
+// tone, which is why it was the medium of reproductive portraiture.
+//
+// Drag on the plate to burnish. Someone has already begun a flower. Pull a
+// print to see the impression — reversed, as every print is.
+// ═══════════════════════════════════════════════════════════════
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+let DW, DH, SS, P, W, H, tone, pit, img, view = 'plate', bufCv, bctx, seed = 1642;
+
+function layout(){
+  const h = Math.min(DH*0.78, DW*0.86/0.8), w = h*0.8;
+  P = {x: (DW - w)/2, y: (DH - h)/2 - 12, w, h};
+  W = Math.round(w*SS); H = Math.round(h*SS);
+  bufCv = Relief.makeCanvas(W, H); bctx = bufCv.getContext('2d'); img = bctx.createImageData(W, H);
+}
+
+// the rocker's pits: a fine, even grain, a little directional where it was rocked
+function rock(){
+  const F = Relief.field(W, H), rng = Relief.makeRng(seed);
+  const raw = new Float32Array(W*H);
+  for(let i=0;i<W*H;i++) raw[i] = rng();
+  const b = F.blur(raw, 1, 1);
+  pit = new Float32Array(W*H);
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const i = y*W + x, rows = 0.5 + 0.5*Math.sin((x + y)*0.9) * Math.sin((x - y)*0.7);
+    pit[i] = Math.min(1, Math.max(0, (b[i] - 0.5)*5 + 0.5))*0.8 + rows*0.2;
+  }
+  tone = new Float32Array(W*H).fill(1);
+}
+
+// an apprentice's start: a flower burnished up out of the black
+function begin(){
+  const F = Relief.field(W, H);
+  const spec = Flora.defaults({seed, species: 'peony', size: Math.min(W, H)*0.28, leaves: 3});
+  const h = F.rasterLuma(c => { c.translate(W/2, H*0.45); Flora.render(c, Flora.grow(spec), spec, 'h'); });
+  const cov = new Float32Array(W*H).fill(1), hs = F.blur(h, 3, 2), nrm = F.normals(cov, hs, 10);
+  // lit from the upper left, as a painting would be, then burnished to that light
+  for(let i=0;i<W*H;i++){
+    if(hs[i] < 0.02) continue;
+    const light = Math.max(0, -0.55*nrm.nX[i] - 0.55*nrm.nY[i] + 0.63*nrm.nZ[i]);
+    tone[i] = Math.max(0.04, 1 - Math.min(1, hs[i]*1.3)*(0.25 + 0.75*light));
+  }
+}
+
+function burnish(px, py, strength){
+  const r = 20*SS, x0 = Math.max(0, Math.floor(px - r)), x1 = Math.min(W - 1, Math.ceil(px + r));
+  const y0 = Math.max(0, Math.floor(py - r)), y1 = Math.min(H - 1, Math.ceil(py + r));
+  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
+    const d = Math.hypot(x - px, y - py)/r; if(d > 1) continue;
+    const f = (1 - d*d)*strength, i = y*W + x;
+    tone[i] = Math.max(0, tone[i] - f*tone[i]*0.9);
+  }
+}
+
+function render(){
+  const d = img.data;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const i = y*W + x, o = i*4;
+    if(view === 'plate'){
+      // pitted copper is matte and dark; burnished copper shines
+      const t = tone[i]*(0.55 + 0.45*pit[i]), sweep = 0.75 + 0.25*Math.sin((x/W + y/H)*3.2);
+      d[o] = (224 - 150*t)*sweep; d[o+1] = (150 - 112*t)*sweep; d[o+2] = (96 - 78*t)*sweep; d[o+3] = 255;
+    } else {
+      // the print: read the plate mirrored; ink sits in the pits
+      const j = y*W + (W - 1 - x), ink = Math.min(1, tone[j]*(0.88 + 0.22*pit[j]));
+      d[o] = 246 - (246 - 26)*ink; d[o+1] = 241 - (241 - 22)*ink; d[o+2] = 229 - (229 - 19)*ink; d[o+3] = 255;
+    }
+  }
+  bctx.putImageData(img, 0, 0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+  const m = view === 'print' ? 26*SS : 0;
+  ctx.save(); ctx.shadowColor = 'rgba(40,30,20,0.28)'; ctx.shadowBlur = 20*SS; ctx.shadowOffsetY = 8*SS;
+  if(view === 'print'){ ctx.fillStyle = '#f6f1e5'; ctx.fillRect(P.x*SS - m, P.y*SS - m, W + 2*m, H + 2.6*m); }
+  else { ctx.fillStyle = '#6b4024'; ctx.fillRect(P.x*SS - 3*SS, P.y*SS - 3*SS, W + 6*SS, H + 6*SS); }
+  ctx.restore();
+  ctx.drawImage(bufCv, P.x*SS, P.y*SS);
+  if(view === 'print'){                                    // the plate mark, pressed into the sheet
+    ctx.strokeStyle = 'rgba(80,60,40,0.3)'; ctx.lineWidth = 1.2*SS; ctx.strokeRect(P.x*SS - 4*SS, P.y*SS - 4*SS, W + 8*SS, H + 8*SS);
+  }
+}
+
+let down = null, dirty = true;
+cv.addEventListener('pointerdown', e => { if(view !== 'plate') return; cv.setPointerCapture(e.pointerId); down = true; work(e); });
+cv.addEventListener('pointermove', e => { if(down) work(e); });
+cv.addEventListener('pointerup', () => { down = null; });
+function work(e){ burnish((e.clientX - P.x)*SS, (e.clientY - P.y)*SS, e.shiftKey ? 0.5 : 0.16); dirty = true; }
+function frame(){ if(dirty){ render(); dirty = false; } requestAnimationFrame(frame); }
+const pull = document.getElementById('pull');
+pull.onclick = () => { view = view === 'plate' ? 'print' : 'plate'; pull.textContent = view === 'plate' ? 'pull a print' : 'back to the plate'; cv.style.cursor = view === 'plate' ? 'crosshair' : 'default'; dirty = true; };
+document.getElementById('rock').onclick = () => { seed = Math.floor(Math.random()*1e5); rock(); view = 'plate'; pull.textContent = 'pull a print'; dirty = true; };
+
+function size(){
+  DW = innerWidth; DH = innerHeight; SS = Math.min(devicePixelRatio || 1, 2);
+  cv.width = Math.round(DW*SS); cv.height = Math.round(DH*SS); cv.style.width = DW + 'px'; cv.style.height = DH + 'px';
+  if(DW > 2){ layout(); rock(); begin(); dirty = true; }
+}
+let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(size, 200); });
+size();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
