@@ -154,7 +154,7 @@ function paint(){
   g.addColorStop(0.55, 'rgba(0,0,0,0)'); g.addColorStop(0.85, 'rgba(0,0,0,0.25)'); g.addColorStop(1, 'rgba(0,0,0,0.75)');
   ctx.fillStyle = g; ctx.fillRect(X, Y, W, H);
   // the lever: a brass arm pivoted to the left, its pen resting on the drum's front
-  const ly = Y + (0.42*H - lever*H*0.30), px = cx, pivotX = X - 160*SS, pivotY = Y + H*0.42;
+  const ly = Y + (0.42*H - lever*H*0.30), px = cx, pivotX = X - Math.min(160*SS, X*0.8), pivotY = Y + H*0.42;
   ctx.strokeStyle = '#a8864a'; ctx.lineWidth = 2.2*SS; ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(pivotX, pivotY); ctx.lineTo(px, ly); ctx.stroke();
   ctx.fillStyle = '#6e5634'; ctx.beginPath(); ctx.arc(pivotX, pivotY, 6*SS, 0, 7); ctx.fill();
@@ -162,7 +162,7 @@ function paint(){
   // the chronograph pen
   const ty = Y + SH*0.86/SH*H;
   ctx.strokeStyle = '#7d6a4c'; ctx.lineWidth = 1.6*SS;
-  ctx.beginPath(); ctx.moveTo(pivotX + 60*SS, ty + 30*SS); ctx.lineTo(px, ty); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pivotX + Math.min(60*SS, X*0.3), ty + 30*SS); ctx.lineTo(px, ty); ctx.stroke();
   // labels a physiologist would have pencilled on the bench card
   ctx.fillStyle = '#6a645b'; ctx.font = 'italic ' + (12*SS) + 'px Lora, serif';
   ctx.fillText('lever', pivotX - 10*SS, pivotY - 14*SS);
