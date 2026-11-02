@@ -22,5 +22,6 @@ running log of experiments in simulating pressings, indentations, print processe
 - [morphogenesis](turing/): turing patterns grown as an emboss in paper
 - [golden angle](phyllotaxis/): a sunflower head at 137.508°
 - [the black manner](mezzotint/): burnish light out of a mezzotint ground
+- [camera obscura](obscura/): the world upside down on the far wall; trace it in pencil
 
 `lib/gouache.js` paints any height field the way the round map paints terrain.

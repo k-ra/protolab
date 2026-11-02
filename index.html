@@ -70,6 +70,7 @@ noscript a{color:var(--soft)}
   <a href="turing/" data-k="maze"><span>Morphogenesis</span></a>
   <a href="phyllotaxis/" data-k="seeds"><span>Golden Angle</span></a>
   <a href="mezzotint/" data-k="velvet"><span>The Black Manner</span></a>
+  <a href="obscura/" data-k="tracing"><span>Camera Obscura</span></a>
 </nav>
 <noscript>
   <a href="protolab/">The sheet</a><a href="canvas/">Clippings</a><a href="flowers/">Specimen</a>
@@ -79,7 +80,7 @@ noscript a{color:var(--soft)}
   <a href="kintsugi/">Kintsugi</a><a href="girih/">Girih</a><a href="kymograph/">Smoked Drum</a>
   <a href="jacquard/">Damask</a><a href="daguerreotype/">Mirror with a Memory</a><a href="chladni/">Sound Figures</a>
   <a href="turing/">Morphogenesis</a><a href="phyllotaxis/">Golden Angle</a>
-  <a href="mezzotint/">The Black Manner</a>
+  <a href="mezzotint/">The Black Manner</a><a href="obscura/">Camera Obscura</a>
 </noscript>
 
 <script>
@@ -522,6 +523,28 @@ const KINDS = {
       ctx.restore();
     }
   },
+  // a pencil tracing taken in a camera obscura: the tree is upside down
+  tracing: {
+    stock: '#f2ede1',
+    height(){},
+    color(ctx, s){
+      const rng = Relief.makeRng(s.seed + 21);
+      ctx.save(); ctx.rotate(Math.PI);
+      ctx.strokeStyle = 'rgba(60,56,54,0.8)'; ctx.lineCap = 'round';
+      const twig = (x, y, a, len, w, d) => {
+        const nx = x + Math.cos(a)*len, ny = y + Math.sin(a)*len;
+        ctx.lineWidth = Math.max(0.5, w); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(nx + (rng() - 0.5), ny); ctx.stroke();
+        if(d > 4) return;
+        twig(nx, ny, a - 0.45 - rng()*0.2, len*0.72, w*0.7, d + 1); twig(nx, ny, a + 0.4 + rng()*0.2, len*0.72, w*0.7, d + 1);
+      };
+      twig(0, s.hh*0.62, -Math.PI/2, s.hh*0.42, s.U*0.03, 0);
+      ctx.lineWidth = Math.max(0.5, s.U*0.008);              // the hills, a quick line
+      ctx.beginPath(); ctx.moveTo(-s.hw*0.85, s.hh*0.25);
+      for(let x=-s.hw*0.85; x<=s.hw*0.85; x+=s.U*0.08) ctx.lineTo(x, s.hh*0.25 + Math.sin(x*0.05 + s.seed)*s.U*0.06);
+      ctx.stroke();
+      ctx.restore();
+    }
+  },
   // a wax seal on a punched tag
   sigil: {
     stock: STOCK.cotton, wax: true,
@@ -701,11 +724,11 @@ const PILED = {
   gilded:    {hw: 0.58, hh: 0.80}, engraving: {hw: 0.62, hh: 0.72}, washi:   {hw: 0.56, hh: 0.50},
   girih:     {hw: 0.62, hh: 0.55}, smoked:    {hw: 1.35, hh: 0.32}, card:    {hw: 0.95, hh: 0.42},
   cabinet:   {hw: 0.55, hh: 0.78}, figures:   {hw: 0.70, hh: 0.70}, maze:    {hw: 0.66, hh: 0.56},
-  seeds:     {hw: 0.62, hh: 0.62}, velvet:  {hw: 0.55, hh: 0.70}
+  seeds:     {hw: 0.62, hh: 0.62}, velvet:  {hw: 0.55, hh: 0.70}, tracing: {hw: 0.72, hh: 0.56}
 };
 // painter's order: later slips rest on earlier ones
 // A new study gets a slip here, a kind above, and a place in both layouts.
-const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds', 'velvet'];
+const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds', 'velvet', 'tracing'];
 
 function compose(){
   const L = DW/DH > 1.05 ? LAYOUTS.wide : LAYOUTS.tall;
