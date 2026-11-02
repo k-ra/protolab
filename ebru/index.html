@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ebru — cloud art on water</title>
+<script src="../lib/relief.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#efece4;color:var(--ink);overflow:hidden;font-family:'Lora',serif}
+canvas{position:fixed;inset:0;display:block;touch-action:none;cursor:crosshair}
+.bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;align-items:center;
+  font-style:italic;font-size:14px;color:var(--soft);white-space:nowrap;
+  background:#efece4;padding:7px 16px;border-radius:2px;box-shadow:0 1px 2px rgba(47,42,36,.14),0 8px 22px -10px rgba(47,42,36,.4)}
+.bar button{font:inherit;color:var(--soft);background:none;border:none;cursor:pointer;padding:4px 2px}
+.bar button:hover,.bar button:focus-visible{color:var(--ink)}
+.bar .ink{width:16px;height:16px;border-radius:50%;border:1px solid rgba(47,42,36,.25);padding:0}
+.bar .ink[aria-pressed="true"]{outline:1px solid var(--ink);outline-offset:3px}
+.back{position:fixed;left:16px;top:14px;font-style:italic;font-size:13px;color:var(--soft);text-decoration:none;
+  background:#efece4;padding:4px 10px;border-radius:2px;box-shadow:0 1px 2px rgba(47,42,36,.14)}
+.back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<canvas id="c"></canvas>
+<div class="bar" id="bar">
+  <span id="inks"></span>
+  <button id="comb">comb</button>
+  <button id="rake">rake</button>
+  <button id="bath">new bath</button>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// EBRU — marbling on size, after the Ottoman papers of the 16th century.
+//
+// Ink is dropped onto a thickened bath and floats; every new drop pushes
+// every earlier film outward, and every stylus or comb drawn through the bath
+// drags the films along with it. Nothing mixes — ink films only deform —
+// which is why marbling keeps hard, exact edges however far it is pulled.
+//
+// That property makes it exactly computable. Each film is a polygon; a drop
+// of radius r at c moves every point p to  c + (p − c)·√(1 + r²/|p − c|²),
+// and a tine along a line moves p by  α·λ/(d + λ)  along the line, d its
+// distance from it (Jaffer, Lu, Rhoades et al., "Mathematical Marbling").
+// The order of drops and strokes is the pattern.
+//
+// click — drop ink (hold to let it spread)   drag — draw a stylus through
+// comb / rake — pull a comb across the whole bath
+// ═══════════════════════════════════════════════════════════════
+
+// earth and plant pigments of the old ateliers
+const INKS = [
+  {name: 'indigo',       c: '#2c3e63'},
+  {name: 'ochre',        c: '#c99a45'},
+  {name: 'rose madder',  c: '#b2524a'},
+  {name: 'oxblood',      c: '#6e2a2a'},
+  {name: 'malachite',    c: '#4f7d68'},
+  {name: 'bone',         c: '#ece3cf'}
+];
+const SIZE_BATH = '#e8dcc0';
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+let DW, DH, SS, films = [], ink = 0, dirty = true, sheet = null;
+let grain = null, mottle = null;
+
+// ── the two operations ────────────────────────────────────────
+function drop(cx, cy, r, color){
+  const r2 = r*r;
+  for(const f of films){
+    const p = f.p;
+    for(let i=0;i<p.length;i+=2){
+      const dx = p[i] - cx, dy = p[i+1] - cy, d2 = dx*dx + dy*dy;
+      const k = Math.sqrt(1 + r2/(d2 || 1e-6));
+      p[i] = cx + dx*k; p[i+1] = cy + dy*k;
+    }
+  }
+  const n = Math.max(48, Math.min(420, Math.round(r*1.4)));
+  const p = new Float64Array(n*2);
+  for(let i=0;i<n;i++){ const a = i/n*Math.PI*2; p[i*2] = cx + Math.cos(a)*r; p[i*2+1] = cy + Math.sin(a)*r; }
+  films.push({p, color});
+  dirty = true;
+}
+
+// a straight tine: (bx,by) a point on it, (mx,my) its unit direction
+function tine(bx, by, mx, my, shift, sharp){
+  const nx = -my, ny = mx;
+  for(const f of films){
+    const p = f.p;
+    for(let i=0;i<p.length;i+=2){
+      const d = Math.abs((p[i] - bx)*nx + (p[i+1] - by)*ny);
+      const s = shift*sharp/(d + sharp);
+      p[i] += mx*s; p[i+1] += my*s;
+    }
+  }
+  dirty = true;
+}
+
+// a stylus: the bath is dragged only near the point, along its motion
+function stylus(x, y, vx, vy, reach){
+  for(const f of films){
+    const p = f.p;
+    for(let i=0;i<p.length;i+=2){
+      const dx = p[i] - x, dy = p[i+1] - y, d = Math.sqrt(dx*dx + dy*dy);
+      const k = reach/(d + reach); const kk = k*k*k;
+      p[i] += vx*kk; p[i+1] += vy*kk;
+    }
+  }
+  dirty = true;
+}
+
+// stretched films get new points so their edges stay smooth
+function refine(maxLen){
+  const m2 = maxLen*maxLen;
+  for(const f of films){
+    const p = f.p, n = p.length/2;
+    let add = 0;
+    for(let i=0;i<n;i++){ const j = (i + 1) % n; const dx = p[j*2] - p[i*2], dy = p[j*2+1] - p[i*2+1]; if(dx*dx + dy*dy > m2) add++; }
+    if(!add || n + add > 9000) continue;
+    const q = new Float64Array((n + add)*2); let k = 0;
+    for(let i=0;i<n;i++){
+      const j = (i + 1) % n;
+      q[k++] = p[i*2]; q[k++] = p[i*2+1];
+      const dx = p[j*2] - p[i*2], dy = p[j*2+1] - p[i*2+1];
+      if(dx*dx + dy*dy > m2){ q[k++] = p[i*2] + dx/2; q[k++] = p[i*2+1] + dy/2; }
+    }
+    f.p = q;
+  }
+}
+
+// combs: many parallel tines, drawn one after another across the bath
+function comb(vertical, teeth, shift, sharp){
+  const span = vertical ? DW : DH, step = span/teeth;
+  for(let t=0;t<teeth;t++){
+    const o = step*(t + 0.5);
+    if(vertical) tine(o, 0, 0, 1, shift, sharp); else tine(0, o, 1, 0, shift, sharp);
+    if(t % 3 === 2) refine(5);
+  }
+  refine(4);
+}
+
+// ── a first pattern: battal stones, combed into gel-git, then raked ─
+function startBath(seed){
+  films = [];
+  const rng = Relief.makeRng(seed);
+  const order = [3, 1, 0, 2, 5, 4, 1, 0, 2, 5];
+  const R = Math.min(DW, DH);
+  // battal: drops of every colour scattered until the bath is full
+  for(let i=0;i<240;i++){
+    const c = INKS[order[(i*7 + Math.floor(rng()*3)) % order.length]].c;
+    drop(rng()*DW*1.1 - DW*0.05, rng()*DH*1.1 - DH*0.05, R*(0.035 + rng()*0.05), c);
+    if(i % 40 === 39) refine(6);
+  }
+  refine(5);
+  const gelgit = rng() < 0.6;
+  if(gelgit){
+    comb(true, Math.round(DW/(R*0.08)), R*0.10, R*0.035);
+    comb(true, Math.round(DW/(R*0.08)) + 1, -R*0.10, R*0.035);
+  }
+  if(rng() < 0.7) comb(false, Math.round(DH/(R*0.045)), R*0.05, R*0.012);
+  dirty = true;
+}
+
+// ── drawing the bath ──────────────────────────────────────────
+function draw(){
+  if(!dirty) return requestAnimationFrame(draw);
+  dirty = false;
+  ctx.setTransform(SS, 0, 0, SS, 0, 0);
+  ctx.fillStyle = SIZE_BATH; ctx.fillRect(0, 0, DW, DH);
+  for(const f of films){
+    const p = f.p;
+    ctx.beginPath(); ctx.moveTo(p[0], p[1]);
+    for(let i=2;i<p.length;i+=2) ctx.lineTo(p[i], p[i+1]);
+    ctx.closePath();
+    ctx.fillStyle = f.color; ctx.fill();
+    // a hairline where a film's edge meets the next: the ox-gall rim
+    ctx.strokeStyle = 'rgba(255,250,236,0.22)'; ctx.lineWidth = 0.7; ctx.stroke();
+  }
+  // printed onto laid paper: pigment takes unevenly, and the tooth shows
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.38;
+  ctx.drawImage(mottle, 0, 0, cv.width, cv.height);
+  ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = 0.32;
+  ctx.fillStyle = grain; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  requestAnimationFrame(draw);
+}
+
+function makeMottle(){
+  // laid lines and a soft cloud, multiplied in: the paper the print was pulled on
+  const w = 256, h = 256, c = Relief.makeCanvas(w, h), x = c.getContext('2d');
+  const img = x.createImageData(w, h), rng = Relief.makeRng(7);
+  const F = Relief.field(w, h);
+  const raw = new Float32Array(w*h).map(() => rng());
+  const cloud = F.blur(raw, 10, 3);
+  for(let i=0;i<w*h;i++){
+    const y = (i/w)|0;
+    const laid = (y % 5 === 0) ? 0.975 : 1;
+    const v = 255*Math.min(1, (0.93 + (cloud[i] - 0.5)*1.6)*laid);
+    img.data[i*4] = v; img.data[i*4+1] = v*0.995; img.data[i*4+2] = v*0.98; img.data[i*4+3] = 255;
+  }
+  x.putImageData(img, 0, 0);
+  return c;
+}
+
+// ── hands in the bath ─────────────────────────────────────────
+let down = null;
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId);
+  down = {x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, t: performance.now(), moved: false, grow: 0};
+});
+cv.addEventListener('pointermove', e => {
+  if(!down) return;
+  const vx = e.clientX - down.lx, vy = e.clientY - down.ly;
+  if(!down.moved && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) down.moved = true;
+  if(down.moved){ stylus(e.clientX, e.clientY, vx, vy, Math.min(DW, DH)*0.02); refine(5); }
+  down.lx = e.clientX; down.ly = e.clientY;
+});
+cv.addEventListener('pointerup', e => {
+  if(!down) return;
+  if(!down.moved){
+    // the longer it's held, the further the drop spreads
+    const held = Math.min(1.6, (performance.now() - down.t)/1000);
+    drop(down.x, down.y, Math.min(DW, DH)*(0.035 + held*0.07), INKS[ink].c);
+    refine(5);
+  }
+  down = null;
+});
+
+const inksEl = document.getElementById('inks');
+INKS.forEach((k, i) => {
+  const b = document.createElement('button');
+  b.className = 'ink'; b.style.background = k.c; b.title = k.name; b.setAttribute('aria-label', k.name);
+  b.setAttribute('aria-pressed', i === ink);
+  b.onclick = () => { ink = i; [...inksEl.children].forEach((x, j) => x.setAttribute('aria-pressed', j === i)); };
+  inksEl.appendChild(b); inksEl.append(' ');
+});
+inksEl.style.display = 'inline-flex'; inksEl.style.gap = '8px';
+let combDir = true;
+document.getElementById('comb').onclick = () => {
+  const R = Math.min(DW, DH);
+  comb(combDir, Math.round((combDir ? DW : DH)/(R*0.07)), (Math.random() < 0.5 ? 1 : -1)*R*0.09, R*0.03);
+  combDir = !combDir;
+};
+document.getElementById('rake').onclick = () => {
+  const R = Math.min(DW, DH);
+  comb(false, Math.round(DH/(R*0.03)), R*0.045, R*0.008);
+};
+document.getElementById('bath').onclick = () => startBath(Math.floor(Math.random()*1e6));
+
+function size(){
+  DW = innerWidth; DH = innerHeight;
+  SS = Math.min(devicePixelRatio || 1, 2);
+  cv.width = Math.round(DW*SS); cv.height = Math.round(DH*SS);
+  cv.style.width = DW + 'px'; cv.style.height = DH + 'px';
+  grain = ctx.createPattern(Relief.grainTile(256, 11, 30), 'repeat');
+  if(!mottle) mottle = makeMottle();
+  dirty = true;
+}
+let rt = 0;
+addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { size(); startBath(Math.floor(Math.random()*1e6)); }, 200); });
+size();
+startBath(1550);
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
