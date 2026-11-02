@@ -72,6 +72,7 @@ noscript a{color:var(--soft)}
   <a href="mezzotint/" data-k="velvet"><span>The Black Manner</span></a>
   <a href="obscura/" data-k="tracing"><span>Camera Obscura</span></a>
   <a href="nature-print/" data-k="fern"><span>Nature Printing</span></a>
+  <a href="stencil/" data-k="hand"><span>Hands on the Wall</span></a>
 </nav>
 <noscript>
   <a href="protolab/">The sheet</a><a href="canvas/">Clippings</a><a href="flowers/">Specimen</a>
@@ -82,7 +83,7 @@ noscript a{color:var(--soft)}
   <a href="jacquard/">Damask</a><a href="daguerreotype/">Mirror with a Memory</a><a href="chladni/">Sound Figures</a>
   <a href="turing/">Morphogenesis</a><a href="phyllotaxis/">Golden Angle</a>
   <a href="mezzotint/">The Black Manner</a><a href="obscura/">Camera Obscura</a>
-  <a href="nature-print/">Nature Printing</a>
+  <a href="nature-print/">Nature Printing</a><a href="stencil/">Hands on the Wall</a>
 </noscript>
 
 <script>
@@ -565,6 +566,29 @@ const KINDS = {
       }
     }
   },
+  // a hand stencil, blown in red ochre on kraft paper
+  hand: {
+    stock: '#d2b48a',
+    height(){},
+    color(ctx, s){
+      const rng = Relief.makeRng(s.seed + 41), U = s.U;
+      for(let i=0;i<4200;i++){
+        const a = rng()*6.283, r = Math.pow(rng(), 0.8)*U*0.60;
+        ctx.fillStyle = 'rgba(122,36,22,' + (0.22 + rng()*0.3) + ')';
+        ctx.fillRect(Math.cos(a)*r, -s.hh*0.05 + Math.sin(a)*r, 1.8, 1.8);
+      }
+      // the hand that kept the paper clean
+      ctx.fillStyle = '#d2b48a'; ctx.strokeStyle = '#d2b48a'; ctx.lineCap = 'round';
+      ctx.save(); ctx.translate(0, s.hh*0.08);
+      ctx.beginPath(); ctx.ellipse(0, 0, U*0.16, U*0.19, 0, 0, 7); ctx.fill(); ctx.fillRect(-U*0.1, U*0.1, U*0.2, U*0.4);
+      [[-0.13, 0.27, -2.2], [-0.07, 0.36, -1.8], [0, 0.39, -1.57], [0.07, 0.36, -1.35], [0.12, 0.29, -1.0]].forEach(([fx, len, a], k) => {
+        ctx.lineWidth = U*(k === 0 ? 0.085 : 0.066);
+        const bx = fx*U, by = -U*0.12 + (k === 0 ? U*0.12 : 0);
+        ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + Math.cos(a)*len*U, by + Math.sin(a)*len*U); ctx.stroke();
+      });
+      ctx.restore();
+    }
+  },
   // a wax seal on a punched tag
   sigil: {
     stock: STOCK.cotton, wax: true,
@@ -745,11 +769,11 @@ const PILED = {
   girih:     {hw: 0.62, hh: 0.55}, smoked:    {hw: 1.35, hh: 0.32}, card:    {hw: 0.95, hh: 0.42},
   cabinet:   {hw: 0.55, hh: 0.78}, figures:   {hw: 0.70, hh: 0.70}, maze:    {hw: 0.66, hh: 0.56},
   seeds:     {hw: 0.62, hh: 0.62}, velvet:  {hw: 0.55, hh: 0.70}, tracing: {hw: 0.72, hh: 0.56},
-  fern:      {hw: 0.52, hh: 0.76}
+  fern:      {hw: 0.52, hh: 0.76}, hand: {hw: 0.58, hh: 0.66}
 };
 // painter's order: later slips rest on earlier ones
 // A new study gets a slip here, a kind above, and a place in both layouts.
-const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds', 'velvet', 'tracing', 'fern'];
+const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds', 'velvet', 'tracing', 'fern', 'hand'];
 
 function compose(){
   const L = DW/DH > 1.05 ? LAYOUTS.wide : LAYOUTS.tall;
