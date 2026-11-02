@@ -54,11 +54,17 @@ noscript a{color:var(--soft)}
   <a href="canvas/" data-k="clippings"><span>Clippings</span></a>
   <a href="wax-seal/" data-k="sigil"><span>Sigil Pressure</span></a>
   <a href="twin-peaks/" data-k="map" class="round"><span>San Francisco, Round</span></a>
+  <a href="rosetta/" data-k="rubbing"><span>Three Hands</span></a>
+  <a href="ebru/" data-k="marbled"><span>Ebru</span></a>
+  <a href="cyanotype/" data-k="cyan"><span>Sun Print</span></a>
+  <a href="gilded/" data-k="gilded"><span>Gilded</span></a>
+  <a href="burin/" data-k="engraving"><span>One Line</span></a>
 </nav>
 <noscript>
   <a href="protolab/">The sheet</a><a href="canvas/">Clippings</a><a href="flowers/">Specimen</a>
   <a href="press/">The Press</a><a href="wax-seal/">Sigil Pressure</a>
-  <a href="twin-peaks/">San Francisco, Round</a>
+  <a href="twin-peaks/">San Francisco, Round</a><a href="rosetta/">Three Hands</a><a href="ebru/">Ebru</a>
+  <a href="cyanotype/">Sun Print</a><a href="gilded/">Gilded</a><a href="burin/">One Line</a>
 </noscript>
 
 <script>
@@ -94,6 +100,7 @@ const PIXEL_BUDGET = 5e6;
 // the same numbers, so a slip and the paper beneath it always agree
 const LAMP = {h: 980, radius: 3200, color: '#fff8ee', amb: 0.58, wrap: 0.42};
 const PAPER_RESPONSE = {ambient: LAMP.amb, aoLo: 0.62, exposure: 1.0, gloss: 0, sheen: 0.02, scatter: 0.02, env: false};
+const GOLD_RESPONSE = {ambient: 0.22, aoLo: 0.35, exposure: 1.3, gloss: 0.78, sheen: 0.16, scatter: 0, env: true, envLo: 0.35, envHi: 1.75};
 const BLUEPRINT = {shadow: '#002e7a', high: '#ffffff', amount: 1};
 
 let DW, DH, SS, PW, PH;
@@ -216,6 +223,133 @@ const KINDS = {
       const d = s.hw*2*1.04;
       ctx.drawImage(MAP, -d/2, -d/2, d, d);
       ctx.restore();
+    }
+  },
+  // a graphite rubbing taken off the stele: the cut signs stay paper-white
+  rubbing: {
+    stock: '#ece9e1',
+    height(){},
+    color(ctx, s){
+      const U = s.U, w = s.hw*0.80, h = s.hh*0.74, rng = Relief.makeRng(s.seed + 5);
+      ctx.save();
+      ctx.beginPath();                                   // the stone's edge, broken at the top left
+      ctx.moveTo(-w, -h*0.35); ctx.lineTo(-w*0.2, -h); ctx.lineTo(w, -h); ctx.lineTo(w, h); ctx.lineTo(-w, h); ctx.closePath();
+      ctx.clip();
+      ctx.strokeStyle = 'rgba(66,66,72,0.30)'; ctx.lineWidth = Math.max(0.5, U*0.008);
+      for(let i=0;i<1400;i++){                           // the pencil, worked on the diagonal
+        const x = -w*1.1 + rng()*2.2*w, y = -h*1.1 + rng()*2.2*h, l = U*(0.03 + rng()*0.05);
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + l, y - l*0.6); ctx.stroke();
+      }
+      ctx.restore();
+      ctx.strokeStyle = ctx.fillStyle = '#ece9e1'; ctx.lineWidth = Math.max(1, U*0.026); ctx.lineCap = 'round';
+      const q = U*0.10;
+      for(let row=0; row<5; row++){
+        const y = -h*0.55 + row*q*1.5;
+        for(let x = -w*0.82 + (row === 0 ? w*0.5 : 0); x < w*0.8; x += q*1.3){
+          const k = Math.floor(rng()*4);
+          ctx.beginPath();
+          if(k === 0) ctx.arc(x, y, q*0.32, 0, 7);
+          else if(k === 1){ for(let j=0;j<=4;j++) ctx.lineTo(x - q*0.4 + j*q*0.2, y + (j % 2 ? -q*0.12 : q*0.12)); }
+          else if(k === 2){ ctx.moveTo(x, y + q*0.4); ctx.lineTo(x, y - q*0.4); ctx.moveTo(x, y - q*0.1); ctx.lineTo(x + q*0.25, y - q*0.35); }
+          else { ctx.moveTo(x - q*0.4, y + q*0.2); ctx.quadraticCurveTo(x, y - q*0.4, x + q*0.4, y + q*0.2); }
+          ctx.stroke();
+        }
+      }
+    }
+  },
+  // a scrap of marbled paper, computed the way the ebru study computes it
+  marbled: {
+    stock: '#e8dcc0',
+    height(){},
+    color(ctx, s){
+      const rng = Relief.makeRng(s.seed + 8), films = [];
+      const inks = ['#2c3e63', '#c99a45', '#b2524a', '#6e2a2a', '#4f7d68', '#ece3cf'];
+      const drop = (cx, cy, r, c) => {
+        films.forEach(f => { for(let i=0;i<f.p.length;i+=2){ const dx = f.p[i] - cx, dy = f.p[i+1] - cy, k = Math.sqrt(1 + r*r/(dx*dx + dy*dy || 1e-6)); f.p[i] = cx + dx*k; f.p[i+1] = cy + dy*k; } });
+        const p = []; for(let i=0;i<120;i++){ const a = i/120*6.283; p.push(cx + Math.cos(a)*r, cy + Math.sin(a)*r); }
+        films.push({p, c});
+      };
+      for(let i=0;i<70;i++) drop((rng()*2 - 1)*s.hw, (rng()*2 - 1)*s.hh, s.U*(0.05 + rng()*0.06), inks[(i*5 + (rng()*2|0)) % inks.length]);
+      const tine = (x0, shift, sharp) => films.forEach(f => { for(let i=0;i<f.p.length;i+=2){ const d = Math.abs(f.p[i] - x0); f.p[i+1] += shift*sharp/(d + sharp); } });
+      for(let t=0;t<9;t++) tine(-s.hw + (t + 0.5)*s.hw*2/9, (t % 2 ? -1 : 1)*s.U*0.16, s.U*0.05);
+      ctx.save(); outline(ctx, s); ctx.clip();
+      films.forEach(f => { ctx.beginPath(); for(let i=0;i<f.p.length;i+=2) ctx.lineTo(f.p[i], f.p[i+1]); ctx.closePath(); ctx.fillStyle = f.c; ctx.fill(); });
+      ctx.restore();
+    }
+  },
+  // a sun print: prussian blue, the shadow of a frond left white
+  cyan: {
+    stock: STOCK.cotton,
+    height(){},
+    color(ctx, s){
+      const rng = Relief.makeRng(s.seed + 2);
+      ctx.save(); ctx.fillStyle = '#1f3d72';
+      deckle(ctx, s.hw*0.84, s.hh*0.86, s.seed + 9, 0.05); ctx.fill();
+      ctx.strokeStyle = '#f4f0e5'; ctx.lineCap = 'round';
+      const frond = (x, y, a, len, w, d) => {
+        const nx = x + Math.cos(a)*len, ny = y + Math.sin(a)*len;
+        ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + Math.cos(a + 0.3)*len*0.5, y + Math.sin(a + 0.3)*len*0.5, nx, ny); ctx.stroke();
+        if(d > 5 || w < 0.5) return;
+        frond(nx, ny, a - 0.35 - rng()*0.2, len*0.78, w*0.74, d + 1);
+        frond(nx, ny, a + 0.35 + rng()*0.2, len*0.78, w*0.74, d + 1);
+      };
+      frond(0, s.hh*0.62, -Math.PI/2, s.hh*0.30, s.U*0.05, 0);
+      ctx.lineWidth = Math.max(0.6, s.U*0.012);
+      ctx.beginPath(); ctx.moveTo(-s.hw*0.35, s.hh*0.76); ctx.lineTo(s.hw*0.35, s.hh*0.76); ctx.stroke();
+      ctx.restore();
+    }
+  },
+  // a leaf of vellum with a raised gold initial on lapis
+  gilded: {
+    stock: '#efe5cf', gold: true,
+    height(ctx, s){
+      ctx.save(); ctx.translate(0, -s.hh*0.18);
+      ctx.globalAlpha = 0.85; ctx.fillStyle = '#fff';
+      ctx.font = '600 ' + (s.U*0.78) + 'px Lora, Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('P', 0, s.U*0.03);
+      ctx.lineWidth = s.U*0.03; ctx.strokeStyle = '#fff'; ctx.strokeRect(-s.U*0.48, -s.U*0.48, s.U*0.96, s.U*0.96);
+      ctx.restore();
+    },
+    color(ctx, s){
+      ctx.save(); ctx.translate(0, -s.hh*0.18);
+      ctx.fillStyle = '#26458a'; ctx.fillRect(-s.U*0.46, -s.U*0.46, s.U*0.92, s.U*0.92);
+      KINDS.gilded.mask(ctx, s, '#caa04a');
+      ctx.restore();
+      ctx.fillStyle = 'rgba(74,53,38,0.75)';                 // a few lines of text below
+      for(let l=0;l<4;l++) for(let x=-s.hw*0.66; x<s.hw*0.66; x+=s.U*0.05) if((x*7 + l*3) % 5 > 0.8) ctx.fillRect(x, s.hh*0.42 + l*s.U*0.11, s.U*0.018, s.U*0.05);
+    },
+    mask(ctx, s, col){
+      ctx.save(); if(!col) ctx.translate(0, -s.hh*0.18);
+      ctx.fillStyle = ctx.strokeStyle = col || '#fff';
+      ctx.font = '600 ' + (s.U*0.78) + 'px Lora, Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('P', 0, s.U*0.03);
+      ctx.lineWidth = s.U*0.03; ctx.strokeRect(-s.U*0.48, -s.U*0.48, s.U*0.96, s.U*0.96);
+      ctx.restore();
+    }
+  },
+  // one line, spiralling out, swelling where a flower is dark
+  engraving: {
+    stock: '#f6f2e7',
+    height(ctx, s){
+      ctx.fillStyle = grey(BASE - 0.12);
+      ctx.fillRect(-s.hw*0.78, -s.hh*0.80, s.hw*1.56, s.hw*1.56);
+    },
+    color(ctx, s){
+      const R = s.hw*0.70, cy = -s.hh*0.80 + s.hw*0.78, gap = Math.max(1.0, R/30);
+      const L = [], Rt = [];
+      for(let th=0; ; ){
+        const r = gap*th/6.283; if(r > R) break;
+        const a = th % 6.283, rr = R*0.78*(0.5 + 0.5*Math.abs(Math.cos(a*3.5)));
+        const dark = r < rr ? 0.25 + 0.6*(r/rr) : 0.03;
+        const w = gap*(0.06 + 0.86*dark), nx = Math.cos(th), ny = Math.sin(th);
+        const x = nx*r, y = cy + ny*r;
+        L.push(x + nx*w/2, y + ny*w/2); Rt.push(x - nx*w/2, y - ny*w/2);
+        th += Math.min(0.6, 0.9/Math.max(r, 1));
+      }
+      ctx.beginPath(); ctx.moveTo(L[0], L[1]);
+      for(let i=2;i<L.length;i+=2) ctx.lineTo(L[i], L[i+1]);
+      for(let i=Rt.length - 2;i>=0;i-=2) ctx.lineTo(Rt[i], Rt[i+1]);
+      ctx.closePath(); ctx.fillStyle = '#211b18'; ctx.fill();
     }
   },
   // a wax seal on a punched tag
@@ -366,36 +500,46 @@ function paintPlate(F, s, at){
 const LAYOUTS = {
   wide: {
     mark: {x: 0.50, y: 0.34},
-    U: (w, h) => Math.min(w/1440, h/880)*112,
+    U: (w, h) => Math.min(w/1440, h/880)*104,
     slips: {
       sheet:     {x: 0.20, y: 0.30, r:  5, hw: 0.95, hh: 0.74},
       specimen:  {x: 0.32, y: 0.70, r: -4, hw: 1.06, hh: 1.36},
       press:     {x: 0.52, y: 0.74, r:  3, hw: 0.82, hh: 1.04},
       sigil:     {x: 0.68, y: 0.63, r: 11, hw: 0.56, hh: 0.86},
       clippings: {x: 0.815, y: 0.32, r: -7, hw: 0.70, hh: 0.92},
-      map:       {x: 0.855, y: 0.74, r: 18, hw: 0.86, hh: 0.86}
+      map:       {x: 0.855, y: 0.74, r: 18, hw: 0.86, hh: 0.86},
+      rubbing:   {x: 0.37, y: 0.13, r: -3, hw: 0.80, hh: 0.60},
+      marbled:   {x: 0.63, y: 0.14, r:  4, hw: 0.74, hh: 0.54},
+      cyan:      {x: 0.08, y: 0.64, r: -6, hw: 0.62, hh: 0.82},
+      gilded:    {x: 0.945, y: 0.47, r:  6, hw: 0.58, hh: 0.80},
+      engraving: {x: 0.455, y: 0.495, r: -2, hw: 0.58, hh: 0.68}
     }
   },
   tall: {
-    mark: {x: 0.50, y: 0.14},
-    U: (w, h) => Math.min(w/430, h/900)*74,
+    mark: {x: 0.50, y: 0.07},
+    U: (w, h) => Math.min(w/430, h/900)*54,
     slips: {
-      sheet:     {x: 0.76, y: 0.27, r:  7, hw: 0.95, hh: 0.74},
-      specimen:  {x: 0.33, y: 0.37, r: -5, hw: 1.06, hh: 1.36},
-      map:       {x: 0.72, y: 0.50, r: 16, hw: 0.80, hh: 0.80},
-      press:     {x: 0.30, y: 0.61, r:  4, hw: 0.82, hh: 1.04},
-      clippings: {x: 0.73, y: 0.71, r: -8, hw: 0.70, hh: 0.92},
-      sigil:     {x: 0.31, y: 0.85, r: 12, hw: 0.56, hh: 0.86}
+      sheet:     {x: 0.74, y: 0.19,  r:  7, hw: 0.95, hh: 0.74},
+      specimen:  {x: 0.30, y: 0.25,  r: -5, hw: 1.06, hh: 1.36},
+      map:       {x: 0.72, y: 0.335, r: 16, hw: 0.80, hh: 0.80},
+      press:     {x: 0.29, y: 0.43,  r:  4, hw: 0.82, hh: 1.04},
+      clippings: {x: 0.73, y: 0.485, r: -8, hw: 0.70, hh: 0.92},
+      sigil:     {x: 0.30, y: 0.585, r: 12, hw: 0.56, hh: 0.86},
+      rubbing:   {x: 0.72, y: 0.625, r: -3, hw: 0.80, hh: 0.60},
+      marbled:   {x: 0.71, y: 0.745, r:  4, hw: 0.74, hh: 0.54},
+      cyan:      {x: 0.30, y: 0.725, r: -6, hw: 0.62, hh: 0.82},
+      gilded:    {x: 0.28, y: 0.88,  r:  6, hw: 0.58, hh: 0.80},
+      engraving: {x: 0.69, y: 0.875, r: -2, hw: 0.62, hh: 0.72}
     }
   }
 };
 // painter's order: later slips rest on earlier ones
 // A new study gets a slip here, a kind above, and a place in both layouts.
-const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map'];
+const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving'];
 
 function compose(){
   const L = DW/DH > 1.05 ? LAYOUTS.wide : LAYOUTS.tall;
-  const U = Math.max(46, Math.min(150, L.U(DW, DH)));
+  const U = Math.max(36, Math.min(150, L.U(DW, DH)));
   const rng = Relief.makeRng(SEED);
   const old = {};
   slips.forEach((s, z) => { old[s.k] = s; s.z = z; });
@@ -477,7 +621,7 @@ function buildSlip(s){
     }
   }
   const nrm = F.normals(cov, surf, 46*SS);
-  const materials = [PAPER_RESPONSE, Matter.response('wax')];
+  const materials = [PAPER_RESPONSE, K.gold ? GOLD_RESPONSE : Matter.response('wax')];
 
   s.F = F; s.W = W; s.H = H;
   s.shadeArgs = {cov, hgt, hMax: 1, nX: nrm.nX, nY: nrm.nY, nZ: nrm.nZ,
