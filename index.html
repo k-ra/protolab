@@ -69,6 +69,7 @@ noscript a{color:var(--soft)}
   <a href="chladni/" data-k="figures"><span>Sound Figures</span></a>
   <a href="turing/" data-k="maze"><span>Morphogenesis</span></a>
   <a href="phyllotaxis/" data-k="seeds"><span>Golden Angle</span></a>
+  <a href="mezzotint/" data-k="velvet"><span>The Black Manner</span></a>
 </nav>
 <noscript>
   <a href="protolab/">The sheet</a><a href="canvas/">Clippings</a><a href="flowers/">Specimen</a>
@@ -78,6 +79,7 @@ noscript a{color:var(--soft)}
   <a href="kintsugi/">Kintsugi</a><a href="girih/">Girih</a><a href="kymograph/">Smoked Drum</a>
   <a href="jacquard/">Damask</a><a href="daguerreotype/">Mirror with a Memory</a><a href="chladni/">Sound Figures</a>
   <a href="turing/">Morphogenesis</a><a href="phyllotaxis/">Golden Angle</a>
+  <a href="mezzotint/">The Black Manner</a>
 </noscript>
 
 <script>
@@ -504,6 +506,22 @@ const KINDS = {
       ctx.beginPath(); ctx.arc(0, 0, R*1.06, 0, 7); ctx.stroke();
     }
   },
+  // a small mezzotint: a pale bloom burnished out of velvet black
+  velvet: {
+    stock: '#f6f1e5',
+    height(ctx, s){ ctx.fillStyle = grey(BASE - 0.14); ctx.fillRect(-s.hw*0.80, -s.hh*0.82, s.hw*1.6, s.hh*1.56); },
+    color(ctx, s){
+      const w = s.hw*0.74, h = s.hh*0.76, rng = Relief.makeRng(s.seed + 3);
+      ctx.fillStyle = '#1c1713'; ctx.fillRect(-w, -h, w*2, h*2);
+      ctx.save(); ctx.beginPath(); ctx.rect(-w, -h, w*2, h*2); ctx.clip();
+      const g = ctx.createRadialGradient(0, -h*0.12, 0, 0, -h*0.12, w*0.75);
+      g.addColorStop(0, 'rgba(236,228,212,0.95)'); g.addColorStop(0.45, 'rgba(160,148,130,0.55)'); g.addColorStop(1, 'rgba(28,23,19,0)');
+      ctx.fillStyle = g; ctx.fillRect(-w, -h, w*2, h*2);
+      ctx.fillStyle = 'rgba(28,23,19,0.5)';                  // the rocker's grain
+      for(let i=0;i<500;i++) ctx.fillRect(-w + rng()*2*w, -h + rng()*2*h, 0.8, 0.8);
+      ctx.restore();
+    }
+  },
   // a wax seal on a punched tag
   sigil: {
     stock: STOCK.cotton, wax: true,
@@ -683,11 +701,11 @@ const PILED = {
   gilded:    {hw: 0.58, hh: 0.80}, engraving: {hw: 0.62, hh: 0.72}, washi:   {hw: 0.56, hh: 0.50},
   girih:     {hw: 0.62, hh: 0.55}, smoked:    {hw: 1.35, hh: 0.32}, card:    {hw: 0.95, hh: 0.42},
   cabinet:   {hw: 0.55, hh: 0.78}, figures:   {hw: 0.70, hh: 0.70}, maze:    {hw: 0.66, hh: 0.56},
-  seeds:     {hw: 0.62, hh: 0.62}
+  seeds:     {hw: 0.62, hh: 0.62}, velvet:  {hw: 0.55, hh: 0.70}
 };
 // painter's order: later slips rest on earlier ones
 // A new study gets a slip here, a kind above, and a place in both layouts.
-const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds'];
+const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds', 'velvet'];
 
 function compose(){
   const L = DW/DH > 1.05 ? LAYOUTS.wide : LAYOUTS.tall;
