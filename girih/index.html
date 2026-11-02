@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Girih — strapwork in stucco</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#efece4;color:var(--ink);overflow:hidden;font-family:'Lora',serif}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;cursor:crosshair}
+.bar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:14px;align-items:center;
+  font-style:italic;font-size:14px;color:var(--soft);white-space:nowrap;background:#efece4;padding:7px 16px;border-radius:2px;
+  box-shadow:0 1px 2px rgba(47,42,36,.14),0 8px 22px -10px rgba(47,42,36,.4)}
+.bar button{font:inherit;color:var(--soft);background:none;border:none;cursor:pointer}
+.bar button:hover,.bar button:focus-visible{color:var(--ink)}
+.bar input{accent-color:#6a645b;width:140px}
+.back{position:fixed;left:16px;top:14px;font-style:italic;font-size:13px;color:var(--soft);text-decoration:none;
+  background:#efece4;padding:4px 10px;border-radius:2px;box-shadow:0 1px 2px rgba(47,42,36,.14)}
+.back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<div id="stage"></div>
+<div class="bar">
+  <label for="ang">angle</label><input id="ang" type="range" min="40" max="80" step="0.5" value="67.5">
+  <button id="tile">8 · 8 · 4</button>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// GIRIH — interlaced strapwork, carved in stucco.
+//
+// The star patterns of Islamic architecture can be drawn from a plain tiling
+// by Hankin's method of "polygons in contact" (1925): from the middle of
+// every edge send out two rays, each at the same angle to the edge, and stop
+// each where it meets its neighbour's. One number — the contact angle —
+// turns squares and octagons into eight-pointed stars, rosettes and kites.
+//
+// The lines are then cut as the plasterers of the Nasrid palaces cut them:
+// flat straps standing proud of a deep ground, each strap edged with a pair
+// of fillets, weaving over and under wherever two cross. White stucco only;
+// the raking lamp, which follows the cursor, does the rest.
+// ═══════════════════════════════════════════════════════════════
+
+const PLASTER = [236, 229, 214];
+let DW, DH, SS, PW, PH, F, art, artCtx, lo = null, ready = false, need = false, moving = 0;
+let cov, hgt, nrm, colorMap, angle = 67.5, tiling = '488';
+let lamp = {x: 0, y: 0}, lampT = {x: 0, y: 0};
+
+// ── tilings ───────────────────────────────────────────────────
+function polygons(a){
+  const out = [];
+  const reg = (cx, cy, n, R, rot) => { const p = []; for(let k=0;k<n;k++){ const t = rot + k*2*Math.PI/n; p.push([cx + Math.cos(t)*R, cy + Math.sin(t)*R]); } return p; };
+  if(tiling === '488'){
+    const s = a*(1 + Math.SQRT2), R8 = a/(2*Math.sin(Math.PI/8)), R4 = a/Math.SQRT2;
+    for(let i=-1;i*s < DW + s;i++) for(let j=-1;j*s < DH + s;j++){
+      out.push(reg(i*s, j*s, 8, R8, Math.PI/8));
+      out.push(reg((i + 0.5)*s, (j + 0.5)*s, 4, R4, 0));
+    }
+  } else {
+    const R = a, h = Math.sqrt(3)*a;
+    for(let i=-1;i*1.5*a < DW + 2*a;i++) for(let j=-1;j*h < DH + 2*h;j++)
+      out.push(reg(i*1.5*a, j*h + (i % 2 ? h/2 : 0), 6, R, 0));
+  }
+  return out;
+}
+
+// Hankin: two rays from each edge's midpoint, met by the next edge's rays
+function hankin(polys, deg){
+  const th = deg*Math.PI/180, segs = [];
+  const rot = (v, t) => [v[0]*Math.cos(t) - v[1]*Math.sin(t), v[0]*Math.sin(t) + v[1]*Math.cos(t)];
+  const meet = (p, d, q, e) => {
+    const den = d[0]*e[1] - d[1]*e[0]; if(Math.abs(den) < 1e-9) return null;
+    const t = ((q[0] - p[0])*e[1] - (q[1] - p[1])*e[0])/den;
+    return t > 0 ? [p[0] + d[0]*t, p[1] + d[1]*t] : null;
+  };
+  const hit = (p, d, q, e) => {                              // both rays must go forward to meet
+    const den = d[0]*e[1] - d[1]*e[0]; if(Math.abs(den) < 1e-9) return null;
+    const t = ((q[0] - p[0])*e[1] - (q[1] - p[1])*e[0])/den, u = ((q[0] - p[0])*d[1] - (q[1] - p[1])*d[0])/den;
+    return t > 1e-6 && u > 1e-6 ? {t, u, X: [p[0] + d[0]*t, p[1] + d[1]*t]} : null;
+  };
+  polys.forEach(P => {
+    const n = P.length, mids = [], dirs = [];
+    for(let i=0;i<n;i++){
+      const A = P[i], B = P[(i + 1) % n], L = Math.hypot(B[0] - A[0], B[1] - A[1]);
+      const e = [(B[0] - A[0])/L, (B[1] - A[1])/L];
+      const m = [(A[0] + B[0])/2, (A[1] + B[1])/2];
+      mids.push(m);
+      // turn the rays toward the middle of their own polygon, whichever way it winds
+      const cx = P.reduce((q, v) => q + v[0], 0)/n, cy = P.reduce((q, v) => q + v[1], 0)/n;
+      const f = rot(e, th), sg = (f[0]*(cx - m[0]) + f[1]*(cy - m[1])) >= 0 ? 1 : -1;
+      dirs.push({fwd: rot(e, sg*th), back: rot([-e[0], -e[1]], -sg*th)});
+    }
+    // each right-handed ray stops at the left-handed ray it reaches soonest
+    for(let i=0;i<n;i++){
+      let best = null, bj = -1;
+      for(let j=0;j<n;j++){
+        if(j === i) continue;
+        const h = hit(mids[i], dirs[i].fwd, mids[j], dirs[j].back);
+        if(h && (!best || h.t + h.u < best.t + best.u)){ best = h; bj = j; }
+      }
+      if(best){ segs.push([mids[i], best.X]); segs.push([mids[bj], best.X]); }
+    }
+  });
+  return segs;
+}
+
+function crossings(segs){
+  const cr = segs.map(() => []);
+  for(let a=0;a<segs.length;a++){
+    const [p, q] = segs[a];
+    for(let b=a + 1;b<segs.length;b++){
+      const [r, s] = segs[b];
+      if(Math.max(p[0], q[0]) < Math.min(r[0], s[0]) || Math.max(r[0], s[0]) < Math.min(p[0], q[0])) continue;
+      if(Math.max(p[1], q[1]) < Math.min(r[1], s[1]) || Math.max(r[1], s[1]) < Math.min(p[1], q[1])) continue;
+      const d1 = [q[0] - p[0], q[1] - p[1]], d2 = [s[0] - r[0], s[1] - r[1]];
+      const den = d1[0]*d2[1] - d1[1]*d2[0]; if(Math.abs(den) < 1e-9) continue;
+      const t = ((r[0] - p[0])*d2[1] - (r[1] - p[1])*d2[0])/den, u = ((r[0] - p[0])*d1[1] - (r[1] - p[1])*d1[0])/den;
+      if(t > 0.02 && t < 0.98 && u > 0.02 && u < 0.98){
+        const X = [p[0] + d1[0]*t, p[1] + d1[1]*t];
+        cr[a].push({t, X, other: b}); cr[b].push({t: u, X, other: a});
+      }
+    }
+  }
+  return cr;
+}
+
+// ── carving ───────────────────────────────────────────────────
+function build(){
+  const a = Math.min(DW, DH)/(tiling === '488' ? 6.5 : 7.5);
+  const segs = hankin(polygons(a), angle);
+  const cr = crossings(segs);
+  const w = a*0.085;
+  // over or under: alternate along each strap, and let the other strap agree
+  const over = new Map();
+  cr.forEach((list, i) => {
+    list.sort((x, y) => x.t - y.t);
+    list.forEach((c, k) => {
+      const key = Math.min(i, c.other) + ':' + Math.max(i, c.other);
+      if(!over.has(key)) over.set(key, (k + i) % 2 ? i : c.other);
+    });
+  });
+  const at = c => c.setTransform(SS, 0, 0, SS, 0, 0);
+  const strap = (c, P, Q, lvl, fill) => {
+    c.lineCap = 'butt';
+    c.strokeStyle = grey(lvl); c.lineWidth = w; c.beginPath(); c.moveTo(P[0], P[1]); c.lineTo(Q[0], Q[1]); c.stroke();
+    if(fill){                                                 // the two fillets: a groove either side of a flat crown
+      c.strokeStyle = grey(lvl - 0.10); c.lineWidth = w*0.66; c.beginPath(); c.moveTo(P[0], P[1]); c.lineTo(Q[0], Q[1]); c.stroke();
+      c.strokeStyle = grey(lvl); c.lineWidth = w*0.44; c.beginPath(); c.moveTo(P[0], P[1]); c.lineTo(Q[0], Q[1]); c.stroke();
+    }
+  };
+  const h0 = F.rasterLuma(c => {
+    at(c);
+    c.fillStyle = grey(0.30); c.fillRect(0, 0, DW, DH);
+    c.lineJoin = 'miter';
+    // round caps at the joints so straps meet cleanly
+    segs.forEach(([P, Q]) => { strap(c, P, Q, 0.9, true); });
+    segs.forEach(([P, Q]) => { c.fillStyle = grey(0.9); c.beginPath(); c.arc(Q[0], Q[1], w*0.5, 0, 7); c.fill(); });
+    // at each crossing, the strap that goes under dips, and the one over is laid again on top
+    cr.forEach((list, i) => list.forEach(cc => {
+      const key = Math.min(i, cc.other) + ':' + Math.max(i, cc.other);
+      const top = over.get(key), bot = top === i ? cc.other : i;
+      const piece = (k, half) => {
+        const [P, Q] = segs[k], L = Math.hypot(Q[0] - P[0], Q[1] - P[1]), ux = (Q[0] - P[0])/L, uy = (Q[1] - P[1])/L;
+        return [[cc.X[0] - ux*half, cc.X[1] - uy*half], [cc.X[0] + ux*half, cc.X[1] + uy*half]];
+      };
+      if(i !== top) return;
+      const [b0, b1] = piece(bot, w*1.6); strap(c, b0, b1, 0.66, true);
+      c.strokeStyle = grey(0.30); c.lineWidth = w*1.9;                 // a shadowed cut where it passes under
+      const [g0, g1] = piece(top, w*0.95); c.beginPath(); c.moveTo(g0[0], g0[1]); c.lineTo(g1[0], g1[1]); c.stroke();
+      const [t0, t1] = piece(top, w*1.4); strap(c, t0, t1, 0.9, true);
+    }));
+  });
+  const hs = F.blur(h0, Math.max(1, Math.round(0.8*SS)), 2);
+  const n2 = PW*PH;
+  cov = new Float32Array(n2).fill(1); hgt = new Float32Array(n2); colorMap = new Uint8ClampedArray(n2*3);
+  const surf = new Float32Array(n2);
+  for(let y=0;y<PH;y++){
+    for(let x=0;x<PW;x++){
+      const i = y*PW + x, X = x/SS, Y = y/SS, v = hs[i];
+      // the ground is cut rough; the straps are floated smooth
+      const rough = v < 0.4 ? (noise(X*0.4, Y*0.4) - 0.5)*0.05 + (noise(X*1.6, Y*1.6) - 0.5)*0.02 : (noise(X*0.08, Y*0.08) - 0.5)*0.01;
+      surf[i] = v*0.55 + rough;
+      hgt[i] = 0.35 + 0.65*v;
+      // old stucco: warm, a little grimed in the hollows
+      const k = 1 - (1 - v)*0.12 + (noise(X*0.02, Y*0.02) - 0.5)*0.05;
+      colorMap[i*3] = PLASTER[0]*k; colorMap[i*3+1] = PLASTER[1]*k; colorMap[i*3+2] = PLASTER[2]*k*0.98;
+    }
+  }
+  nrm = F.normals(cov, surf, 40*SS);
+  makeLo();
+  need = true;
+}
+const grey = v => { const c = Math.round(Math.max(0, Math.min(1, v))*255); return 'rgb(' + c + ',' + c + ',' + c + ')'; };
+
+const LO = 3;
+function makeLo(){
+  const w = Math.floor(PW/LO), h = Math.floor(PH/LO), n = w*h;
+  lo = {F: Relief.field(w, h), cov: new Float32Array(n).fill(1), hgt: new Float32Array(n),
+        nX: new Float32Array(n), nY: new Float32Array(n), nZ: new Float32Array(n), colorMap: new Uint8ClampedArray(n*3)};
+  lo.cv = Relief.makeCanvas(w, h); lo.ctx = lo.cv.getContext('2d');
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const i = y*w + x, a = (y*LO)*PW + x*LO;
+    lo.hgt[i] = hgt[a]; lo.nX[i] = nrm.nX[a]; lo.nY[i] = nrm.nY[a]; lo.nZ[i] = nrm.nZ[a];
+    lo.colorMap[i*3] = colorMap[a*3]; lo.colorMap[i*3+1] = colorMap[a*3+1]; lo.colorMap[i*3+2] = colorMap[a*3+2];
+  }
+}
+function shade(preview){
+  const k = preview ? 1/LO : 1;
+  (preview ? lo.F : F).shade(preview ? lo.ctx : artCtx, {
+    cov: preview ? lo.cov : cov, hgt: preview ? lo.hgt : hgt, hMax: 1,
+    nX: preview ? lo.nX : nrm.nX, nY: preview ? lo.nY : nrm.nY, nZ: preview ? lo.nZ : nrm.nZ,
+    colorMap: preview ? lo.colorMap : colorMap,
+    light: {x: lamp.x*SS*k, y: lamp.y*SS*k, h: 220*SS*k, radius: 1800*SS*k, color: '#fff2dc'},
+    ambient: 0.58, aoLo: 0.48, exposure: 1.24, matte: true, wrap: 0.30, sheen: 0.04, scatter: 0.05, contrast: 1.04,
+    tone: {shadow: '#5a4636', high: '#fffaf2', amount: 0.10}
+  });
+}
+
+// ── p5 ────────────────────────────────────────────────────────
+function measure(){
+  DW = document.documentElement.clientWidth; DH = window.innerHeight;
+  SS = Math.max(1, Math.min(Math.min(devicePixelRatio || 1, 2), Math.sqrt(3.6e6/(DW*DH))));
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS);
+  F = Relief.field(PW, PH); art = Relief.makeCanvas(PW, PH); artCtx = art.getContext('2d');
+}
+function setup(){
+  pixelDensity(1); measure();
+  createCanvas(PW, PH).parent('stage'); fit();
+  noiseSeed(1238);
+  lamp = {x: DW*0.25, y: DH*0.15}; lampT = {x: DW*0.3, y: DH*0.2};
+  if(DW > 2){ build(); ready = true; }
+}
+function fit(){ const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px'; }
+function windowResized(){ measure(); resizeCanvas(PW, PH); fit(); if(DW > 2){ build(); ready = true; } }
+function mouseMoved(){ lampT = {x: mouseX/SS, y: mouseY/SS}; }
+function touchMoved(){ lampT = {x: mouseX/SS, y: mouseY/SS}; }
+function draw(){
+  if(!ready) return;
+  const dx = lampT.x - lamp.x, dy = lampT.y - lamp.y;
+  if(Math.abs(dx) + Math.abs(dy) > 0.8){ lamp.x += dx*0.12; lamp.y += dy*0.12; moving = 5; need = true; }
+  if(need){ if(moving > 0){ shade(true); moving--; } else { shade(false); need = false; } }
+  const g = drawingContext;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.imageSmoothingQuality = 'high';
+  if(moving > 0 && lo) g.drawImage(lo.cv, 0, 0, PW, PH); else g.drawImage(art, 0, 0);
+}
+let rb = 0;
+document.getElementById('ang').addEventListener('input', e => {
+  angle = +e.target.value; clearTimeout(rb); rb = setTimeout(() => { if(ready) build(); }, 120);
+});
+document.getElementById('tile').onclick = e => {
+  tiling = tiling === '488' ? '666' : '488';
+  e.target.textContent = tiling === '488' ? '8 · 8 · 4' : '6 · 6 · 6';
+  if(ready) build();
+};
+</script>
+</body>
+</html>
