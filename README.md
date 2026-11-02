@@ -23,5 +23,6 @@ running log of experiments in simulating pressings, indentations, print processe
 - [golden angle](phyllotaxis/): a sunflower head at 137.508°
 - [the black manner](mezzotint/): burnish light out of a mezzotint ground
 - [camera obscura](obscura/): the world upside down on the far wall; trace it in pencil
+- [nature printing](nature-print/): a barnsley fern pressed into lead, printed in green
 
 `lib/gouache.js` paints any height field the way the round map paints terrain.

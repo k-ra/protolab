@@ -71,6 +71,7 @@ noscript a{color:var(--soft)}
   <a href="phyllotaxis/" data-k="seeds"><span>Golden Angle</span></a>
   <a href="mezzotint/" data-k="velvet"><span>The Black Manner</span></a>
   <a href="obscura/" data-k="tracing"><span>Camera Obscura</span></a>
+  <a href="nature-print/" data-k="fern"><span>Nature Printing</span></a>
 </nav>
 <noscript>
   <a href="protolab/">The sheet</a><a href="canvas/">Clippings</a><a href="flowers/">Specimen</a>
@@ -81,6 +82,7 @@ noscript a{color:var(--soft)}
   <a href="jacquard/">Damask</a><a href="daguerreotype/">Mirror with a Memory</a><a href="chladni/">Sound Figures</a>
   <a href="turing/">Morphogenesis</a><a href="phyllotaxis/">Golden Angle</a>
   <a href="mezzotint/">The Black Manner</a><a href="obscura/">Camera Obscura</a>
+  <a href="nature-print/">Nature Printing</a>
 </noscript>
 
 <script>
@@ -545,6 +547,24 @@ const KINDS = {
       ctx.restore();
     }
   },
+  // a nature print: a fern, green, every pinnule
+  fern: {
+    stock: '#f3eee2',
+    height(){},
+    color(ctx, s){
+      const rng = Relief.makeRng(s.seed + 31), k = s.hh*0.17;
+      let x = 0, y = 0; ctx.fillStyle = 'rgba(46,80,46,0.55)';
+      for(let i=0;i<14000;i++){
+        const r = rng(); let nx, ny;
+        if(r < 0.01){ nx = 0; ny = 0.16*y; }
+        else if(r < 0.86){ nx = 0.85*x + 0.04*y; ny = -0.04*x + 0.85*y + 1.6; }
+        else if(r < 0.93){ nx = 0.2*x - 0.26*y; ny = 0.23*x + 0.22*y + 1.6; }
+        else { nx = -0.15*x + 0.28*y; ny = 0.26*x + 0.24*y + 0.44; }
+        x = nx; y = ny;
+        if(i > 20) ctx.fillRect(x*k*0.9, s.hh*0.88 - y*k, 0.9, 0.9);
+      }
+    }
+  },
   // a wax seal on a punched tag
   sigil: {
     stock: STOCK.cotton, wax: true,
@@ -724,11 +744,12 @@ const PILED = {
   gilded:    {hw: 0.58, hh: 0.80}, engraving: {hw: 0.62, hh: 0.72}, washi:   {hw: 0.56, hh: 0.50},
   girih:     {hw: 0.62, hh: 0.55}, smoked:    {hw: 1.35, hh: 0.32}, card:    {hw: 0.95, hh: 0.42},
   cabinet:   {hw: 0.55, hh: 0.78}, figures:   {hw: 0.70, hh: 0.70}, maze:    {hw: 0.66, hh: 0.56},
-  seeds:     {hw: 0.62, hh: 0.62}, velvet:  {hw: 0.55, hh: 0.70}, tracing: {hw: 0.72, hh: 0.56}
+  seeds:     {hw: 0.62, hh: 0.62}, velvet:  {hw: 0.55, hh: 0.70}, tracing: {hw: 0.72, hh: 0.56},
+  fern:      {hw: 0.52, hh: 0.76}
 };
 // painter's order: later slips rest on earlier ones
 // A new study gets a slip here, a kind above, and a place in both layouts.
-const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds', 'velvet', 'tracing'];
+const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds', 'velvet', 'tracing', 'fern'];
 
 function compose(){
   const L = DW/DH > 1.05 ? LAYOUTS.wide : LAYOUTS.tall;
