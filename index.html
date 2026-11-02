@@ -67,6 +67,8 @@ noscript a{color:var(--soft)}
   <a href="jacquard/" data-k="card"><span>Damask</span></a>
   <a href="daguerreotype/" data-k="cabinet"><span>Mirror with a Memory</span></a>
   <a href="chladni/" data-k="figures"><span>Sound Figures</span></a>
+  <a href="turing/" data-k="maze"><span>Morphogenesis</span></a>
+  <a href="phyllotaxis/" data-k="seeds"><span>Golden Angle</span></a>
 </nav>
 <noscript>
   <a href="protolab/">The sheet</a><a href="canvas/">Clippings</a><a href="flowers/">Specimen</a>
@@ -75,6 +77,7 @@ noscript a{color:var(--soft)}
   <a href="cyanotype/">Sun Print</a><a href="gilded/">Gilded</a><a href="burin/">One Line</a>
   <a href="kintsugi/">Kintsugi</a><a href="girih/">Girih</a><a href="kymograph/">Smoked Drum</a>
   <a href="jacquard/">Damask</a><a href="daguerreotype/">Mirror with a Memory</a><a href="chladni/">Sound Figures</a>
+  <a href="turing/">Morphogenesis</a><a href="phyllotaxis/">Golden Angle</a>
 </noscript>
 
 <script>
@@ -475,6 +478,32 @@ const KINDS = {
       });
     }
   },
+  // a Turing labyrinth, pressed blind into cotton paper
+  maze: {
+    stock: STOCK.cotton,
+    height(ctx, s){
+      ctx.save(); outline(ctx, s); ctx.clip();
+      ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.6;
+      const st = Math.max(1, s.U*0.02), z = 5.5/s.U, o = s.seed*0.001;
+      for(let y=-s.hh;y<s.hh;y+=st) for(let x=-s.hw;x<s.hw;x+=st){
+        const v = noise(x*z + o, y*z + 40) + noise(x*z*2.1 + 9, y*z*2.1)*0.35;
+        if(Math.abs(v - 0.67) < 0.06) ctx.fillRect(x, y, st, st);
+      }
+      ctx.restore();
+    }
+  },
+  // the golden angle, printed as a botanist's diagram
+  seeds: {
+    stock: '#f4efe2',
+    height(){},
+    color(ctx, s){
+      const N = 340, R = Math.min(s.hw, s.hh)*0.82, c = R/Math.sqrt(N), th = 137.508*Math.PI/180;
+      ctx.fillStyle = '#5b3b22';
+      for(let n=1;n<=N;n++){ const r = c*Math.sqrt(n), a = n*th; ctx.beginPath(); ctx.arc(Math.cos(a)*r, Math.sin(a)*r, c*0.36, 0, 7); ctx.fill(); }
+      ctx.strokeStyle = 'rgba(91,59,34,0.5)'; ctx.lineWidth = Math.max(0.5, s.U*0.006);
+      ctx.beginPath(); ctx.arc(0, 0, R*1.06, 0, 7); ctx.stroke();
+    }
+  },
   // a wax seal on a punched tag
   sigil: {
     stock: STOCK.cotton, wax: true,
@@ -653,11 +682,12 @@ const PILED = {
   rubbing:   {hw: 0.80, hh: 0.60}, marbled:   {hw: 0.74, hh: 0.54}, cyan:    {hw: 0.62, hh: 0.82},
   gilded:    {hw: 0.58, hh: 0.80}, engraving: {hw: 0.62, hh: 0.72}, washi:   {hw: 0.56, hh: 0.50},
   girih:     {hw: 0.62, hh: 0.55}, smoked:    {hw: 1.35, hh: 0.32}, card:    {hw: 0.95, hh: 0.42},
-  cabinet:   {hw: 0.55, hh: 0.78}, figures:   {hw: 0.70, hh: 0.70}
+  cabinet:   {hw: 0.55, hh: 0.78}, figures:   {hw: 0.70, hh: 0.70}, maze:    {hw: 0.66, hh: 0.56},
+  seeds:     {hw: 0.62, hh: 0.62}
 };
 // painter's order: later slips rest on earlier ones
 // A new study gets a slip here, a kind above, and a place in both layouts.
-const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures'];
+const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds'];
 
 function compose(){
   const L = DW/DH > 1.05 ? LAYOUTS.wide : LAYOUTS.tall;
