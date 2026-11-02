@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kintsugi — mended in gold</title>
+<script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#efece4;color:var(--ink);overflow:hidden;font-family:'Lora',serif}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;cursor:pointer}
+.bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:16px;font-style:italic;font-size:14px;color:var(--soft);white-space:nowrap}
+.bar button{font:inherit;color:var(--soft);background:none;border:none;cursor:pointer}
+.bar button:hover,.bar button:focus-visible{color:var(--ink)}
+.back{position:fixed;left:20px;top:18px;font-style:italic;font-size:13px;color:var(--soft);text-decoration:none}
+.back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="back" href="../">Protolab</a>
+<div id="stage"></div>
+<div class="bar"><span id="count">strike the bowl</span><button id="fresh">another bowl</button></div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// KINTSUGI — a bowl that keeps its breaks.
+//
+// The Japanese repair of broken ceramics with lacquer dusted in gold, from
+// the fifteenth century on: the break is not hidden but made the most
+// precious line on the pot. A bowl repaired this way carries its history on
+// its face.
+//
+// Seen from above, the bowl is a height field: rim, well and foot. Its
+// glaze is glossy and crackled finely all over, and pools deeper in the
+// well. Strike it and cracks run from the blow, wandering, forking, stopping
+// at the rim or at an earlier break. A moment later they are mended: each
+// crack becomes a raised seam of gold that flares as the lamp, following
+// the cursor, passes over it.
+// ═══════════════════════════════════════════════════════════════
+
+const GLAZES = [
+  {name: 'celadon', c: [150, 178, 160], deep: [92, 128, 116], rim: [196, 206, 186]},
+  {name: 'tenmoku', c: [58, 40, 30],    deep: [24, 18, 16],   rim: [146, 96, 52]},
+  {name: 'shino',   c: [232, 222, 206], deep: [214, 190, 170], rim: [196, 136, 104]},
+  {name: 'ruri',    c: [40, 66, 120],   deep: [20, 34, 74],   rim: [120, 150, 190]}
+];
+const GOLD = [214, 170, 82];
+const MATS = [
+  {ambient: 1, aoLo: 1, exposure: 1, gloss: 0, sheen: 0},                                     // the table: untouched
+  {ambient: 0.34, aoLo: 0.45, exposure: 1.12, gloss: 0.62, sheen: 0.12, env: true, envLo: 0.6, envHi: 1.4},  // glaze
+  {ambient: 0.20, aoLo: 0.4, exposure: 1.32, gloss: 0.82, sheen: 0.18, env: true, envLo: 0.3, envHi: 1.8},   // gold
+  {ambient: 0.48, aoLo: 0.5, exposure: 1.0, gloss: 0.02, sheen: 0.02}                                        // bare clay at the foot
+];
+
+let DW, DH, SS, PW, PH, F, art, artCtx, lo = null, ready = false, need = false, moving = 0;
+let cov, hgt, nrm, colorMap, matMap;
+let cracks = [], strikes = 0, seed = 1480, glaze = GLAZES[0], mending = 0;
+let lamp = {x: 0, y: 0}, lampT = {x: 0, y: 0};
+
+const bowl = () => { const R = Math.min(DW, DH)*0.38; return {cx: DW/2, cy: DH/2 - 10, R}; };
+
+// ── breaking ──────────────────────────────────────────────────
+function strike(x, y){
+  const B = bowl(), rng = Relief.makeRng(seed*7 + strikes*131);
+  const n = 3 + Math.floor(rng()*3);
+  const born = [];
+  for(let k=0;k<n;k++) run(x, y, rng()*Math.PI*2, B, rng, born, 0);
+  cracks.push(...born.map(c => ({pts: c, mended: false})));
+  strikes++;
+  build();
+  // the lacquer goes on a moment later
+  clearTimeout(mending);
+  mending = setTimeout(() => { cracks.forEach(c => c.mended = true); build(); }, 900);
+  document.getElementById('count').textContent = strikes === 1 ? 'mended once' : 'mended ' + strikes + ' times';
+}
+function hitsOld(x, y){
+  for(const c of cracks){ const p = c.pts; for(let i=0;i<p.length;i+=2){ const dx = p[i] - x, dy = p[i+1] - y; if(dx*dx + dy*dy < 9) return true; } }
+  return false;
+}
+function run(x, y, a, B, rng, out, depth){
+  const pts = [x, y];
+  const step = B.R*0.012;
+  for(let i=0;i<400;i++){
+    // a crack runs nearly straight, jagged in small kinks, and keeps its heading
+    const kink = (rng() - 0.5)*0.9;
+    x += Math.cos(a + kink)*step; y += Math.sin(a + kink)*step;
+    a += (rng() - 0.5)*0.06;
+    pts.push(x, y);
+    if(Math.hypot(x - B.cx, y - B.cy) > B.R*0.985) break;   // out through the rim
+    if(i > 6 && hitsOld(x, y)) break;                        // or into an older break
+    if(depth < 1 && i > 10 && rng() < 0.018) run(x, y, a + (rng() < 0.5 ? 1 : -1)*(0.5 + rng()*0.6), B, rng, out, depth + 1);
+  }
+  out.push(pts);
+}
+
+// ── the field ─────────────────────────────────────────────────
+function build(){
+  const B = bowl(), at = c => c.setTransform(SS, 0, 0, SS, 0, 0);
+  const body = F.raster(c => { at(c); c.beginPath(); c.arc(B.cx, B.cy, B.R, 0, 7); c.fill(); });
+  const open = F.raster(c => { at(c); c.lineCap = 'round'; c.lineJoin = 'round';
+    cracks.filter(k => !k.mended).forEach(k => { c.lineWidth = 1.6; c.beginPath(); for(let i=0;i<k.pts.length;i+=2) c.lineTo(k.pts[i], k.pts[i+1]); c.stroke(); }); });
+  const gold = F.raster(c => { at(c); c.lineCap = 'round'; c.lineJoin = 'round';
+    cracks.filter(k => k.mended).forEach(k => {
+      // lacquer is laid by hand: thicker where the brush paused
+      for(let i=2;i<k.pts.length;i+=2){
+        c.lineWidth = 2.4 + 1.6*Math.abs(Math.sin(i*0.07 + k.pts[0]));
+        c.beginPath(); c.moveTo(k.pts[i-2], k.pts[i-1]); c.lineTo(k.pts[i], k.pts[i+1]); c.stroke();
+      }
+    }); });
+  const goldS = F.blur(gold, Math.max(1, Math.round(1.1*SS)), 2);
+  const n2 = PW*PH;
+  cov = body; hgt = new Float32Array(n2); colorMap = new Uint8ClampedArray(n2*3); matMap = new Uint8Array(n2);
+  const surf = new Float32Array(n2);
+  const table = [239, 236, 228];
+  for(let y=0;y<PH;y++){
+    for(let x=0;x<PW;x++){
+      const i = y*PW + x, X = x/SS, Y = y/SS, o = i*3;
+      const d = Math.hypot(X - B.cx, Y - B.cy)/B.R;
+      if(body[i] < 0.01){
+        colorMap[o] = table[0]; colorMap[o+1] = table[1]; colorMap[o+2] = table[2]; surf[i] = 0; hgt[i] = 1; continue;
+      }
+      // profile: a rounded rim, a falling wall, a flat well, the foot ring seen through it
+      let h;
+      if(d > 0.90) h = 0.95 - Math.pow((d - 0.93)/0.07, 2)*0.6;
+      else h = 0.15 + 0.8*Math.pow(d/0.9, 2.2);
+      const foot = d < 0.30 && d > 0.27 ? 0.03 : 0;
+      h += foot;
+      // the glaze: pooled deep in the well, thinning to the rim's colour at the lip
+      const t = Math.min(1, Math.max(0, (d - 0.15)/0.75));
+      let c = [glaze.deep[0] + (glaze.c[0] - glaze.deep[0])*t, glaze.deep[1] + (glaze.c[1] - glaze.deep[1])*t, glaze.deep[2] + (glaze.c[2] - glaze.deep[2])*t];
+      if(d > 0.86){ const r = Math.min(1, (d - 0.86)/0.12); c = c.map((v, j) => v + (glaze.rim[j] - v)*r*0.8); }
+      // craquelure: a fine net where the glaze shrank as it cooled
+      const v = Math.abs(noise(X*0.045, Y*0.045) - 0.5), v2 = Math.abs(noise(X*0.11 + 40, Y*0.11) - 0.5);
+      const craze = (v < 0.012 ? 1 - v/0.012 : 0)*0.7 + (v2 < 0.008 ? 1 - v2/0.008 : 0)*0.35;
+      c = c.map(u => u*(1 - craze*0.22));
+      // speckle in the body showing through
+      if(noise(X*0.9, Y*0.9) > 0.8) c = c.map(u => u*0.86);
+      let m = 1;
+      if(open[i] > 0.1){ c = c.map(u => u*(1 - open[i]*0.75)); h -= open[i]*0.05; }
+      if(goldS[i] > 0.05){
+        const g = Math.min(1, goldS[i]*1.5);
+        c = c.map((u, j) => u + (GOLD[j] - u)*g);
+        if(g > 0.45) m = 2;
+        h += goldS[i]*0.05 + (noise(X*0.7, Y*0.7) - 0.5)*0.004*g;
+      }
+      colorMap[o] = c[0]; colorMap[o+1] = c[1]; colorMap[o+2] = c[2];
+      matMap[i] = m; surf[i] = h*0.9; hgt[i] = 0.55 + 0.45*Math.min(1, h);
+    }
+  }
+  nrm = F.normals(cov, surf, 60*SS);
+  makeLo();
+  need = true;
+}
+
+const LO = 3;
+function makeLo(){
+  const w = Math.floor(PW/LO), h = Math.floor(PH/LO), n = w*h;
+  lo = {F: Relief.field(w, h), cov: new Float32Array(n), hgt: new Float32Array(n), matMap: new Uint8Array(n),
+        nX: new Float32Array(n), nY: new Float32Array(n), nZ: new Float32Array(n), colorMap: new Uint8ClampedArray(n*3)};
+  lo.cv = Relief.makeCanvas(w, h); lo.ctx = lo.cv.getContext('2d');
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const i = y*w + x, a = (y*LO)*PW + x*LO;
+    lo.cov[i] = cov[a]; lo.hgt[i] = hgt[a]; lo.matMap[i] = matMap[a];
+    lo.nX[i] = nrm.nX[a]; lo.nY[i] = nrm.nY[a]; lo.nZ[i] = nrm.nZ[a];
+    lo.colorMap[i*3] = colorMap[a*3]; lo.colorMap[i*3+1] = colorMap[a*3+1]; lo.colorMap[i*3+2] = colorMap[a*3+2];
+  }
+}
+function shade(preview){
+  const k = preview ? 1/LO : 1;
+  (preview ? lo.F : F).shade(preview ? lo.ctx : artCtx, {
+    cov: preview ? lo.cov : cov, hgt: preview ? lo.hgt : hgt, hMax: 1,
+    nX: preview ? lo.nX : nrm.nX, nY: preview ? lo.nY : nrm.nY, nZ: preview ? lo.nZ : nrm.nZ,
+    colorMap: preview ? lo.colorMap : colorMap, matMap: preview ? lo.matMap : matMap, materials: MATS,
+    light: {x: lamp.x*SS*k, y: lamp.y*SS*k, h: 340*SS*k, radius: 1500*SS*k, color: '#fff6e8'},
+    wrap: 0.35, specColor: '#fff8e6', tone: {shadow: '#1d1a17', high: '#fffaf0', amount: 0.04}
+  });
+}
+
+// ── p5 ────────────────────────────────────────────────────────
+function measure(){
+  DW = document.documentElement.clientWidth; DH = window.innerHeight;
+  SS = Math.max(1, Math.min(Math.min(devicePixelRatio || 1, 2), Math.sqrt(3.6e6/(DW*DH))));
+  PW = Math.round(DW*SS); PH = Math.round(DH*SS);
+  F = Relief.field(PW, PH); art = Relief.makeCanvas(PW, PH); artCtx = art.getContext('2d');
+}
+function setup(){
+  pixelDensity(1); measure();
+  createCanvas(PW, PH).parent('stage'); fit();
+  noiseSeed(seed);
+  lamp = {x: DW*0.32, y: DH*0.22}; lampT = {x: DW*0.38, y: DH*0.28};
+  if(DW > 2){ build(); ready = true; }
+}
+function fit(){ const c = document.querySelector('#stage canvas'); c.style.width = DW + 'px'; c.style.height = DH + 'px'; }
+function windowResized(){ measure(); resizeCanvas(PW, PH); fit(); cracks = []; strikes = 0; if(DW > 2){ build(); ready = true; } }
+function mouseMoved(){ lampT = {x: mouseX/SS, y: mouseY/SS}; }
+function mousePressed(e){
+  if(!ready || (e && e.target && e.target.tagName !== 'CANVAS')) return;
+  const B = bowl(), x = mouseX/SS, y = mouseY/SS;
+  if(Math.hypot(x - B.cx, y - B.cy) < B.R*0.95) strike(x, y);
+}
+function draw(){
+  if(!ready) return;
+  const dx = lampT.x - lamp.x, dy = lampT.y - lamp.y;
+  if(Math.abs(dx) + Math.abs(dy) > 0.8){ lamp.x += dx*0.12; lamp.y += dy*0.12; moving = 5; need = true; }
+  if(need){ if(moving > 0){ shade(true); moving--; } else { shade(false); need = false; } }
+  const g = drawingContext;
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, PW, PH);
+  // a soft contact shadow where the bowl sits on the table
+  const B = bowl();
+  g.save(); g.fillStyle = 'rgba(40,32,24,0.18)'; g.filter = 'blur(' + (14*SS) + 'px)';
+  g.beginPath(); g.ellipse((B.cx + 8)*SS, (B.cy + 14)*SS, B.R*SS, B.R*SS*0.98, 0, 0, 7); g.fill(); g.restore();
+  g.imageSmoothingQuality = 'high';
+  if(moving > 0 && lo) g.drawImage(lo.cv, 0, 0, PW, PH); else g.drawImage(art, 0, 0);
+}
+document.getElementById('fresh').onclick = () => {
+  seed = Math.floor(Math.random()*1e5); glaze = GLAZES[(GLAZES.indexOf(glaze) + 1) % GLAZES.length];
+  cracks = []; strikes = 0; noiseSeed(seed); document.getElementById('count').textContent = 'strike the bowl';
+  build();
+};
+</script>
+</body>
+</html>
