@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2f2a24;--soft:#6a645b;--line:rgba(47,42,36,.14);--sheet:#efece4}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--sheet);color:var(--ink);font-family:'Lora',serif;display:grid;grid-template-columns:232px 1fr;height:100dvh;overflow:hidden}
+nav{display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0}
+.top{padding:18px 20px 12px;display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-style:italic;color:var(--soft)}
+.top a{color:inherit;text-decoration:none}
+.top a:hover,.top a:focus-visible{color:var(--ink)}
+ol{list-style:none;overflow-y:auto;flex:1;padding:0 8px 16px}
+li a{display:block;padding:7px 12px;border-radius:2px;color:var(--ink);text-decoration:none;font-size:15px;line-height:1.25}
+li a small{display:block;font-size:12px;font-style:italic;color:var(--soft);margin-top:1px}
+li a:hover{background:rgba(47,42,36,.05)}
+li a[aria-current="true"]{background:rgba(47,42,36,.09);font-weight:500}
+a:focus-visible,button:focus-visible{outline:1px dashed var(--soft);outline-offset:1px}
+main{display:grid;grid-template-rows:1fr auto;min-width:0;min-height:0}
+iframe{width:100%;height:100%;border:0;display:block;background:var(--sheet)}
+.foot{display:flex;align-items:baseline;gap:14px;padding:9px 18px;border-top:1px solid var(--line);font-size:14px;font-style:italic;color:var(--soft)}
+#note{flex:1;min-width:0}
+.foot button,.foot a{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-decoration:none;white-space:nowrap}
+.foot button:hover,.foot a:hover{color:var(--ink)}
+@media (max-width:720px){
+  body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  nav{border-right:0;border-bottom:1px solid var(--line)}
+  .top{padding:10px 16px 2px}
+  ol{display:flex;overflow-x:auto;overflow-y:hidden;padding:0 8px 8px;flex:none}
+  li{flex:none}
+  li a{white-space:nowrap;padding:6px 10px}
+  li a small{display:none}
+  .foot{padding:8px 16px;gap:12px}
+  #note{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+</style>
+</head>
+<body>
+<nav aria-label="Studies">
+  <div class="top"><a href="../">Protolab</a><span id="count"></span></div>
+  <ol id="list"></ol>
+</nav>
+<main>
+  <iframe id="view" title="Study"></iframe>
+  <div class="foot">
+    <span id="note" aria-live="polite"></span>
+    <button id="prev" aria-label="Previous study">←</button>
+    <button id="next" aria-label="Next study">→</button>
+    <a id="full">full page</a>
+  </div>
+</main>
+<script>
+// The newer studies, oldest idea first, each running live: only the one on
+// show is loaded, because several relit height fields at once would crawl.
+const STUDIES = [
+  ['stencil', 'Hands on the Wall', 'c. 40,000 BCE', 'Press and hold to blow pigment around a hand; the torch follows the cursor.'],
+  ['obscura', 'Camera Obscura', 'c. 400 BCE', 'Move the pinhole slider, trace in pencil, then close the shutter.'],
+  ['rosetta', 'Three Hands', '196 BCE', 'Type a line and the stone carves it three ways. Move the cursor to rake the light.'],
+  ['girih', 'Girih', '14th century', 'Drag the angle slider to reshape the stars. The lamp follows the cursor.'],
+  ['gilded', 'Gilded', '15th century', 'Move the cursor to make the gold flare. Type any initial.'],
+  ['kintsugi', 'Kintsugi', '15th century', 'Click the bowl to break it; it mends in gold.'],
+  ['quipu', 'Quipu', '15th century', 'Type numbers and they are tied in knotted cord.'],
+  ['ebru', 'Ebru', '16th century', 'Click to drop ink, drag to pull it, then comb or rake.'],
+  ['mezzotint', 'The Black Manner', '1642', 'Drag to burnish light out of the plate, then pull a print.'],
+  ['burin', 'One Line', '1649', 'Move the cursor and the single line re-cuts itself.'],
+  ['sashiko', 'One Stitch', 'Edo period', 'Type two words and their bits set the stitches.'],
+  ['chladni', 'Sound Figures', '1787', 'Drag across the plate to change the note.'],
+  ['jacquard', 'Damask', '1804', 'Move the cursor to the side: the flower appears only in raking light.'],
+  ['daguerreotype', 'Mirror with a Memory', '1839', 'Move the cursor over the plate to turn it negative.'],
+  ['cyanotype', 'Sun Print', '1843', 'Drag the seaweed, expose, then wash.'],
+  ['kymograph', 'Smoked Drum', '1847', 'Move the cursor up and down, or leave it to record a heartbeat.'],
+  ['nature-print', 'Nature Printing', '1853', 'Move the cursor over the lead, then pull a print.'],
+  ['rings', 'Rings', 'c. 1900', 'Hover a ring to read its year.'],
+  ['turing', 'Morphogenesis', '1952', 'Drag to seed new growth; change the feed and kill rates below.'],
+  ['phyllotaxis', 'Golden Angle', '1979', 'Drag sideways to turn the angle by fractions of a degree.']
+];
+
+const view = document.getElementById('view'), list = document.getElementById('list'), note = document.getElementById('note'), full = document.getElementById('full');
+document.getElementById('count').textContent = STUDIES.length + ' studies';
+STUDIES.forEach(([slug, name, when]) => {
+  const li = document.createElement('li'), a = document.createElement('a');
+  a.href = '#' + slug; a.textContent = name;
+  const s = document.createElement('small'); s.textContent = when; a.appendChild(s);
+  li.appendChild(a); list.appendChild(li);
+});
+
+const indexOfHash = () => Math.max(0, STUDIES.findIndex(s => s[0] === location.hash.slice(1)));
+function show(){
+  const i = indexOfHash(), [slug, name, when, how] = STUDIES[i];
+  view.src = '../' + slug + '/'; view.title = name;
+  document.title = name + ' · Studies';
+  note.textContent = how; full.href = '../' + slug + '/';
+  [...list.querySelectorAll('a')].forEach((a, k) => {
+    a.setAttribute('aria-current', k === i);
+    if(k === i) a.scrollIntoView({block: 'nearest', inline: 'nearest'});
+  });
+}
+function step(d){ location.hash = STUDIES[(indexOfHash() + d + STUDIES.length) % STUDIES.length][0]; }
+document.getElementById('prev').onclick = () => step(-1);
+document.getElementById('next').onclick = () => step(1);
+addEventListener('hashchange', show);
+
+// arrow keys work whether focus is out here or inside the study, unless typing
+function keys(e){
+  if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  if(e.key === 'ArrowLeft') step(-1);
+  if(e.key === 'ArrowRight') step(1);
+}
+addEventListener('keydown', keys);
+view.addEventListener('load', () => {
+  try {
+    const w = view.contentWindow, back = w.document.querySelector('.back');
+    if(back) back.style.display = 'none';                // the viewer has its own way home
+    w.addEventListener('keydown', keys);
+  } catch(e){}
+});
+show();
+</script>
+</body>
+</html>

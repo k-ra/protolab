@@ -7,6 +7,7 @@ running log of experiments in simulating pressings, indentations, print processe
 ## studies
 
 - [cover](https://k-ra.github.io/protolab/): the sheet, with every study resting on it as a paper slip. pick one up, carry it, tap it to open.
+- [studies](studies/): the newer studies below, one at a time, live, oldest idea first. arrow keys move between them.
 - [the sheet](protolab/), [clippings](canvas/), [specimen](flowers/), [the press](press/), [sigil pressure](wax-seal/), [san francisco, round](twin-peaks/)
 - [three hands](rosetta/): one decree carved three ways into granodiorite, chalked
 - [ebru](ebru/): ottoman marbling, computed exactly with drop and tine transforms
