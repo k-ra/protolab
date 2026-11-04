@@ -22,15 +22,15 @@ li a small{display:block;font-size:12px;font-style:italic;color:var(--soft);marg
 li a:hover{background:rgba(47,42,36,.05)}
 li a[aria-current="true"]{background:rgba(47,42,36,.09);font-weight:500}
 a:focus-visible,button:focus-visible{outline:1px dashed var(--soft);outline-offset:1px}
-main{display:grid;grid-template-rows:1fr auto;min-width:0;min-height:0}
+main{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;min-width:0;min-height:0}
 iframe{width:100%;height:100%;border:0;display:block;background:var(--sheet)}
 .foot{display:flex;align-items:baseline;gap:14px;padding:9px 18px;border-top:1px solid var(--line);font-size:14px;font-style:italic;color:var(--soft)}
 #note{flex:1;min-width:0}
 .foot button,.foot a{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-decoration:none;white-space:nowrap}
 .foot button:hover,.foot a:hover{color:var(--ink)}
 @media (max-width:720px){
-  body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
-  nav{border-right:0;border-bottom:1px solid var(--line)}
+  body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+  nav{border-right:0;border-bottom:1px solid var(--line);min-width:0}
   .top{padding:10px 16px 2px}
   ol{display:flex;overflow-x:auto;overflow-y:hidden;padding:0 8px 8px;flex:none}
   li{flex:none}
@@ -98,8 +98,13 @@ function show(){
   note.textContent = how; full.href = '../' + slug + '/';
   [...list.querySelectorAll('a')].forEach((a, k) => {
     a.setAttribute('aria-current', k === i);
-    if(k === i) a.scrollIntoView({block: 'nearest', inline: 'nearest'});
   });
+  reveal();
+}
+// fonts arriving can shift the list, so this also runs again once the study loads
+function reveal(){
+  const a = list.querySelector('[aria-current="true"]');
+  if(a) a.scrollIntoView({block: 'nearest', inline: 'center'});
 }
 function step(d){ location.hash = STUDIES[(indexOfHash() + d + STUDIES.length) % STUDIES.length][0]; }
 document.getElementById('prev').onclick = () => step(-1);
@@ -114,6 +119,7 @@ function keys(e){
 }
 addEventListener('keydown', keys);
 view.addEventListener('load', () => {
+  reveal();
   try {
     const w = view.contentWindow, back = w.document.querySelector('.back');
     if(back) back.style.display = 'none';                // the viewer has its own way home
