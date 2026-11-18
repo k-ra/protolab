@@ -14,7 +14,7 @@ running log of experiments in simulating pressings, indentations, print processe
 - [sun print](cyanotype/): algae photograms after anna atkins, exposed and washed
 - [gilded](gilded/): a raised gold initial on lapis, acanthus in the margins
 - [one line](burin/): a single spiral engraving after claude mellan, re-cut as the light moves
-- [kintsugi](kintsugi/): a glazed bowl that keeps its breaks in gold
+- [kintsugi](kintsugi/): a glazed surface that keeps its breaks in gold, seeping out from each blow
 - [smoked drum](kymograph/): a kymograph scratching through soot
 - [girih](girih/): hankin strapwork carved in stucco
 - [damask](jacquard/): silk woven from punched cards; the flower exists only in the light
