@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sky Fabric · Grid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#141417;--fg:#e9e9ea;--dim:rgba(233,233,234,.55);--line:rgba(255,255,255,.12)}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font:400 12px/1.4 Inter,system-ui,sans-serif}
+  header{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:12px 16px;background:rgba(20,20,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  h1{margin:0 8px 0 0;font:500 11px/1 Inter,system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase}
+  .group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .group > span{color:var(--dim);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;margin-right:2px}
+  button,select{all:unset;cursor:pointer;padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--fg);font-size:11.5px}
+  button:hover,select:hover{border-color:rgba(255,255,255,.35)}
+  button[aria-pressed=true]{background:var(--fg);color:#111;border-color:var(--fg)}
+  input[type=range]{width:140px;accent-color:#ddd}
+  output{min-width:62px;color:var(--dim);font-variant-numeric:tabular-nums}
+  .grid{display:grid;grid-template-columns:repeat(var(--cols,4),1fr);gap:10px;padding:12px 16px 24px}
+  figure{margin:0;position:relative;border-radius:10px;overflow:hidden;background:#000;aspect-ratio:16/10}
+  iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+  figcaption{position:absolute;left:10px;bottom:8px;pointer-events:none;font-size:11px;letter-spacing:.04em;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+  figure a{position:absolute;right:8px;top:8px;opacity:0;transition:opacity .2s;color:#fff;font-size:10.5px;text-decoration:none;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.35)}
+  figure:hover a{opacity:.9}
+  .note{padding:0 16px 20px;color:var(--dim);font-size:11px}
+  @media (max-width:900px){.grid{--cols:2}}
+  @media (max-width:520px){.grid{--cols:1}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Sky Fabric · every weather</h1>
+  <div class="group" id="clock"><span>Time</span></div>
+  <div class="group"><input type="range" id="hour" min="0" max="24" step="0.25"><output id="hourOut"></output></div>
+  <div class="group"><span>Hang</span><select id="hang"></select></div>
+  <div class="group"><span>Columns</span><button data-cols="3">3</button><button data-cols="4">4</button><button data-cols="5">5</button></div>
+</header>
+<div class="grid" id="grid"></div>
+<p class="note">Each cell is the live piece running one forecast, using the tweaks saved in this browser (size, whimsy, colours…). Hover a cell to open it full screen.</p>
+<script type="module">
+import { PRESETS, PRESET_ORDER } from './js/weather.js';
+
+const HANGS = { web: 'Web of strings', corners: 'Four corners', three: 'Three strings', two: 'Two corners', one: 'One thread', side: 'Like a flag' };
+const CLOCKS = [['forecast', 'Forecast'], [9, 'Morning'], [12.5, 'Noon'], [15.5, 'Golden'], [16.75, 'Sunset'], [17.4, 'Dusk'], [23.75, 'Night']];
+const state = { clock: 'forecast', hang: 'web', cols: 4 };
+try { Object.assign(state, JSON.parse(localStorage.getItem('skyfabric:grid') || '{}')); } catch {}
+const save = () => { try { localStorage.setItem('skyfabric:grid', JSON.stringify(state)); } catch {} };
+
+const fmt = (h) => { const d = new Date(); d.setHours(0, 0, 0, 0); return new Date(d.getTime() + h * 3600e3).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
+const $ = (s) => document.querySelector(s);
+
+// controls
+for (const [v, label] of CLOCKS) {
+  const b = document.createElement('button'); b.textContent = label; b.dataset.clock = v;
+  b.onclick = () => { state.clock = v; apply(); };
+  $('#clock').append(b);
+}
+$('#hour').oninput = (e) => { state.clock = +e.target.value; mark(); clearTimeout(apply.t); apply.t = setTimeout(apply, 350); };
+for (const [k, l] of Object.entries(HANGS)) $('#hang').insertAdjacentHTML('beforeend', `<option value="${k}">${l}</option>`);
+$('#hang').onchange = (e) => { state.hang = e.target.value; apply(); };
+for (const b of document.querySelectorAll('[data-cols]')) b.onclick = () => { state.cols = +b.dataset.cols; mark(); save(); };
+
+function mark() {
+  for (const b of document.querySelectorAll('[data-clock]')) b.setAttribute('aria-pressed', String(b.dataset.clock === String(state.clock)));
+  for (const b of document.querySelectorAll('[data-cols]')) b.setAttribute('aria-pressed', String(+b.dataset.cols === state.cols));
+  $('#hour').value = state.clock === 'forecast' ? 12 : state.clock;
+  $('#hourOut').textContent = state.clock === 'forecast' ? 'as forecast' : fmt(state.clock);
+  $('#hang').value = state.hang;
+  $('#grid').style.setProperty('--cols', state.cols);
+}
+
+// cells: live + every preset
+const cells = PRESET_ORDER.map((key) => {
+  const fig = document.createElement('figure');
+  fig.innerHTML = `<iframe loading="lazy" title="${key}"></iframe><figcaption>${key === 'live' ? 'Live, here' : PRESETS[key].label}</figcaption><a target="_blank" rel="noopener">open ↗</a>`;
+  $('#grid').append(fig);
+  return { key, frame: fig.querySelector('iframe'), link: fig.querySelector('a') };
+});
+function apply() {
+  mark(); save();
+  for (const c of cells) {
+    const q = new URLSearchParams({ mood: c.key, hang: state.hang });
+    if (state.clock !== 'forecast') q.set('clock', state.clock);
+    c.link.href = `index.html?${q}`;
+    q.set('embed', '');
+    const src = `index.html?${q}`;
+    if (c.frame.getAttribute('src') !== src) c.frame.src = src;
+  }
+}
+apply();
+</script>
+</body>
+</html>
