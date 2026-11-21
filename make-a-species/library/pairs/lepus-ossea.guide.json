@@ -1,0 +1,77 @@
+{
+  "name": "Lepus ossea",
+  "common": "the bone hare",
+  "note": "A speculative field note written by Claude. The species is invented; the natural history of every part it is made from is real.",
+  "lineage": "The bone hare is the youngest animal on earth and also among the oldest. Its haunches are foraminifera, single-celled shell-builders whose fossil record runs back more than 500 million years and whose dead shells became the chalk of whole coastlines. Its ears come from two survivors: the tarpon, whose lineage is shared with eels and which still gulps air from the surface through a lung-like swim bladder, and the velvet worm, whose soft-legged relatives were already hunting in Cambrian seas. Its ribs and feet were borrowed from dragonflies, whose ancestors, the griffinflies, flew Carboniferous swamps with wings as wide as an eagle's. In the bone hare these deep-time lines meet, as if evolution had finished early and started assembling instead of branching.",
+  "habitat": "Quartz gravel flats at the edge of seasonal pools, where window plants grow sunk into the ground and only their translucent leaf tips show. The bone hare lives the same way. It rests half-buried, and its chest, made of the window leaves of Haworthia, lets light down into its body while the rest stays cool beneath the stones. Beard lichens, which only grow where the air is clean, line its ribs, so it is found only where the air has stayed unpolluted.",
+  "behaviour": "At dawn it crawls, not hops: diagonal legs stepping in turn while the whole spine ripples sideways like a salamander's. Its vertebrae are slime moulds, and they keep the slow rhythmic streaming of a plasmodium, so the body seems to flow as much as walk. When the pools dry it does what its tardigrade eyes and vertebrae know how to do: it draws in, dries out and waits, sometimes for years. When the thermals rise it raises its ears, opens the dragonfly membranes of its feet, and flies low and level over the flats, its shadow passing across the window plants.",
+  "partsByName": {
+    "Stemonitis fusca": {
+      "role": "vertebra",
+      "fact": "Chocolate tube slime: a slime mould whose plasmodium streams back and forth in a slow rhythm."
+    },
+    "Lycogala epidendrum": {
+      "role": "tail and vertebra",
+      "fact": "Wolf's milk: a slime mould fruiting as pink beads full of paste-like spores on rotting wood."
+    },
+    "Scleropages formosus": {
+      "role": "hind foot",
+      "fact": "Asian arowana: a 'bony-tongued' fish of a very old lineage; the males brood eggs in their mouths."
+    },
+    "Dionaea muscipula": {
+      "role": "vertebra",
+      "fact": "Venus flytrap: a snap trap that grows wild only in the coastal Carolinas."
+    },
+    "Sternocera pulchra": {
+      "role": "toe",
+      "fact": "Jewel beetle: iridescent wing cases long used as sequins in beetle-wing textiles."
+    },
+    "Megalops atlanticus": {
+      "role": "ear and toe",
+      "fact": "Atlantic tarpon: an ancient eel-related fish that gulps air at the surface through a lung-like swim bladder."
+    },
+    "Peripatoides aurorbis": {
+      "role": "ear and toe",
+      "fact": "Velvet worm: soft-legged hunters that trap prey with jets of slime; their relatives appear in Cambrian rocks."
+    },
+    "Hypsibius dujardini": {
+      "role": "eye and vertebra",
+      "fact": "Tardigrade: a microscopic water bear and a laboratory model for surviving extremes."
+    },
+    "Haworthia cooperi pilifera": {
+      "role": "chest",
+      "fact": "Window haworthia: a South African succulent whose translucent leaf tips let light into leaves buried in the soil."
+    },
+    "Usnea longissima": {
+      "role": "rib",
+      "fact": "Methuselah's beard lichen: a fungus and alga living as one, found only where the air is clean."
+    },
+    "Lophorina latipennis": {
+      "role": "foreleg",
+      "fact": "Greater lophorina: a bird-of-paradise whose super-black display feathers absorb almost all light."
+    }
+  },
+  "partsByQuery": {
+    "Category:Foraminifera": {
+      "role": "haunch",
+      "fact": "Foraminifera: single-celled organisms that build chambered shells; their fossils record more than 500 million years of ocean history."
+    },
+    "Category:Scanning electron microscopic images of pollen": {
+      "role": "skull",
+      "fact": "Sedge pollen, seen through an electron microscope: wind-carried grains whose shapes identify the plant that made them."
+    },
+    "Category:Anisoptera wings": {
+      "role": "rib, hind foot and toe",
+      "fact": "Dragonfly wing: a lineage of fliers whose ancestors, the griffinflies, had wings as wide as an eagle's."
+    },
+    "Category:Zygoptera wings": {
+      "role": "lobe and vertebra",
+      "fact": "Damselfly wing: the slender cousins of dragonflies, which fold their wings along the body at rest."
+    },
+    "sundew macro": {
+      "role": "toe",
+      "fact": "Round-leaved sundew: a carnivorous plant whose glistening tentacles catch insects on sticky dew."
+    }
+  },
+  "mythology": "The people who walk the quartz flats say the bone hare was gathered after a flood. When the water went down it left eighteen things on the gravel: the scales of a tarpon, a velvet worm, the wings of dragonflies and damselflies, two slime moulds, one grain of sedge pollen, the shells of foraminifera, and others. None of them could live there alone. So the grain of pollen became a skull to think with. The tarpon gave the ears its habit of listening for air, the dragonflies gave it ribs that could open into wings, and the foraminifera, who remember every sea they have lived in, became the haunches it sits on. On dry nights it goes perfectly still, like the water bears in its eyes, and waits for the flood that will one day come back and take it apart."
+}

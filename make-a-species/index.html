@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Make a Species</title>
+<script>window.STATIC = true; { const q = new URLSearchParams(location.search); if (!q.get("kept") && !q.get("species")) q.set("kept", "lepus-ossea"); q.set("portfolio", q.get("portfolio") === "2" ? "2" : "1"); window.LAZY_CUTS = !q.get("species"); history.replaceState(null, "", "?" + q); }</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,300&family=IBM+Plex+Mono:wght@400&family=Instrument+Sans:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+<style>
+  html, body { margin:0; height:100%; overflow:hidden; background:#000; font:12px/1.4 "IBM Plex Mono", ui-monospace, monospace; }
+  #gl { position:fixed; inset:0; width:100%; height:100%; display:block; }
+  #pad { position:fixed; top:0; bottom:0; right:0; width:50%; cursor:grab; }
+  h1 { position:fixed; left:18px; top:12px; margin:0; font:italic 300 22px "Fraunces", Georgia, serif; color:#2b2b2b; z-index:2; }
+  .half { position:fixed; top:46px; letter-spacing:.12em; text-transform:uppercase; font-size:10px; pointer-events:none; z-index:2; }
+  .half.l { left:18px; color:#8d8a84; } .half.r { left:calc(50% + 18px); color:#7b7f86; }
+  body.darkplate h1 { color:#d8d4cc; } body.darkplate .half.l { color:#6d6964; }
+  .bar { position:fixed; left:16px; bottom:14px; display:flex; gap:6px; z-index:2; }
+  .chip { background:rgba(246,245,242,.7); color:#2a2a2a; border:1px solid #bdbab3; border-radius:999px; padding:5px 11px; font:inherit; cursor:pointer; }
+  a.chip { text-decoration:none; }
+  /* portfolio: one white 16:9 frame, nothing else */
+  /* the specimen drawer and the field guide */
+  #drawer { position:fixed; top:0; right:0; bottom:0; width:min(430px, 92vw); background:#fff; color:#222; border-left:1px solid #e8e8e8; padding:26px 26px 48px; overflow:auto; z-index:6; font:12px/1.55 "IBM Plex Mono", ui-monospace, monospace; box-shadow:-12px 0 40px rgba(0,0,0,.04); }
+  #drawer[hidden] { display:none; }
+  #drawer .x { position:absolute; top:14px; right:16px; border:0; background:none; font-size:20px; color:#999; cursor:pointer; }
+  #drawer h2 { font:italic 300 28px/1.15 "Fraunces", Georgia, serif; margin:0 28px 2px 0; }
+  #drawer .sci { color:#8a8a8a; font-style:italic; }
+  #drawer .role { margin:14px 0 4px; color:#444; }
+  #drawer .fact { margin:0 0 14px; color:#555; }
+  #drawer .figs { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:12px 0 6px; }
+  #drawer figure { margin:0; } #drawer figure img { width:100%; aspect-ratio:1; object-fit:contain; background:#f5f5f3; display:block; }
+  #drawer img.bw { filter:grayscale(1) contrast(1.1); transition:filter .4s; } #drawer img.bw:hover { filter:none; }
+  #drawer figcaption { color:#9a9a9a; font-size:10px; margin-top:4px; }
+  #drawer .box { margin-top:20px; } #drawer h3 { font:500 10px "IBM Plex Mono", monospace; letter-spacing:.14em; text-transform:uppercase; color:#9a9a9a; margin:0 0 8px; }
+  #drawer .box p { margin:0 0 10px; font:300 15px/1.6 "Fraunces", Georgia, serif; color:#2a2a2a; }
+  #drawer .kv { display:grid; grid-template-columns:92px 1fr; gap:8px; margin:3px 0; } #drawer .kv .k { color:#9a9a9a; }
+  #drawer a { color:#222; } #drawer .lineage { color:#777; margin-bottom:10px; } #drawer .note { color:#9a9a9a; font-style:italic; margin-top:22px; } #drawer .muted { color:#9a9a9a; }
+  .gait a { margin-left:16px; color:#9a9a9a; text-decoration:none; cursor:pointer; } .gait a.on { color:#1f1f1f; text-decoration:underline; text-underline-offset:3px; } .gait a.guide { color:#1f1f1f; }
+  .bar .gait { display:flex; align-items:center; } .bar .gait a { color:#c9c9c9; } .bar .gait a.on, .bar .gait a.guide { color:#fff; }
+  #tip { z-index:7; }
+  /* mythology: the same margin column, one typeface; the "made of" rows light their part on the plate */
+  #myth { position:fixed; width:300px; display:none; flex-direction:column; overflow:auto; font:400 13px/1.65 "Instrument Sans", system-ui, sans-serif; color:#161616; z-index:4; scrollbar-width:none; }
+  #myth::-webkit-scrollbar { display:none; } #myth.on { display:flex; }
+  #myth .nm { font-size:20px; line-height:1.25; font-weight:500; letter-spacing:-0.01em; } #myth .common { color:#767676; }
+  #myth section { margin-top:22px; } #myth h3 { margin:0 0 4px; font:400 12px "Instrument Sans", system-ui, sans-serif; color:#767676; } #myth p { margin:0; }
+  #myth .made { display:flex; flex-direction:column; }
+  #myth .row { display:grid; grid-template-columns:92px minmax(0, 1fr); gap:12px; text-align:left; background:none; border:0; border-top:1px solid #efefef; padding:6px 0; font:400 12px/1.45 "Instrument Sans", system-ui, sans-serif; color:#161616; cursor:pointer; }
+  #myth .row .p { color:#767676; } #myth .row:hover .n, #myth .row.lit .n, #myth .row:focus-visible .n { text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
+  #myth .row:focus-visible { outline:none; }
+  #myth .fine { margin-top:22px; font-size:11px; line-height:1.5; color:#8a8a8a; }
+  #myth .close { margin:16px 0 4px; align-self:flex-start; background:none; border:0; padding:0; font:400 12px "Instrument Sans", system-ui, sans-serif; color:#161616; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+  /* A · margin note: a museum label in the white margin; one typeface, two sizes, two greys */
+  #note { position:fixed; width:248px; display:none; flex-direction:column; font:400 13px/1.55 "Instrument Sans", system-ui, sans-serif; color:#161616; z-index:4; }
+  #note.on { display:flex; }
+  #note img { width:248px; height:96px; object-fit:contain; object-position:left center; filter:grayscale(1) contrast(1.05); margin-bottom:20px; }
+  #note .part { color:#767676; }
+  #note .nm { font-size:20px; line-height:1.25; font-weight:500; letter-spacing:-0.01em; margin-top:2px; }
+  #note .sci { font-style:italic; color:#767676; }
+  #note p { margin:14px 0 0; }
+  #note .rec { margin-top:14px; color:#767676; font-size:12px; line-height:1.5; }
+  #note a { margin-top:14px; color:#161616; font-size:12px; text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; cursor:pointer; align-self:flex-start; }
+  #note .hint { margin-top:6px; font-size:11px; color:#9a9a9a; }
+  #leader { position:fixed; inset:0; width:100vw; height:100vh; pointer-events:none; z-index:3; display:none; }
+  #leader path, #leader circle { fill:none; stroke:#b4537a; stroke-width:1; }
+  #caption { display:none; }
+  body.portfolio { background:#fff; overflow:auto; }
+  body.portfolio { --fw:min(calc(100vw - 420px), calc(82vh * 16 / 9)); --fl:calc((100vw - var(--fw) - 300px) / 2); }
+  @media (max-width:900px) { body.portfolio { --fw:92vw; --fl:4vw; } }
+  body.portfolio #frame { position:fixed; top:0; bottom:0; margin:auto 0; left:var(--fl); width:var(--fw); height:auto; aspect-ratio:16 / 9; }
+  body.portfolio #gl { position:absolute; inset:0; }
+  body.portfolio #pad { position:absolute; top:0; bottom:0; right:0; width:50%; border-left:none; }
+  body.pv2 #pad { width:66%; border-left:none; }
+  body.portfolio h1, body.portfolio .half, body.portfolio .bar, body.portfolio #say { display:none; }
+  body.portfolio #caption { display:flex; justify-content:space-between; align-items:baseline; position:fixed; left:var(--fl); margin:0; width:var(--fw); bottom:calc((100vh - var(--fw) * 9 / 16) / 2 - 34px); color:#767676; font:400 12px "Instrument Sans", system-ui, sans-serif; letter-spacing:0; }
+  body.portfolio #caption { flex-wrap:nowrap; gap:16px; } body.portfolio #caption > span:not(.gait) { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } body.portfolio #caption .gait { white-space:nowrap; }
+  body.portfolio #caption b { white-space:nowrap; font:italic 500 15px "Instrument Sans", system-ui, sans-serif; color:#161616; letter-spacing:-0.01em; }
+  body.portfolio .gait a { font-family:"Instrument Sans", system-ui, sans-serif; color:#767676; }
+  /* caption controls: one size, one face; the current motion underlined; one emphasised action; a hairline before what leaves the page */
+  body.portfolio #caption .gait { display:flex; align-items:baseline; gap:28px; }
+  body.portfolio .gait .grp { display:flex; align-items:baseline; gap:16px; }
+  body.portfolio .gait .grp .sl { color:#c9c9c9; margin:0 -8px; }
+  body.portfolio .gait a { margin:0; font:400 13px "Instrument Sans", system-ui, sans-serif; color:#767676; text-decoration:none; text-underline-offset:4px; text-decoration-thickness:1px; }
+  body.portfolio .gait a:hover { color:#161616; }
+  body.portfolio .gait a.on { color:#161616; text-decoration:underline; }
+  body.portfolio .gait a.make { color:#161616; font-weight:500; }
+  body.portfolio .gait .grp:has(a.away) { padding-left:28px; border-left:1px solid #e3e3e3; }
+  body.portfolio #caption > span:not(.gait) { font:400 13px "Instrument Sans", system-ui, sans-serif; color:#767676; } body.portfolio .gait a.on, body.portfolio .gait a.guide { color:#161616; }
+  .chip[aria-pressed="true"] { background:#2a2a2a; color:#f6f5f2; border-color:#2a2a2a; }
+  #say { position:fixed; right:16px; top:14px; color:#7b7f86; z-index:2; }
+  /* scroll: a kept beast's pair, then its folded paper twin on white below */
+  html.scroll, html.scroll body { overflow-y:auto; height:auto; }
+  body.scroll #frame { position:relative; height:100vh; } body.scroll #gl { position:absolute; inset:0; } body.scroll #pad { position:absolute; }
+  body.scroll h1, body.scroll .half, body.scroll #say { position:absolute; } body.scroll .bar { position:absolute; top:calc(100vh - 46px); bottom:auto; }
+  #foldsec { display:none; height:100vh; background:#fff; } body.scroll #foldsec { display:block; } #foldsec iframe { border:0; width:100%; height:100%; display:block; }
+  #tip { position:fixed; pointer-events:none; background:rgba(0,0,0,.75); color:#eee; padding:3px 7px; border-radius:3px; font-size:11px; display:none; z-index:3; }
+</style>
+</head>
+<body>
+<div id="frame"><canvas id="gl"></canvas><div id="pad"></div></div>
+<div id="caption"></div>
+<aside id="drawer" hidden></aside>
+<div id="note" aria-live="polite"></div><div id="myth" role="dialog" aria-label="Mythology"></div><svg id="leader" aria-hidden="true"><path></path><circle r="0"></circle></svg>
+<section id="foldsec"></section>
+<canvas id="cv" width="10" height="10" hidden></canvas>
+<h1 id="name">—</h1><div class="half l">x-ray</div><div class="half r">in motion</div>
+<div class="bar"><a class="chip" href="./?kept=lepus-ossea">Lepus ossea</a><a class="chip" href="./?kept=piscis-vitrea">Piscis vitrea</a><a class="chip" href="pair.html">new creature</a><span style="width:8px"></span><button class="chip" id="echo">motion echoes</button><button class="chip" id="colour">bone white</button><button class="chip" id="reseed">another creature</button></div>
+<div id="say"></div><div id="tip"></div>
+<script>window.cutsReady = new Promise(r => (window.ONBOOT = r));</script>
+<script src="painter.js"></script>
+<script src="lore.js"></script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+await window.cutsReady;
+const Q = new URLSearchParams(location.search), seed = +(window.FIXED_SEED ?? Q.get("seed") ?? 7), R = rng(seed);
+const white = Q.get("white") === "1"; // true colours by default; "bone white" turns every specimen to one colour
+let echoes = Q.get("echo") !== "0";
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+// ---------------- specimens, all turned to one colour so the form carries everything ----------------
+const thin = CUTS.filter(c => c.aspect > 4.2 && c.g.rect < 0.55), longP = shuffle(thin.length > 6 ? thin : CUTS.filter(c => c.aspect > 3 && c.g.rect < 0.65));
+const ribP = [...longP].sort((a, b) => b.aspect - a.aspect).slice(0, 3); // the wing ribs share a few of the cleanest, thinnest specimens, so the wing reads as one structure
+const laceP = shuffle(CUTS.filter(c => /skeleton|sceleton|leaf vein|dry leaf|odonata|anisoptera|zygoptera|wing \(closeup\)|venation|basket star|sea fan/i.test(c.name) && c.g.rect < 0.85 && c.g.fill > 0.3));
+const roundP = shuffle(CUTS.filter(c => c.aspect < 1.45 && c.g.fill > 0.5 && ["shells", "pearls_minerals", "coral_sea", "micro"].includes(c.category)));
+const skullP = shuffle(CUTS.filter(c => /murex|thorny|nautil|argonaut/i.test(c.name)));
+const CELL = 256, COLS = 16, mk = () => { const c = document.createElement("canvas"); c.width = c.height = CELL * COLS; return c; };
+const bone = mk(), ink = mk(), bx = bone.getContext("2d"), ix = ink.getContext("2d"); let cells = 0; const cellInfo = [];
+function addCell(c, vertical = true) { // draw a specimen with its long axis along the cell's v (the piece's length)
+  const k = cells++; if (window.FIXED_IDS) c = CUTS.find(x => x.id === window.FIXED_IDS[k]) || c; // a saved creature keeps its exact specimens
+  const _k = k, col = k % COLS, row = Math.floor(k / COLS), im = c.g.im, rot = (vertical ? Math.PI / 2 : 0) - c.g.theta;
+  const along = Math.abs(Math.cos(c.g.theta)) * im.width + Math.abs(Math.sin(c.g.theta)) * im.height, s = (CELL * 0.98) / Math.max(along, (im.width * im.height) / along * 1.0);
+  for (const [g, filter, rim] of (white ? [[bx, "grayscale(1) brightness(1.25) contrast(1.15)", false], [ix, "grayscale(1) brightness(1.08) contrast(1.35)", true]] : [[bx, "brightness(1.08) saturate(1.05)", false], [ix, "contrast(1.08)", true]])) {
+    g.save(); g.translate(col * CELL + CELL / 2, row * CELL + CELL / 2); g.rotate(rot);
+    if (rim) { g.filter = "drop-shadow(0 0 1.2px #111) drop-shadow(0 0 0.6px #111)"; g.drawImage(im, -im.width * s / 2, -im.height * s / 2, im.width * s, im.height * s); }
+    g.filter = filter; g.drawImage(im, -im.width * s / 2, -im.height * s / 2, im.width * s, im.height * s); g.restore(); }
+  const e = 0.003, uv = { u0: col / COLS + e, u1: (col + 1) / COLS - e, v1: 1 - row / COLS - e, v0: 1 - (row + 1) / COLS + e };
+  // how wide the specimen is relative to its length, so pieces keep the specimen's own proportions
+  const wide = (im.width * im.height * c.g.fill) / (c.g.axisLen * c.g.axisLen);
+  cellInfo[k] = { ...uv, c, wide: Math.min(1, Math.max(0.12, wide * 1.6)) }; return k; }
+
+// ---------------- one creature: a spine; ribs fanning into wings joined by holed membrane; horns; a shrinking tail ----------------
+const S = 18, D = 0.58, pieces = [], NU = 4, NV = 14, SPEC = Q.get("species"), KEPT = Q.get("kept") || (SPEC ? "species-" + SPEC : null);
+const pick = (pool, n) => pool[n % pool.length];
+let keptMeta = null;
+if (!KEPT) {
+  // ---------------- the spine creature: horns, a wing of fanned ribs under one holed membrane per side, a shrinking tail, hooked claws ----------------
+  const ribSpec = i => { // per vertebra: rib length, rest angle (negative = toward the head), curl
+    if (i === 0) return { L: 5.2, a: -2.25, k: 1.35, pool: longP, tag: "horn" };
+    if (i <= 6) { const t = (i - 1) / 5; return { L: 3.4 + 1.5 * Math.sin(Math.PI * t), a: lerp(-0.75, 0.75, t), k: 0.32, pool: ribP, tag: "wing rib" }; }
+    const t = (i - 7) / (S - 8); return { L: lerp(1.9, 0.35, t), a: 0.85 + 0.2 * t, k: 0.75, pool: longP, tag: "tail rib" }; };
+  let lp = 0, rp = 0;
+  pieces.push({ kind: "skull", cell: addCell(skullP[0] || roundP[0], true), size: 1.9 });
+  for (let i = 0; i < S; i++) { const rs = ribSpec(i), cell = addCell(pick(rs.pool, lp++)); // the same specimen on both sides: a true mirror
+    for (const side of [1, -1]) pieces.push({ kind: "rib", key: `${i}`, i, side, ...rs, cell }); }
+  for (let i = 0; i < S; i++) pieces.push({ kind: "vert", i, cell: addCell(pick(roundP, rp++), false), size: lerp(0.62, 0.2, i / (S - 1)) });
+  // (cells added after this line are new since Pennata lucida was saved, so a saved creature keeps its first cells exact)
+  pieces.push({ kind: "jaw", cell: addCell(skullP[1] || skullP[0] || roundP[1], true), size: 1.5 });
+  for (let i = 1; i <= 6; i++) { const rs = ribSpec(i), cell = addCell(pick(longP, lp++));
+    for (const side of [1, -1]) pieces.push({ kind: "rib", key: `${i}b`, i, side, L: rs.L * 0.62, a: rs.a + 0.22, k: 0.5, tag: "wing spine", cell }); }
+  { const cell = addCell(pick(longP, lp++)); for (const side of [1, -1]) pieces.push({ kind: "rib", key: "claw", i: 11, side, L: 3.4, a: 1.15, k: 2.7, tag: "hooked claw", cell }); }
+  { const memb = laceP.filter(c => /skeleton|sceleton|vein|odonata|anisoptera|zygoptera|wing/i.test(c.name)), cell = addCell(memb[0] || laceP[0] || longP[0]); for (const side of [1, -1]) pieces.push({ kind: "wing", side, cell, nu: 10 }); } // one specimen is the whole wing membrane
+} else {
+  // ---------------- a kept beast: its exact saved plate, every piece baked with its saved colour correction ----------------
+  // MAKE A SPECIES: a body plan and its proportions drawn at random, every organ filled by one found specimen
+  const makeSpecies = sd => { const sr = rng(sd * 7919 + 13), plans = [...Object.keys(BEASTS), ...Object.keys(BIG)], plan0 = plans[Math.floor(sr() * plans.length)], plan = plans.includes(Q.get("plan")) ? Q.get("plan") : plan0, u = 100; // ?plan= explores one body plan (same seed, same proportions)
+    const prm = { size: 1, mass: lerp(0.8, 1.3, sr()), limb: lerp(0.75, 1.35, sr()), spread: lerp(0.75, 1.45, sr()), skull: lerp(0.85, 1.25, sr()), ribs: lerp(0.6, 1.5, sr()), machine: 0, pink: sr() };
+    uses.clear(); const r1 = rng(Math.floor(sr() * 1e9)), r2 = rng(Math.floor(sr() * 1e9));
+    const marks = BIG[plan] ? bigBeast(r1, r2, plan, 0, 0, u, prm, true) : beast(r1, plan, 0, 0, u, prm.pink, "dark");
+    return { name: "", meta: { cx: 0, u, plate: "dark", kind: plan, seed: sd, prm }, pieces: marks.map(ser) }; };
+  const K = SPEC ? makeSpecies(+SPEC) : await fetch(`library/kept/${KEPT}.json`).then(r => r.json()); keptMeta = K;
+  const ps = []; for (const p of K.pieces) { const c = await cutById(p.id); if (c) ps.push({ ...p, c }); }
+  const ys = ps.map(p => p.y), y0 = Math.min(...ys), y1 = Math.max(...ys), xmax = Math.max(...ps.map(p => Math.abs(p.x - K.meta.cx) + Math.max(p.sw, p.sh) / 2)), sc = Math.min(10.4 / (y1 - y0), 6.4 / xmax) /* fit the taller or the wider of the two */, ym = (y0 + y1) / 2, ku = (K.meta.u || 80) * sc;
+  for (const p of ps) { const x = (p.x - K.meta.cx) * sc, y = (p.y - ym) * sc, cls = classify(p.tag), side = Math.abs(x) < ku * 0.2 ? 0 : Math.sign(x);
+    const grp = side && ["limb", "wing", "fin", "ear"].includes(cls) ? `${cls}|${side}|${y < 0 ? "f" : "h"}|${(p.tag || "").split(" ")[0]}` : cls === "head" ? "head" : "core";
+    pieces.push({ kind: "card", tag: p.tag, cell: addFlat(p), x, y, w: p.sw * sc, h: p.sh * sc, rot: p.rot, mirror: p.mirror, cls, side, grp, comp: p.comp }); }
+  const groups = new Map(); for (const pc of pieces) { if (!groups.has(pc.grp)) groups.set(pc.grp, []); groups.get(pc.grp).push(pc); }
+  for (const [g, items] of groups) { const root = items.reduce((a, b) => (Math.abs(a.x) + 0.3 * Math.abs(a.y) < Math.abs(b.x) + 0.3 * Math.abs(b.y) ? a : b));
+    items.forEach((pc, n) => { pc.pivot = [root.x, root.y]; pc.phase = [...g].reduce((a, ch) => a + ch.charCodeAt(0), 0) % 7; }); }
+}
+function addFlat(p) { // a saved piece, baked exactly as it was painted (brightness, glaze, tint), stretched to fill its cell
+  const k = cells++, col = k % COLS, row = Math.floor(k / COLS), spr = bake(p, false);
+  for (const [g, filter] of [[bx, white ? "grayscale(1) brightness(1.3)" : "none"], [ix, white ? "grayscale(1) brightness(1.1) contrast(1.3)" : "none"]]) { g.save(); g.filter = filter; g.drawImage(spr, col * CELL + 2, row * CELL + 2, CELL - 4, CELL - 4); g.restore(); }
+  const e = 0.004; cellInfo[k] = { u0: col / COLS + e, u1: (col + 1) / COLS - e, v1: 1 - row / COLS - e, v0: 1 - (row + 1) / COLS + e, c: p.c, wide: 1 }; return k; }
+
+// ---------------- pose: rest = the flat x-ray; in 3D the same pieces lift, curl and breathe ----------------
+const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
+function spine(t, live) { const P = [], T = [], X = [], U = [];
+  for (let i = 0; i < S; i++) { const f = i / (S - 1);
+    const p = V3(0, 4.6 - i * D, 0);
+    if (live) { p.x += 0.9 * Math.sin(0.7 * t - 0.45 * i) * f * f; p.z += 4.2 * f * f * (0.8 + 0.2 * Math.sin(0.4 * t)); p.x += 1.2 * f * f * Math.sin(0.25 * t); p.y += 0.9 * f * f * f; }
+    P.push(p); }
+  for (let i = 0; i < S; i++) { const a = P[Math.max(0, i - 1)], b = P[Math.min(S - 1, i + 1)], tg = b.clone().sub(a).normalize();
+    const up0 = V3(0, 0, 1), x = up0.clone().cross(tg).normalize(); T.push(tg); X.push(x); U.push(tg.clone().cross(x).normalize()); }
+  return { P, T, X, U }; }
+function ribCurve(sp, r, t, live, n = NV) { // points along a rib, its in-plane width direction, and the plane normal
+  const i = r.i, s = r.side, O0 = sp.X[i].clone().multiplyScalar(s), Tg = sp.T[i];
+  const lift = live ? (r.tag === "horn" ? 0.5 : r.tag === "hooked claw" ? 1.1 + 0.25 * Math.sin(0.8 * t + (s < 0 ? 1 : 0)) : 0.75 + 0.35 * Math.sin(0.9 * t - 0.5 * i + (s < 0 ? 0.6 : 0)) + (r.key.endsWith("b") ? 0.35 : 0)) : 0;
+  const O = O0.clone().multiplyScalar(Math.cos(lift)).add(sp.U[i].clone().multiplyScalar(Math.sin(lift)));
+  const k = r.k + (live ? 0.55 + 0.25 * Math.sin(0.7 * t - 0.3 * i) + (r.tag === "hooked claw" ? 0.6 : 0) : 0), Np = O.clone().cross(Tg).normalize();
+  const pts = [], wid = []; let p = sp.P[i].clone(); const ds = r.L / n;
+  for (let j = 0; j <= n; j++) { const ph = r.a + k * (j / n), d = O.clone().multiplyScalar(Math.cos(ph)).add(Tg.clone().multiplyScalar(Math.sin(ph)));
+    pts.push(p.clone()); wid.push(O.clone().multiplyScalar(-Math.sin(ph)).add(Tg.clone().multiplyScalar(Math.cos(ph)))); p.add(d.multiplyScalar(ds)); }
+  return { pts, wid, Np }; }
+
+function makeInstance(mat) { // one copy of the creature: a mesh per piece, sharing materials
+  return pieces.map(pc => { const nu = pc.nu || NU, g = new THREE.BufferGeometry(), nv = (nu + 1) * (NV + 1);
+    g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(nv * 3), 3));
+    const uv = new Float32Array(nv * 2), C = cellInfo[pc.cell], idx = [];
+    for (let j = 0; j <= NV; j++) for (let q = 0; q <= nu; q++) { const m = j * (nu + 1) + q;
+      uv[m * 2] = lerp(C.u0, C.u1, q / nu); uv[m * 2 + 1] = lerp(C.v1, C.v0, j / NV);
+      if (j < NV && q < nu) idx.push(m, m + 1, m + nu + 1, m + 1, m + nu + 2, m + nu + 1); }
+    g.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); g.setIndex(idx);
+    const me = new THREE.Mesh(g, mat); me.userData.pc = pc; return me; }); }
+const rot2 = (x, y, a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
+function poseKept(inst, t, live) { const q = new THREE.Quaternion(), ax = V3(0, 1, 0), zx = V3(0, 0, 1), q2 = new THREE.Quaternion();
+  for (const me of inst) { const pc = me.userData.pc, pos = me.geometry.attributes.position.array, ph = pc.phase || 0;
+    let th = 0, sw = 0; // flaps hinge out of the plate on their root; limbs also swing in it
+    if (live && pc.side) { const hind = pc.grp.includes("|h|"), diag = (hind ? Math.PI : 0) + (pc.side < 0 ? Math.PI : 0);
+      if (GAIT === "fly") { if (pc.cls === "limb") { th = pc.side * 0.55; sw = 0.3 * pc.side; } // legs tuck back
+        else th = pc.side * (0.15 + 1.0 * Math.sin(3.2 * t + ph * 0.25)); } // ears and fins become wings
+      else if (GAIT === "crawl") { if (pc.cls === "limb") { const s = Math.sin(2.4 * t + diag); th = pc.side * (0.12 + 0.35 * Math.max(0, s)); sw = 0.5 * Math.cos(2.4 * t + diag) * pc.side; } // diagonal pairs step
+        else th = pc.side * (0.22 + 0.12 * Math.sin(1.2 * t + ph)); } // ears lie back
+      else { if (pc.cls === "limb") { th = pc.side * (0.35 + 0.3 * Math.sin(1.5 * t + (hind ? Math.PI : 0))); sw = 0.18 * Math.sin(1.5 * t + ph); }
+        else th = pc.side * (0.55 + 0.45 * Math.sin(1.1 * t + ph * 0.6)); } }
+    q.setFromAxisAngle(ax, -th); q2.setFromAxisAngle(zx, sw * pc.side); const pv = V3(pc.pivot[0], -pc.pivot[1], 0);
+    for (let j = 0; j <= NV; j++) for (let qq = 0; qq <= NU; qq++) { const lu = (qq / NU - 0.5) * pc.w, lv = (j / NV - 0.5) * pc.h;
+      let [rx, ry] = rot2(lu, lv, pc.rot); if (pc.mirror) rx = -rx;
+      const v = V3(pc.x + rx, -(pc.y + ry), 0);
+      if (live) { const bend = 0.12 * Math.min(pc.w, pc.h) * ((qq / NU - 0.5) ** 2 * 4 - 1); v.z += bend + (pc.cls === "head" ? 0.6 : pc.cls === "core" ? 0 : 0.25);
+        if (pc.side) v.sub(pv).applyQuaternion(q2).applyQuaternion(q).add(pv);
+        if (GAIT === "crawl") { v.x += 0.4 * Math.sin(2.4 * t - 0.35 * v.y); v.z += 0.12 * Math.sin(4.8 * t); } // a lateral wave, like a salamander
+        else if (GAIT === "fly") { v.z += 0.35 * Math.sin(1.6 * t - 0.4 * v.y); }
+        else { v.z += 0.7 * Math.sin(0.9 * t - 0.45 * v.y) + 0.06 * v.y * v.y * 0.3; v.x += 0.35 * Math.sin(0.6 * t - 0.3 * v.y) * Math.max(0, -v.y) / 5; } }
+      pos.set([v.x, v.y, v.z], (j * (NU + 1) + qq) * 3); }
+    me.geometry.attributes.position.needsUpdate = true; me.geometry.computeVertexNormals(); } }
+function poseInstance(inst, t, live) {
+  if (KEPT) return poseKept(inst, t, live);
+  const sp = spine(t, live), ribs = new Map();
+  for (const me of inst) { const pc = me.userData.pc, pos = me.geometry.attributes.position.array, C = cellInfo[pc.cell];
+    const put = (j, q, v) => pos.set([v.x, v.y, v.z], (j * (NU + 1) + q) * 3);
+    if (pc.kind === "rib") { const rc = ribCurve(sp, pc, t, live); ribs.set(`${pc.key}|${pc.side}`, rc); const w = pc.L * Math.max(C.wide, 0.16);
+      for (let j = 0; j <= NV; j++) for (let q = 0; q <= NU; q++) { const u = q / NU - 0.5, cup = live ? 0.25 * w * (u * u * 4 - 1) : 0;
+        put(j, q, rc.pts[j].clone().add(rc.wid[j].clone().multiplyScalar(u * w * pc.side)).add(rc.Np.clone().multiplyScalar(cup))); } }
+    else if (pc.kind === "vert" || pc.kind === "skull" || pc.kind === "jaw") { const i = pc.kind === "vert" ? pc.i : 0, sz = pc.size, c0 = sp.P[i].clone();
+      if (pc.kind === "skull") c0.add(sp.T[0].clone().multiplyScalar(-0.75 * sz)).add(sp.U[0].clone().multiplyScalar(live ? 0.3 : 0));
+      if (pc.kind === "jaw") c0.add(sp.T[0].clone().multiplyScalar(-0.35 * sz)).add(sp.U[0].clone().multiplyScalar(live ? 0.9 + 0.35 * Math.sin(0.6 * t) : -0.05));
+      const L = sz * (pc.kind === "vert" ? 1 : 1.25), w = sz * Math.max(0.6, C.wide * 1.4);
+      for (let j = 0; j <= NV; j++) for (let q = 0; q <= NU; q++) { const v = j / NV - 0.5, u = q / NU - 0.5, bulge = live ? 0.22 * sz * (1 - 4 * u * u) * (1 - 4 * v * v) : 0;
+        put(j, q, c0.clone().add(sp.T[i].clone().multiplyScalar(v * L)).add(sp.X[i].clone().multiplyScalar(u * w)).add(sp.U[i].clone().multiplyScalar(bulge + 0.02))); } }
+    if (pc.kind !== "wing") me.geometry.attributes.position.needsUpdate = true; }
+  for (const me of inst) { const pc = me.userData.pc; if (pc.kind !== "wing") continue; // one membrane stretched across all six wing ribs
+    const nu = pc.nu, pos = me.geometry.attributes.position.array;
+    for (let j = 0; j <= NV; j++) { const sj = Math.round(0.02 * NV + (j / NV) * 0.8 * NV);
+      for (let q = 0; q <= nu; q++) { const f = (q / nu) * 5, r0 = Math.min(5, 1 + Math.floor(f)), fr = f - (r0 - 1), a = ribs.get(`${r0}|${pc.side}`), b = ribs.get(`${Math.min(6, r0 + 1)}|${pc.side}`);
+        const sag = live ? 0.18 * Math.sin(Math.PI * fr) : 0, v = a.pts[sj].clone().lerp(b.pts[sj], fr).add(a.Np.clone().multiplyScalar(-sag)); pos.set([v.x, v.y, v.z], (j * (nu + 1) + q) * 3); } }
+    me.geometry.attributes.position.needsUpdate = true; }
+  for (const me of inst) me.geometry.computeVertexNormals(); }
+
+// ---------------- two scenes: the x-ray plate (paper) and the creature alive (black) ----------------
+const cvs = document.getElementById("gl"), renderer = new THREE.WebGLRenderer({ canvas: cvs, antialias: true }); renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+const texOf = c => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; }, boneTex = texOf(bone), inkTex = texOf(ink);
+const PV = Q.get("portfolio"), PORT = PV === "1" || PV === "2"; if (PORT) document.body.classList.add("portfolio", "pv" + PV);
+const SPLIT = PV === "2" ? 0.34 : 0.5;
+let GAIT = KEPT ? (Q.get("gait") || (["fish", "whale", "ray", "bat", "bird"].includes(keptMeta?.meta?.kind) ? "fly" : "crawl")) : "float"; // kept beasts lie down the way the x-ray sees them, then crawl or fly // B: a narrow plate like a label card, the beast large
+// under a kept beast, scroll down to its folded paper twin (Lepus ossea folds into an origami rabbit by default)
+const FOLD = Q.get("fold") || (Q.get("kept") === "lepus-ossea" ? "models/origami-rabbit.obj" : null);
+if (FOLD && !PORT) { document.documentElement.classList.add("scroll"); document.body.classList.add("scroll");
+  document.getElementById("foldsec").innerHTML = `<iframe loading="lazy" title="folded twin" src="fold.html?model=${encodeURIComponent(FOLD)}&ground=paper&white=1&view=side&title=${encodeURIComponent(Q.get("foldname") || "Lepus plicata")}"></iframe>`; }
+const darkPlate = !PORT && !!KEPT && (keptMeta.meta.plate || "dark") === "dark"; // a kept beast keeps the plate it was born on
+const plate = new THREE.Scene(); plate.background = new THREE.Color(PORT ? 0xffffff : darkPlate ? 0x0b0c0e : 0xe7e6e3); if (darkPlate) document.body.classList.add("darkplate");
+const xr = new THREE.OrthographicCamera(-8, 8, 8, -8, 0.1, 100); xr.position.set(0, 0.2, 40);
+const shadowInst = makeInstance(new THREE.MeshBasicMaterial({ map: inkTex, color: 0x000000, transparent: true, opacity: 0.16, alphaTest: 0.5, side: THREE.DoubleSide, depthWrite: false }));
+const plateInst = makeInstance(new THREE.MeshBasicMaterial(darkPlate ? { map: inkTex, alphaTest: 0.02, side: THREE.DoubleSide, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending }
+  : { map: inkTex, alphaTest: 0.5, side: THREE.DoubleSide, transparent: true, opacity: 0.94, depthWrite: false }));
+if (darkPlate) shadowInst.forEach(m => (m.visible = false));
+poseInstance(shadowInst, 0, false); poseInstance(plateInst, 0, false);
+shadowInst.forEach(m => { m.position.set(0.32, -0.42, -1); plate.add(m); }); plateInst.forEach((m, k) => { m.renderOrder = m.userData.pc.kind === "vert" ? 3 : m.userData.pc.kind === "rib" ? 2 : 1; plate.add(m); });
+const live = new THREE.Scene(); live.background = new THREE.Color(PORT ? 0xffffff : 0x030303);
+const cam = new THREE.PerspectiveCamera(34, 1, 0.1, 200); cam.position.set(21, 4, 17); if (PV === "2") cam.position.multiplyScalar(0.92);
+const controls = new OrbitControls(cam, document.getElementById("pad")); controls.enableDamping = true; if (PORT) controls.enableZoom = false; controls.target.set(0, 0.5, 1.5); if (PORT) { controls.target.y += 0.9; cam.position.y += 0.9; }
+if (KEPT) { cam.position.set(0, 17, 25); controls.target.set(0, 0, 0); } // look down on the floor from three-quarters above
+live.add(new THREE.HemisphereLight(0xdfe6ef, 0x111111, 0.7));
+const key = new THREE.DirectionalLight(0xffffff, 2.6); key.position.set(-6, 9, 12); live.add(key);
+const rim = new THREE.DirectionalLight(0xcfd8ff, 1.4); rim.position.set(8, -2, -10); live.add(rim);
+const boneMat = new THREE.MeshStandardMaterial({ map: boneTex, alphaTest: 0.5, side: THREE.DoubleSide, color: new THREE.Color(1.15, 1.15, 1.15), roughness: 0.62 });
+const grp = () => { const g = new THREE.Group(); live.add(g); return g; }, body = grp(); const liveInst = makeInstance(boneMat); liveInst.forEach(m => body.add(m));
+const ghostGroups = [];
+const K = 5, DT = 0.22, ghosts = Array.from({ length: K }, (_, k) => { const inst = makeInstance(new THREE.MeshBasicMaterial({ map: boneTex, alphaTest: 0.5, side: THREE.DoubleSide, transparent: true, depthWrite: false, opacity: 0.2 * (1 - k / K), color: PORT ? 0x9aa0a8 : 0xbfc6cf }));
+  const g = grp(); ghostGroups.push(g); inst.forEach(m => g.add(m)); return inst; });
+// a soft contact shadow on the white floor: it shrinks and fades as the beast lifts off
+const blob = (() => { const c = document.createElement("canvas"); c.width = c.height = 128; const x = c.getContext("2d"), gr = x.createRadialGradient(64, 64, 4, 64, 64, 64);
+  gr.addColorStop(0, "rgba(0,0,0,.32)"); gr.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = gr; x.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); })();
+const floorShadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: blob, transparent: true, depthWrite: false })); floorShadow.rotation.x = -Math.PI / 2; live.add(floorShadow); floorShadow.visible = !!KEPT;
+const FLOOR = -1.6, qLay = new THREE.Quaternion().setFromAxisAngle(V3(1, 0, 0), -Math.PI / 2);
+function travel(g, t) { // where the beast is on its slow loop at time t; the head leads along the path
+  const th = 0.22 * t, R = GAIT === "fly" ? 1.9 : 1.6, h = GAIT === "fly" ? 2.6 + 0.5 * Math.sin(2.2 * t) : FLOOR + 0.9;
+  g.position.set(R * Math.cos(th), h, R * Math.sin(th) * 0.7);
+  const yaw = new THREE.Quaternion().setFromAxisAngle(V3(0, 1, 0), Math.PI - th), pitch = new THREE.Quaternion().setFromAxisAngle(V3(1, 0, 0), GAIT === "fly" ? 0.12 * Math.sin(2.2 * t + 1) : 0);
+  const roll = new THREE.Quaternion().setFromAxisAngle(V3(0, 1, 0), GAIT === "fly" ? 0.35 * Math.sin(0.22 * t) : 0.06 * Math.sin(2.4 * t));
+  g.quaternion.copy(yaw).multiply(qLay).multiply(pitch).multiply(roll); }
+
+const NAMES = ["Spinosa", "Costata", "Pennata", "Alata", "Vertebrata"], EP = ["nivea", "lucida", "ossea", "margaritifera", "pellucida"];
+document.getElementById("name").textContent = KEPT ? keptMeta.name : `${NAMES[seed % 5]} ${EP[(seed * 3) % 5]}`;
+if (PORT) document.getElementById("caption").innerHTML = `<b>${document.getElementById("name").textContent}</b><span>x-ray  ·  in motion  —  ${cells} photographed specimens, each cut along its own edge</span>`;
+const cb = document.getElementById("colour"); cb.setAttribute("aria-pressed", white); cb.onclick = () => { const u = new URL(location); u.searchParams.set("white", white ? "0" : "1"); location = u; };
+window.__ids = () => cellInfo.map(x => x.c.id);
+const eb = document.getElementById("echo"), syncE = () => eb.setAttribute("aria-pressed", echoes); eb.onclick = () => { echoes = !echoes; syncE(); }; syncE();
+if (KEPT) document.getElementById("reseed").hidden = true;
+document.getElementById("reseed").onclick = () => { const u = new URL(location); u.searchParams.set("seed", Math.floor(Math.random() * 9999)); location = u; };
+document.getElementById("say").textContent = `${pieces.length} pieces · ${cells} specimens · drag the right side to turn it`;
+
+const t0 = performance.now();
+function frame() { const t = (performance.now() - t0) / 1000, w = cvs.clientWidth, h = cvs.clientHeight, half = Math.floor(w * (typeof SPLIT === "number" ? SPLIT : 0.5));
+  if (cvs.width !== Math.floor(w * renderer.getPixelRatio())) renderer.setSize(w, h, false);
+  poseInstance(liveInst, t, true); ghosts.forEach((g, k) => { g.forEach(m => (m.visible = echoes)); if (echoes) poseInstance(g, t - (k + 1) * DT, true); });
+  if (KEPT) { travel(body, t); ghostGroups.forEach((g, k) => travel(g, t - (k + 1) * DT));
+    const lift = body.position.y - FLOOR; floorShadow.position.set(body.position.x, FLOOR - 0.01, body.position.z); floorShadow.scale.setScalar(9 / (1 + 0.12 * lift)); floorShadow.material.opacity = 1 / (1 + 0.35 * lift); }
+  else { body.rotation.y = 0.35 * Math.sin(0.15 * t) - 0.3; body.rotation.x = 0.12 * Math.sin(0.21 * t); body.position.y = 0.25 * Math.sin(0.5 * t); }
+  const xa = half / h, xs = Math.max(7.6, 6.2 / xa) * (typeof PORT !== "undefined" && PORT ? 1.18 : 1); xr.top = xs; xr.bottom = -xs; xr.left = -xs * xa; xr.right = xs * xa; xr.updateProjectionMatrix();
+  renderer.setScissorTest(true); renderer.setViewport(0, 0, half, h); renderer.setScissor(0, 0, half, h); renderer.render(plate, xr);
+  cam.aspect = (w - half) / h; cam.updateProjectionMatrix(); controls.update();
+  renderer.setViewport(half, 0, w - half, h); renderer.setScissor(half, 0, w - half, h); renderer.render(live, cam); }
+renderer.setAnimationLoop(frame); setInterval(() => { if (document.hidden) frame(); }, 100);
+// =====================================================================================
+// What is it made of? Hover names a piece; a click opens its drawer: the original photograph, the cut-out,
+// that specimen's own record, and the natural history of its species. "Field guide" tells the new species' story.
+// =====================================================================================
+const manifest = new Map((await fetch("library/manifest.json").then(r => r.json()).catch(() => [])).map(e => [e.id, e]));
+const slug = KEPT || (window.FIXED_IDS ? "pennata-lucida" : null);
+let guide = slug && !SPEC ? await fetch(`library/pairs/${slug}.guide.json`).then(r => (r.ok ? r.json() : null)).catch(() => null) : null;
+if (!SPEC && KEPT && !guide && keptMeta?.meta?.seed != null && typeof composeStory === "function") { // a kept species keeps the story it was made with
+  const parts = pieces.map(pc => { const c = cellInfo[pc.cell].c; return { e: manifest.get(c.id) || c, role: (pc.tag || pc.cls || "part").split(" · ")[0], weight: (pc.w || 1) * (pc.h || 1) }; });
+  guide = composeStory(parts, keptMeta.meta.kind, rng(+keptMeta.meta.seed * 31 + 7), GAIT); guide.name = keptMeta.name; if (keptMeta.meta.common) guide.common = keptMeta.meta.common; window.__guide = guide; }
+if (SPEC) { // compose this new species' name and story from the real natural history of its parts
+  const parts = pieces.map(pc => { const c = cellInfo[pc.cell].c; return { e: manifest.get(c.id) || c, role: (pc.tag || pc.cls || "part").split(" · ")[0], weight: (pc.w || 1) * (pc.h || 1) }; });
+  guide = composeStory(parts, keptMeta.meta.kind, rng(+SPEC * 31 + 7), GAIT); keptMeta.name = guide.name;
+  document.getElementById("name").textContent = guide.name; document.title = `${guide.name} · Make a Species`;
+  if (PORT) document.getElementById("caption").innerHTML = `<b>${guide.name}</b><span>${guide.common}  ·  ${new Set(pieces.map(pc => cellInfo[pc.cell].c.id)).size} found specimens of earth</span>`; }
+const tip = document.getElementById("tip"), drawer = document.getElementById("drawer"), ray = new THREE.Raycaster();
+const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+const plainText = html => new DOMParser().parseFromString(html || "", "text/html").body.textContent.trim();
+const sampleAlpha = (uv) => { const x = Math.floor(uv.x * ink.width), y = Math.floor((1 - uv.y) * ink.height); return ix.getImageData(x, y, 1, 1).data[3]; };
+function pieceAt(e) { const r = cvs.getBoundingClientRect(), half = r.width * (typeof SPLIT === "number" ? SPLIT : 0.5), px = e.clientX - r.left, py = e.clientY - r.top;
+  if (px < 0 || py < 0 || px > r.width || py > r.height) return null;
+  const left = px < half, vw = left ? half : r.width - half, vx = left ? px : px - half;
+  ray.setFromCamera(new THREE.Vector2(vx / vw * 2 - 1, -(py / r.height) * 2 + 1), left ? xr : cam);
+  for (const h of ray.intersectObjects(left ? plateInst : liveInst, false)) if (h.uv && sampleAlpha(h.uv) > 90) return h.object.userData.pc; return null; }
+const roleOf = (pc, e) => { const g = guide && e && (guide.partsByName?.[e.sci] || guide.partsByQuery?.[e.query]); return g?.role || pc.tag || pc.kind; };
+let down = null;
+addEventListener("pointerdown", e => (down = [e.clientX, e.clientY]));
+addEventListener("pointermove", e => { if (PORT) { if (!pinned && !e.target.closest?.("#note, #myth, #drawer, #caption")) light(pieceAt(e)); return; }
+  if (e.target.closest?.("#drawer, .bar, #caption a")) { tip.style.display = "none"; return; }
+  const pc = pieceAt(e); if (!pc) { tip.style.display = "none"; return; } const c = cellInfo[pc.cell].c, m = manifest.get(c.id);
+  tip.textContent = `${m?.sci ? m.name + " · " + m.sci : c.name}  —  ${roleOf(pc, m)}`; tip.style.display = "block"; tip.style.left = e.clientX + 14 + "px"; tip.style.top = e.clientY + 14 + "px"; });
+addEventListener("pointerup", e => { if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5 || e.target.closest?.("#drawer, .bar, #caption, #note, #myth")) return; const pc = pieceAt(e);
+  if (PORT && mythOpen) { if (pc) rowsById.get(cellInfo[pc.cell].c.id)?.scrollIntoView({ block: "nearest" }); return; }
+  if (PORT) { pinned = pc; light(pc, true); return; } if (pc) openSpecimen(pc); });
+addEventListener("keydown", e => { if (e.key === "Escape") { if (!drawer.hidden) drawer.hidden = true; else if (PORT && mythOpen) closeMyth(); else if (PORT) { pinned = null; light(null, true); } } });
+// ---- A · margin note ----
+const note = document.getElementById("note"), leader = document.getElementById("leader"), lpath = leader.querySelector("path"), lring = leader.querySelector("circle");
+const plateMat = plateInst[0].material, plateHi = plateMat.clone(), plateBase = plateMat.opacity; plateHi.opacity = 1;
+let lit = null, pinned = null; const seenCache = new Map();
+const capFirst = t => t.charAt(0).toUpperCase() + t.slice(1);
+function light(pc, force) { const id = pc ? cellInfo[pc.cell].c.id : null; if (id === lit && !force) return; lit = id;
+  plateMat.opacity = lit ? 0.4 : plateBase; plateMat.alphaTest = lit ? 0.12 : plateHi.alphaTest; plateMat.needsUpdate = true; // everything dims, and every piece cut from this specimen stays lit
+  plateInst.forEach(m => (m.material = lit && cellInfo[m.userData.pc.cell].c.id === lit ? plateHi : plateMat));
+  rowsById.forEach((row, id) => row.classList.toggle("lit", id === lit));
+  if (!pc) { note.classList.remove("on"); leader.style.display = "none"; return; }
+  if (mythOpen) { leader.style.display = "block"; return; }
+  const c = cellInfo[pc.cell].c, m = manifest.get(c.id) || {}, lore = typeof loreFor === "function" ? loreFor(m.id ? m : c) : null;
+  const g = (guide && (guide.partsByName?.[m.sci] || guide.partsByQuery?.[m.query])) || (lore ? { fact: lore.fact } : null);
+  const title = m.sci ? m.name : lore ? capFirst(lore.thing.replace(/^(a|an|the) /, "")) : c.name, sub = m.sci || m.name || "";
+  note.replaceChildren(); const img = el("img"); img.src = `library/cut/${c.id}.webp`; img.alt = `${title}, cut along its own edge`;
+  const sci = m.sci && m.sci.toLowerCase() !== title.toLowerCase() ? m.sci : ""; // the scientific name only when it is real and adds something
+  const who = (m.credit || "").replace(/^\(c\)\s*/i, "").replace(/,?\s*some rights reserved.*$/i, "").replace(/\s*\(CC[^)]*\)\s*$/i, "").trim();
+  const L = m.license || "", lic = /^cc-/i.test(L) ? "CC " + L.slice(3).toUpperCase() : L; // "cc-by-sa" → "CC BY-SA"; "CC BY-SA 4.0" stays as it is
+  const nm = el("div", "nm", title); if (m.sci && title.toLowerCase() === m.sci.toLowerCase()) nm.style.fontStyle = "italic"; // a binomial is set in italic
+  note.append(img, el("div", "part", capFirst(roleOf(pc, m))), nm); if (sci) note.append(el("div", "sci", sci));
+  if (g?.fact) note.append(el("p", null, capFirst(g.fact.replace(/^[^:.]{2,48}: /, ""))));
+  const rec = el("div", "rec"), seen = el("div"); rec.append(seen, el("div", null, [who, lic, m.source].filter(Boolean).join(" · "))); note.append(rec);
+  const open = el("a", null, "Open specimen"); open.href = "#"; open.onclick = ev => { ev.preventDefault(); openSpecimen(pc); }; note.append(open);
+  if (pinned) note.append(el("div", "hint", "Esc to unpin"));
+  note.classList.add("on"); leader.style.display = "block";
+  const obs = (m.page || "").match(/observations\/(\d+)/)?.[1]; // where and when this one was seen, fetched once per specimen
+  if (obs) { if (!seenCache.has(obs)) seenCache.set(obs, fetch(`https://api.inaturalist.org/v1/observations/${obs}`).then(r => r.json()).then(j => j.results?.[0]).catch(() => null));
+    seenCache.get(obs).then(o => { if (o && lit === c.id) seen.textContent = `Seen ${[o.observed_on && new Date(o.observed_on + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }), o.place_guess].filter(Boolean).join(", ")}`; }); } }
+function placeNote() { const r = cvs.getBoundingClientRect(), half = r.width * (typeof SPLIT === "number" ? SPLIT : 0.5), wide = r.right + 32 + 300 <= innerWidth - 8;
+  note.style.left = (wide ? r.right + 32 : r.left) + "px"; note.style.top = (wide ? r.top : r.bottom + 56) + "px";
+  if (mythOpen) { myth.style.left = (wide ? r.right + 32 : r.left) + "px"; myth.style.top = (wide ? r.top : r.bottom + 56) + "px"; myth.style.maxHeight = (wide ? r.height + 34 : innerHeight - r.bottom - 72) + "px"; }
+  const target = mythOpen ? rowsById.get(lit) : note;
+  if (lit && target) { let best = null; const k = half / (xr.right - xr.left);
+    for (const m of plateInst) if (m.material === plateHi) { if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere();
+      const sph = m.geometry.boundingSphere, v = sph.center.clone().project(xr), x = r.left + (v.x + 1) / 2 * half, y = r.top + (1 - v.y) / 2 * r.height;
+      if (!best || x > best.x) best = { x, y, rad: Math.max(12, Math.min(60, sph.radius * k * 0.7)) }; } // the lit piece nearest the gap between the halves
+    if (best) { lring.setAttribute("cx", best.x); lring.setAttribute("cy", best.y); lring.setAttribute("r", best.rad);
+      const tb = target.getBoundingClientRect(), mb = myth.getBoundingClientRect(), top = r.top - 18, gap = r.left + half; // sideways into the empty gap, up and over, then across
+      const d = !wide ? "" : target === note ? `M${best.x + best.rad},${best.y} H${gap} V${top} H${tb.left + 1} V${tb.top - 8}`
+        : `M${best.x + best.rad},${best.y} H${gap} V${top} H${tb.left - 14} V${Math.min(mb.bottom - 4, Math.max(mb.top + 4, tb.top + tb.height / 2))} H${tb.left - 4}`;
+      lpath.setAttribute("d", d); } }
+  requestAnimationFrame(placeNote); }
+// ---- mythology, in the same margin column: the creature is never covered ----
+const myth = document.getElementById("myth"), rowsById = new Map(); let mythOpen = false;
+function openMyth() { if (!guide) return; mythOpen = true; pinned = null; note.classList.remove("on"); myth.replaceChildren(); rowsById.clear();
+  const nm = el("div", "nm", guide.name); nm.style.fontStyle = "italic"; myth.append(nm); if (guide.common) myth.append(el("div", "common", capFirst(guide.common)));
+  for (const [h, k] of [["Mythology", "mythology"], ["Lineage", "lineage"], ["Habitat", "habitat"], ["Behaviour", "behaviour"]]) if (guide[k]) { const s = el("section"); s.append(el("h3", null, h), el("p", null, guide[k])); myth.append(s); }
+  const made = el("section"), list = el("div", "made"); made.append(el("h3", null, "Made of")); const seen = new Set();
+  for (const pc of pieces) { const c = cellInfo[pc.cell].c; if (seen.has(c.id)) continue; seen.add(c.id);
+    const m = manifest.get(c.id) || {}, lore = typeof loreFor === "function" ? loreFor(m.id ? m : c) : null, title = m.sci || (lore ? capFirst(lore.thing.replace(/^(a|an|the) /, "")) : c.name);
+    const row = el("button", "row"), n = el("span", "n", title); row.type = "button"; if (m.sci) n.style.fontStyle = "italic"; row.append(el("span", "p", capFirst(roleOf(pc, m))), n);
+    row.onmouseenter = row.onfocus = () => light(pc); row.onmouseleave = row.onblur = () => light(null); row.onclick = () => { closeMyth(); pinned = pc; light(pc, true); };
+    rowsById.set(c.id, row); list.append(row); }
+  made.append(list); myth.append(made); if (guide.note) myth.append(el("p", "fine", guide.note));
+  const x = el("button", "close", "Close"); x.type = "button"; x.onclick = closeMyth; myth.append(x);
+  myth.classList.add("on"); myth.scrollTop = 0; light(null, true); }
+function closeMyth() { mythOpen = false; myth.classList.remove("on"); light(null, true); }
+if (PORT) requestAnimationFrame(placeNote);
+function shell(title, sub) { drawer.replaceChildren(); const x = el("button", "x", "×"); x.onclick = () => (drawer.hidden = true); drawer.append(x, el("h2", null, title)); if (sub) drawer.append(el("div", "sci", sub)); drawer.hidden = false; drawer.scrollTop = 0; }
+const row = (box, k, v, href) => { if (!v) return; const d = el("div", "kv"); d.append(el("span", "k", k)); if (href) { const a = el("a", null, v); a.href = href; a.target = "_blank"; a.rel = "noopener"; d.append(a); } else d.append(el("span", null, v)); box.append(d); };
+async function openSpecimen(pc) {
+  const c = cellInfo[pc.cell].c, m = manifest.get(c.id) || {}, g = (guide && (guide.partsByName?.[m.sci] || guide.partsByQuery?.[m.query])) || (typeof loreFor === "function" ? { fact: loreFor(m.id ? m : c).fact } : null);
+  shell(m.name || c.name, m.sci);
+  drawer.append(el("div", "role", `In ${document.getElementById("name").textContent}: the ${roleOf(pc, m)}.`));
+  if (g?.fact) drawer.append(el("p", "fact", g.fact));
+  const figs = el("div", "figs");
+  for (const [src, cap, cls] of [[`library/${m.file || c.file}`, "the original photograph", ""], [`library/cut/${c.id}.webp`, "cut along its own edge", "bw"]]) {
+    const f = el("figure"), im = el("img", cls); im.src = src; im.alt = cap; f.append(im, el("figcaption", null, cap)); figs.append(f); }
+  drawer.append(figs);
+  const rec = el("div", "box"); rec.append(el("h3", null, "This specimen")); drawer.append(rec);
+  row(rec, "credit", m.credit); row(rec, "licence", m.license); row(rec, "source", m.source, m.page);
+  const nh = el("div", "box"); nh.append(el("h3", null, "Natural history"), el("p", "muted", "looking it up…")); drawer.append(nh);
+  try { const out = await naturalHistory(m); if (drawer.hidden) return; nh.lastChild.remove();
+    out.specimen.forEach(([k, v]) => row(rec, k, v));
+    if (out.lineage) nh.append(el("div", "lineage", out.lineage));
+    if (out.summary) nh.append(el("p", null, out.summary));
+    out.facts.forEach(([k, v, href]) => row(nh, k, v, href));
+  } catch (err) { nh.lastChild.textContent = "couldn't reach iNaturalist or Wikipedia just now"; }
+}
+const RANKS = ["kingdom", "phylum", "class", "order", "family", "genus"];
+async function wiki(term) { if (!term) return null;
+  let r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term)}`); if (r.ok) { const j = await r.json(); if (j.extract && j.type !== "disambiguation") return j; }
+  const s = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srlimit=1&format=json&origin=*&srsearch=${encodeURIComponent(term)}`).then(x => x.json());
+  const t = s.query?.search?.[0]?.title; if (!t) return null; r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t)}`); return r.ok ? r.json() : null; }
+async function naturalHistory(m) {
+  const out = { specimen: [], facts: [], summary: "", lineage: "" };
+  const obs = (m.page || "").match(/observations\/(\d+)/)?.[1];
+  if (obs) { const o = (await fetch(`https://api.inaturalist.org/v1/observations/${obs}`).then(r => r.json())).results?.[0];
+    if (o) { out.specimen.push(["seen", [o.observed_on, o.place_guess].filter(Boolean).join(" · ")], ["status", o.quality_grade === "research" ? "research grade (identity confirmed by the community)" : o.quality_grade]); }
+    const tx = o?.taxon && (await fetch(`https://api.inaturalist.org/v1/taxa/${o.taxon.id}`).then(r => r.json())).results?.[0];
+    if (tx) { out.lineage = (tx.ancestors || []).filter(a => RANKS.includes(a.rank)).map(a => a.name).concat(tx.name).join("  ›  ");
+      out.summary = plainText(tx.wikipedia_summary);
+      if (tx.observations_count) out.facts.push(["recorded", `${tx.observations_count.toLocaleString()} observations on iNaturalist`]);
+      if (tx.conservation_status?.status_name) out.facts.push(["conservation", tx.conservation_status.status_name]);
+      if (tx.wikipedia_url) out.facts.push(["read more", "Wikipedia", tx.wikipedia_url]); }
+    if (!out.summary) { const w = await wiki(m.sci || m.name); if (w) out.summary = w.extract; }
+  } else { const file = decodeURIComponent((m.page || "").split("File:")[1] || "");
+    if (file) { const j = await fetch(`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&prop=imageinfo&iiprop=extmetadata&titles=${encodeURIComponent("File:" + file)}`).then(r => r.json());
+      const md = Object.values(j.query?.pages || {})[0]?.imageinfo?.[0]?.extmetadata || {};
+      const d = plainText(md.ImageDescription?.value); if (d) out.specimen.push(["described", d.slice(0, 220)]);
+      const dt = plainText(md.DateTimeOriginal?.value); if (dt) out.specimen.push(["made", dt.slice(0, 40)]); }
+    const named = (m.name || "").match(/\(([A-Z][a-z]+ [a-z]+)\)/)?.[1];
+    const term = named || (m.query || "").replace(/^Category:/, "").replace(/.* of /, "").replace(/ (wings|macro|closeup)$/i, "").trim();
+    const w = await wiki(term); if (w) { out.summary = w.extract; out.lineage = w.title; if (w.content_urls?.desktop?.page) out.facts.push(["read more", "Wikipedia", w.content_urls.desktop.page]); } }
+  return out; }
+function openGuide() { if (!guide) return; if (PORT) return openMyth(); shell(guide.name, guide.common);
+  for (const [h, k] of [["Mythology", "mythology"], ["Lineage", "lineage"], ["Habitat", "habitat"], ["Behaviour", "behaviour"]]) { if (!guide[k]) continue; const b = el("div", "box"); b.append(el("h3", null, h), el("p", null, guide[k])); drawer.append(b); }
+  const made = el("div", "box"); made.append(el("h3", null, "Made of"));
+  const seen = new Set(); for (const pc of pieces) { const c = cellInfo[pc.cell].c, m = manifest.get(c.id) || {}; if (seen.has(c.id)) continue; seen.add(c.id);
+    const d = el("div", "kv"), a = el("a", null, m.sci || m.name || c.name); a.href = "#"; a.onclick = ev => { ev.preventDefault(); openSpecimen(pc); };
+    d.append(el("span", "k", roleOf(pc, m)), a); made.append(d); }
+  drawer.append(made, el("p", "note", guide.note)); }
+// crawl · fly · field guide, in the caption (portfolio) and in the bar
+function gaitLinks(box) { if (!KEPT) return; const g = el("span", "gait");
+  for (const k of ["crawl", "fly"]) { const a = el("a", null, k); a.href = "#"; a.onclick = ev => { ev.preventDefault(); GAIT = k; sync(); }; a.dataset.g = k; g.append(a); }
+  if (guide) { const a = el("a", "guide", SPEC ? "mythology" : "field guide"); a.href = "#"; a.onclick = ev => { ev.preventDefault(); openGuide(); }; g.append(a); }
+  if (SPEC && !window.STATIC) { const keep = el("a", "guide", "keep"); keep.href = "#"; keep.onclick = async ev => { ev.preventDefault();
+      const res = await fetch("api/keep", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: keptMeta.name, meta: { ...keptMeta.meta, common: guide.common }, pieces: keptMeta.pieces }) }).then(r => r.json()).catch(() => ({}));
+      keep.textContent = res.ok ? "kept ✓" : "couldn't keep"; if (res.ok) keep.href = `./?kept=${res.slug}${PORT ? "&portfolio=" + PV : ""}`; keep.onclick = null; }; g.append(keep); }
+  if (SPEC || KEPT) { const mk = el("a", "guide make", "make a species"); mk.href = `./?species=${Math.floor(Math.random() * 1e6)}${PORT ? "&portfolio=" + PV : ""}${Q.get("plan") ? "&plan=" + Q.get("plan") : ""}`; g.append(mk); }
+  box.append(g); }
+const sync = () => document.querySelectorAll(".gait a[data-g]").forEach(a => a.classList.toggle("on", a.dataset.g === GAIT));
+if (PORT) gaitLinks(document.getElementById("caption")); else gaitLinks(document.querySelector(".bar")); sync();
+// ---- the caption's controls, set in order: motion toggle · reading · the one action · elsewhere ----
+if (PORT) { const box = document.getElementById("caption"), g = box.querySelector(".gait");
+  if (g) { const links = [...g.querySelectorAll("a")], find = re => links.find(a => re.test(a.textContent)), label = (a, t) => a && (a.textContent = t);
+    const crawl = links.find(a => a.dataset.g === "crawl"), fly = links.find(a => a.dataset.g === "fly"), read = find(/field guide|mythology/), keep = find(/^keep|kept|couldn/), make = find(/make a species/), away = find(/paper ray/);
+    label(crawl, "Crawl"); label(fly, "Fly"); if (read) label(read, guide?.mythology ? "Mythology" : "Field guide"); label(keep, "Keep"); label(make, "Make a species"); label(away, "Paper ray →");
+    g.replaceChildren(); const group = (...xs) => { const s = el("span", "grp"); xs.filter(Boolean).forEach((x, i) => { if (i && x.dataset?.g === "fly") s.append(el("span", "sl", "/")); s.append(x); }); if (s.childNodes.length) g.append(s); };
+    group(crawl, fly); group(read, keep); group(make); const all = el("a", null, "All species"); all.href = "bestiary.html"; all.classList.add("away"); if (away) away.classList.add("away"); group(all, away);
+    if (make) make.classList.add("make"); if (read) read.classList.remove("guide"); if (keep) keep.classList.remove("guide"); }
+  const desc = box.querySelector(":scope > span:not(.gait)"), n = new Set(pieces.map(pc => cellInfo[pc.cell].c.id)).size;
+  if (desc && guide?.common) desc.textContent = `${guide.common} · ${n} found specimens`; }
+
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+[
+  {
+    "slug": "avis-margaritifera",
+    "name": "Avis margaritifera",
+    "meta": {
+      "kind": "bird",
+      "common": "the pearl-keeled bird",
+      "plate": "dark"
+    }
+  },
+  {
+    "slug": "avis-venosa",
+    "name": "Avis venosa",
+    "meta": {
+      "kind": "bird",
+      "common": "the laced bird",
+      "plate": "dark"
+    }
+  },
+  {
+    "slug": "balaena-pennata",
+    "name": "Balaena pennata",
+    "meta": {
+      "kind": "whale",
+      "common": "the plumed whale",
+      "plate": "dark"
+    }
+  },
+  {
+    "slug": "elephas-venosa",
+    "name": "Elephas venosa",
+    "meta": {
+      "kind": "elephant",
+      "common": "the laced elephant",
+      "plate": "dark"
+    }
+  },
+  {
+    "slug": "lepus-ossea",
+    "name": "Lepus ossea",
+    "meta": {
+      "kind": "rabbit",
+      "common": "the bone hare",
+      "plate": "dark"
+    }
+  },
+  {
+    "slug": "piscis-alata",
+    "name": "Piscis alata",
+    "meta": {
+      "kind": "fish",
+      "common": "the glass-winged fish",
+      "plate": "dark"
+    }
+  },
+  {
+    "slug": "piscis-vitrea",
+    "name": "Piscis vitrea",
+    "meta": {
+      "kind": "fish",
+      "common": "the glass fish",
+      "plate": "dark"
+    }
+  },
+  {
+    "slug": "ursus-viscosa",
+    "name": "Ursus viscosa",
+    "meta": {
+      "kind": "bear",
+      "common": "the glistening bear",
+      "plate": "dark"
+    }
+  },
+  {
+    "slug": "vermis-margaritifera",
+    "name": "Vermis margaritifera",
+    "meta": {
+      "kind": "worm",
+      "common": "the pearled worm",
+      "plate": "dark"
+    }
+  },
+  {
+    "slug": "vermis-viscosa",
+    "name": "Vermis viscosa",
+    "meta": {
+      "kind": "worm",
+      "common": "the glistening worm",
+      "plate": "dark"
+    }
+  }
+]
