@@ -7,7 +7,7 @@ running log of experiments in simulating pressings, indentations, print processe
 ## studies
 
 - [cover](https://k-ra.github.io/protolab/): the sheet, with the studies resting on it as paper slips. pick one up, carry it, tap it to open.
-- [the sheet](protolab/), [clippings](canvas/), [specimen](flowers/), [the press](press/), [sigil pressure](wax-seal/), [san francisco, round](twin-peaks/)
+- [the sheet](protolab/), [clippings](canvas/), [specimen](flowers/), [platemark](press/), [sigil pressure](wax-seal/), [san francisco, round](twin-peaks/)
 - [ebru](ebru/): ottoman marbling, computed exactly with drop and tine transforms
 - [kintsugi](kintsugi/): a glazed bowl that keeps its breaks in gold
 
