@@ -29,6 +29,7 @@ running log of experiments in simulating pressings, indentations, print processe
 - [quipu](quipu/): type numbers and they are tied in knotted cord, decimal and positional
 - [one stitch](sashiko/): hitomezashi sashiko stitched from the bits of two words
 - [rings](rings/): a tree since 1800; hover a ring for its year, the volcanic winters run thin
+- [sky fabric](sky-fabric/): your next twelve hours of weather, worn by a sheet of silk on slack strings; fog, storms, snow and sunsets all happen in the cloth. [every weather at once](sky-fabric/grid.html)
 - [make a species](make-a-species/): a new animal assembled from found specimens of earth, x-rayed and set moving; hover a part for its real name and history
 
 `lib/gouache.js` paints any height field the way the round map paints terrain.
