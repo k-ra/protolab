@@ -54,7 +54,16 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
 #canvas-container canvas{display:block;width:100%!important;height:auto!important}
 .loading{display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--anthropic-mid-gray);padding:120px 0}
 @media(max-width:600px){.container{flex-direction:column}.sidebar{width:100%;max-height:none}}
+
+/* visitors get a few controls; ?tweak in the URL brings back the whole workshop */
+body:not(.tweak) .tweak-only{display:none!important}
+/* quiet buttons: ink and hairline, no brand colours */
+.button,.button.secondary,.button.tertiary{background:transparent;color:#2f2a24;border:1px solid #d9d4ca;font-weight:400;transform:none!important}
+.button:hover,.button.secondary:hover,.button.tertiary:hover{background:#f3f0ea;border-color:#2f2a24}
+.button-row .button:first-child{background:#2f2a24;color:#f4efe6;border-color:#2f2a24}
+.button-row .button:first-child:hover{background:#4a433a}
 </style>
+<script>document.addEventListener('DOMContentLoaded', () => { if(/[?&]tweak/.test(location.search)) document.body.classList.add('tweak'); });</script>
 </head>
 <body>
 <div class="container">
@@ -63,6 +72,20 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
     <div class="subtitle">Petals built as a height field, not a drawing — so the same lamp that lit the wax lights the flower. Move the mouse; click for a new one.</div>
 
     <div class="control-section">
+
+      <h3>Look</h3>
+
+      <div class="seed-controls">
+
+        <button class="button secondary" onclick="applyPreset('inked')">Inked</button>
+
+        <button class="button secondary" onclick="applyPreset('blind')">Blind</button>
+
+      </div>
+
+    </div>
+
+    <div class="control-section tweak-only">
       <h3>Surface</h3>
       <div class="seg" id="seg-surface">
         <button data-v="ink">Inked</button>
@@ -80,7 +103,7 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
         <div class="color-picker-container"><input type="color" id="cSheet" value="#e9e3d6" oninput="updateColor('cSheet',this.value)"><span class="color-value" id="cSheet-value">#e9e3d6</span></div></div>
     </div>
 
-    <div class="control-section">
+    <div class="control-section tweak-only">
       <h3>Finish</h3>
       <div class="seg" id="seg-finish">
         <button data-v="matte">Matte</button>
@@ -112,45 +135,45 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
     <div class="control-section">
       <h3>Species</h3>
       <div class="seg" id="seg-species"></div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Petals per whorl</label>
         <div class="slider-container"><input type="range" id="petals" min="4" max="26" step="1" value="13" oninput="updateParam('petals',this.value)"><span class="value-display" id="petals-value">13</span></div>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Whorls</label>
         <div class="slider-container"><input type="range" id="whorls" min="1" max="8" step="1" value="4" oninput="updateParam('whorls',this.value)"><span class="value-display" id="whorls-value">4</span></div>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Petal length</label>
         <div class="slider-container"><input type="range" id="petalLen" min="0.4" max="1.3" step="0.02" value="0.92" oninput="updateParam('petalLen',this.value)"><span class="value-display" id="petalLen-value">0.92</span></div>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Petal width</label>
         <div class="slider-container"><input type="range" id="petalWid" min="0.08" max="0.75" step="0.01" value="0.30" oninput="updateParam('petalWid',this.value)"><span class="value-display" id="petalWid-value">0.3</span></div>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Tip</label>
         <div class="slider-container"><input type="range" id="sharp" min="0.1" max="1.6" step="0.05" value="0.75" oninput="updateParam('sharp',this.value)"><span class="value-display" id="sharp-value">0.75</span></div>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Openness</label>
         <div class="slider-container"><input type="range" id="open" min="0" max="1" step="0.02" value="0.4" oninput="updateParam('open',this.value)"><span class="value-display" id="open-value">0.4</span></div>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Disc size</label>
         <div class="slider-container"><input type="range" id="disc" min="0.05" max="0.5" step="0.01" value="0.18" oninput="updateParam('disc',this.value)"><span class="value-display" id="disc-value">0.18</span></div>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Bloom size</label>
         <div class="slider-container"><input type="range" id="size" min="140" max="330" step="5" value="250" oninput="updateParam('size',this.value)"><span class="value-display" id="size-value">250</span></div>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Leaves</label>
         <div class="slider-container"><input type="range" id="leaves" min="0" max="7" step="1" value="4" oninput="updateParam('leaves',this.value)"><span class="value-display" id="leaves-value">4</span></div>
       </div>
     </div>
 
-    <div class="control-section">
+    <div class="control-section tweak-only">
       <h3>Colour</h3>
       <div class="color-group"><label>Petal base</label>
         <div class="color-picker-container"><input type="color" id="cBase" value="#a8817c" oninput="updateColor('cBase',this.value)"><span class="color-value" id="cBase-value">#a8817c</span></div></div>
@@ -163,7 +186,7 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
       <div class="palettes" id="palettes"></div>
     </div>
 
-    <div class="control-section">
+    <div class="control-section tweak-only">
       <h3>Lamp</h3>
       <div class="control-group">
         <label>Pool size</label>
@@ -198,7 +221,7 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
       </div>
     </div>
 
-    <div class="control-section">
+    <div class="control-section tweak-only">
       <h3>Seed</h3>
       <input type="number" id="seed-input" class="seed-input" value="12345" onchange="updateSeed()">
       <div class="seed-controls">
@@ -212,7 +235,7 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
       <h3>Actions</h3>
       <div class="button-row">
         <button class="button" onclick="regenerate()">Regrow</button>
-        <button class="button secondary" onclick="resetParameters()">Reset</button>
+        <button class="button secondary tweak-only" onclick="resetParameters()">Reset</button>
       </div>
       <button class="button tertiary" onclick="downloadPNG()">↓ Download PNG</button>
     </div>
@@ -225,7 +248,7 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
       <button class="button secondary" onclick="location.href = Hub.hubLink()">Back without saving</button>
     </div>
 
-    <div class="control-section">
+    <div class="control-section tweak-only">
       <h3>Settings</h3>
       <div class="button-row">
         <button class="button" onclick="copySettings()">Copy</button>
@@ -262,14 +285,14 @@ const PALETTES = [
 
 let params = {
   seed: 12345, species: 'aster',
-  petals: 13, whorls: 4, petalLen: 0.92, petalWid: 0.30, sharp: 0.75,
-  open: 0.40, disc: 0.18, size: 250, leaves: 4, relief: 26,
+  petals: 21, whorls: 2, petalLen: 1.05, petalWid: 0.13, sharp: 0.55,   // opens on the oxblood aster, inked (Kyra, 2026-11-21)
+  open: 0.30, disc: 0.26, size: 250, leaves: 0, relief: 26,
   gloss: 0, scatter: 0.10, lightSize: 700, lightHeight: 280, ease: 0.045,
   surface: 'ink', emboss: 0.24, press: 'up', cSheet: '#e9e3d6',
-  finish: 'matte', grainAmt: 0.30, contrast: 0.86, steps: 0,
-  toneShadow: '#2f2a24', toneHigh: '#f4efe6', toneAmt: 0.30,
+  finish: 'matte', grainAmt: 0.56, contrast: 1.19, steps: 2,
+  toneShadow: '#2f2a24', toneHigh: '#f4efe6', toneAmt: 0,
   lampColor: '#fff6ec',
-  cBase: '#a8817c', cTip: '#e7d5cb', cDisc: '#7a6b5c', cLeaf: '#93a08c'
+  cBase: '#8f1d2b', cTip: '#e8d5c0', cDisc: '#2f2a1c', cLeaf: '#556247'
 };
 const defaultParams = Object.assign({}, params);
 
@@ -436,6 +459,11 @@ function copySettings(){
   document.getElementById('settings-box').value = txt;
   if(navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => {});
 }
+const KEPT_LOOKS = {
+  inked: {"seed":12345,"species":"aster","petals":21,"whorls":2,"petalLen":1.05,"petalWid":0.13,"sharp":0.55,"open":0.3,"disc":0.26,"size":250,"leaves":0,"relief":26,"gloss":0,"scatter":0.1,"lightSize":700,"lightHeight":280,"ease":0.045,"lampColor":"#fff6ec","finish":"matte","grainAmt":0.56,"contrast":1.19,"steps":2,"toneShadow":"#2f2a24","toneHigh":"#f4efe6","toneAmt":0,"cBase":"#8f1d2b","cTip":"#e8d5c0","cDisc":"#2f2a1c","cLeaf":"#556247","surface":"ink","emboss":0.24,"press":"up","cSheet":"#e9e3d6"},
+  blind: {"seed":12345,"species":"aster","petals":21,"whorls":2,"petalLen":1.05,"petalWid":0.13,"sharp":0.55,"open":0.3,"disc":0.26,"size":250,"leaves":0,"relief":32,"gloss":0.24,"scatter":0.78,"lightSize":370,"lightHeight":290,"ease":0.12,"lampColor":"#fff6ec","finish":"matte","grainAmt":0.56,"contrast":1.19,"steps":2,"toneShadow":"#2f2a24","toneHigh":"#f4efe6","toneAmt":0,"cBase":"#8f1d2b","cTip":"#e8d5c0","cDisc":"#2f2a1c","cLeaf":"#556247","surface":"blind","emboss":0.24,"press":"up","cSheet":"#e9e3d6"}
+};
+function applyPreset(k){ document.getElementById('settings-box').value = JSON.stringify(KEPT_LOOKS[k], null, 1); applySettings(); }
 function applySettings(){
   let o;
   try { o = JSON.parse(document.getElementById('settings-box').value); }

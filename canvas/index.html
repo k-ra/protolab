@@ -70,7 +70,10 @@ textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;
   font-size:12.5px;line-height:1.6;resize:vertical;background:#fff;color:var(--ink)}
 textarea:focus{outline:none;border-color:var(--ink)}
 .hint{font-size:11px;color:var(--soft);line-height:1.6;margin-top:9px}
+/* visitors get a few controls; ?tweak in the URL brings back the whole workshop */
+body:not(.tweak) .tweak-only{display:none!important}
 </style>
+<script>document.addEventListener('DOMContentLoaded', () => { if(/[?&]tweak/.test(location.search)) document.body.classList.add('tweak'); });</script>
 </head>
 <body>
 <div id="sheet">
@@ -83,42 +86,42 @@ textarea:focus{outline:none;border-color:var(--ink)}
   <button id="b-view" onclick="toggleView()">One at a time</button>
   <button id="b-prev" onclick="step(-1)" style="display:none">‹</button>
   <button id="b-next" onclick="step(1)" style="display:none">›</button>
-  <div class="div"></div>
-  <button id="b-lock" onclick="toggleLock()" title="stop the lamp following the cursor">Lamp follows</button>
-  <div class="div"></div>
-  <button class="plus" onclick="addPressing()" title="add a pressing">+</button>
+  <div class="tweak-only div"></div>
+  <button class="tweak-only" id="b-lock" onclick="toggleLock()" title="stop the lamp following the cursor">Lamp follows</button>
+  <div class="tweak-only div"></div>
+  <button class="tweak-only plus" onclick="addPressing()" title="add a pressing">+</button>
   <button onclick="shuffleAll()">Shuffle</button>
-  <button onclick="fillSet()">Full set</button>
-  <button onclick="clearAll()">Clear</button>
+  <button class="tweak-only" onclick="fillSet()">Full set</button>
+  <button class="tweak-only" onclick="clearAll()">Clear</button>
   <button id="b-prop" onclick="plantProposals()" style="display:none"></button>
   <div class="div"></div>
-  <button onclick="togglePanel('notes')">Notes</button>
+  <button class="tweak-only" onclick="togglePanel('notes')">Notes</button>
   <button onclick="downloadPNG()">PNG</button>
 </div>
 
 <div class="panel" id="inspector">
   <h2><span id="i-title">Pressing</span><span onclick="deselect()">×</span></h2>
   <div class="row"><label>Material</label><div class="chips" id="i-mat"></div></div>
-  <div class="row"><label>Medium</label><div class="chips" id="i-medium"></div></div>
+  <div class="tweak-only row"><label>Medium</label><div class="chips" id="i-medium"></div></div>
   <div class="row"><label>Form</label><div class="chips" id="i-form"></div></div>
-  <div class="row" id="row-content"><label>Pressed with</label><div class="chips" id="i-content"></div></div>
-  <div class="row"><label>Scale <span class="val" id="v-scale"></span></label>
+  <div class="tweak-only row" id="row-content"><label>Pressed with</label><div class="chips" id="i-content"></div></div>
+  <div class="tweak-only row"><label>Scale <span class="val" id="v-scale"></span></label>
     <input type="range" id="i-scale" min="0.5" max="1.5" step="0.02" oninput="setField('scale',+this.value)"></div>
-  <div class="row"><label>Impression <span class="val" id="v-depth"></span></label>
+  <div class="tweak-only row"><label>Impression <span class="val" id="v-depth"></span></label>
     <input type="range" id="i-depth" min="0.3" max="2" step="0.05" oninput="setField('depth',+this.value)"></div>
-  <div class="row" id="row-ink"><label>Ink</label>
+  <div class="tweak-only row" id="row-ink"><label>Ink</label>
     <div class="swatchrow" style="display:flex;gap:7px">
       <input type="color" id="i-ink1" oninput="setField('ink1',this.value)" style="width:26px;height:26px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
       <input type="color" id="i-ink2" oninput="setField('ink2',this.value)" style="width:26px;height:26px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
     </div></div>
-  <div class="row" id="row-name"><label>Plate name</label>
+  <div class="tweak-only row" id="row-name"><label>Plate name</label>
     <input type="text" id="i-name" style="width:100%;border:1px solid var(--line);background:#fff;font-family:'Lora',serif;font-size:13px;padding:8px;border-radius:8px;color:var(--ink);text-align:center;letter-spacing:.08em" oninput="setField('name',this.value)"></div>
-  <div class="row"><label>Note</label>
+  <div class="tweak-only row"><label>Note</label>
     <textarea id="i-note" rows="3" placeholder="what you like about it" oninput="setField('note',this.value)"></textarea></div>
   <div class="row"><button class="wide" onclick="reseedSel()">New seed</button></div>
   <div class="row"><button class="wide solid" onclick="openStudy()">Open study ↗</button></div>
-  <div class="row"><button class="wide" onclick="copyStyle()">Copy style prompt</button></div>
-  <div class="row" style="margin-bottom:0"><button class="wide danger" onclick="removeSel()">Remove</button></div>
+  <div class="tweak-only row"><button class="wide" onclick="copyStyle()">Copy style prompt</button></div>
+  <div class="tweak-only row" style="margin-bottom:0"><button class="wide danger" onclick="removeSel()">Remove</button></div>
 </div>
 
 <div class="panel" id="notes">
@@ -905,9 +908,9 @@ function openStudy(){
   // clipping it came from, not like the study's own defaults
   const conditions = {
     surface: 'ink', finish: 'matte', cSheet: GROUND, color: M.color,
-    lampColor: '#fffaf2', lightHeight: L.h, lightSize: 1400,
-    grainAmt: L.grain, contrast: 0.94, steps: 0,
-    toneShadow: '#2b2721', toneHigh: '#ffffff', toneAmt: 0.10,
+    lampColor: '#fff6ec', lightHeight: L.h, lightSize: 1400,
+    grainAmt: L.grain, contrast: 1.19, steps: 2,
+    toneShadow: '#2f2a24', toneHigh: '#f4efe6', toneAmt: 0,
     substrate: SHAPE_OF[it.material] || 'wax'
   };
   location.href = Hub.linkTo(kind, specFor(it), {from: 'clippings', conditions: conditions});
@@ -1023,9 +1026,9 @@ function conditionsOf(it){
     ambient: M.ambient, aoLo: M.aoLo, exposure: M.exposure,
     gloss: M.gloss, sheen: M.sheen, scatter: M.scatter,
     env: !!M.env, relief: M.relief, tooth: M.tooth,
-    lampHeight: L.h, lampRadius: L.radius, lampColor: '#fffaf2',
-    matte: true, wrap: 0.42, contrast: 0.94,
-    toneShadow: '#2b2721', toneHigh: '#ffffff', toneAmt: 0.10,
+    lampHeight: L.h, lampRadius: L.radius, lampColor: '#fff6ec',
+    matte: true, wrap: 0.42, contrast: 1.19, steps: 2,   // the oxblood aster's conditions (Kyra, 2026-11-21)
+    toneShadow: '#2f2a24', toneHigh: '#f4efe6', toneAmt: 0,
     grain: L.grain
   };
   if((it.medium||'relief') !== 'relief'){ c.ink1 = it.ink1; c.ink2 = it.ink2; }

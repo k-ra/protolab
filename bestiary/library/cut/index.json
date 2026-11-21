@@ -1,0 +1,5595 @@
+{
+  "inat-53620484": {
+    "w": 546,
+    "h": 257,
+    "area": 0.179,
+    "edge": 0.056,
+    "compact": 0.733,
+    "color": [
+      64,
+      92,
+      67
+    ],
+    "quality": "good",
+    "name": "Madagascan Sunset Moth",
+    "id": "inat-53620484",
+    "file": "cut/inat-53620484.webp",
+    "category": "wings"
+  },
+  "inat-53540544": {
+    "w": 401,
+    "h": 600,
+    "area": 0.376,
+    "edge": 0.144,
+    "compact": 0.822,
+    "color": [
+      109,
+      106,
+      101
+    ],
+    "quality": "meh",
+    "name": "Madagascan Sunset Moth",
+    "id": "inat-53540544",
+    "file": "cut/inat-53540544.webp",
+    "category": "wings"
+  },
+  "inat-249673906": {
+    "w": 597,
+    "h": 563,
+    "area": 0.307,
+    "edge": 0.089,
+    "compact": 0.277,
+    "color": [
+      62,
+      78,
+      56
+    ],
+    "quality": "good",
+    "name": "Madagascan Sunset Moth",
+    "id": "inat-249673906",
+    "file": "cut/inat-249673906.webp",
+    "category": "wings"
+  },
+  "inat-171176170": {
+    "w": 561,
+    "h": 403,
+    "area": 0.368,
+    "edge": 0,
+    "compact": 0.27,
+    "color": [
+      134,
+      54,
+      41
+    ],
+    "quality": "good",
+    "name": "Morpho epistrophus argentinus",
+    "id": "inat-171176170",
+    "file": "cut/inat-171176170.webp",
+    "category": "wings"
+  },
+  "inat-8368487": {
+    "w": 317,
+    "h": 469,
+    "area": 0.306,
+    "edge": 0.181,
+    "compact": 1,
+    "color": [
+      139,
+      132,
+      136
+    ],
+    "quality": "meh",
+    "name": "Achilles morpho",
+    "id": "inat-8368487",
+    "file": "cut/inat-8368487.webp",
+    "category": "wings"
+  },
+  "inat-295787138": {
+    "w": 561,
+    "h": 529,
+    "area": 0.262,
+    "edge": 0.113,
+    "compact": 0.897,
+    "color": [
+      102,
+      97,
+      97
+    ],
+    "quality": "good",
+    "name": "Aega Morpho",
+    "id": "inat-295787138",
+    "file": "cut/inat-295787138.webp",
+    "category": "wings"
+  },
+  "inat-1589500": {
+    "w": 437,
+    "h": 218,
+    "area": 0.148,
+    "edge": 0,
+    "compact": 0.756,
+    "color": [
+      60,
+      118,
+      131
+    ],
+    "quality": "good",
+    "name": "Morpho helenor montezuma",
+    "id": "inat-1589500",
+    "file": "cut/inat-1589500.webp",
+    "category": "wings"
+  },
+  "inat-45110154": {
+    "w": 426,
+    "h": 327,
+    "area": 0.164,
+    "edge": 0,
+    "compact": 0.359,
+    "color": [
+      35,
+      132,
+      131
+    ],
+    "quality": "good",
+    "name": "Ulysses Butterfly",
+    "id": "inat-45110154",
+    "file": "cut/inat-45110154.webp",
+    "category": "wings"
+  },
+  "inat-383236105": {
+    "w": 540,
+    "h": 316,
+    "area": 0.389,
+    "edge": 0.227,
+    "compact": 1,
+    "color": [
+      119,
+      132,
+      16
+    ],
+    "quality": "meh",
+    "name": "Papilio ulysses joesa",
+    "id": "inat-383236105",
+    "file": "cut/inat-383236105.webp",
+    "category": "wings"
+  },
+  "inat-111699379": {
+    "w": 330,
+    "h": 600,
+    "area": 0.121,
+    "edge": 0.164,
+    "compact": 0.374,
+    "color": [
+      100,
+      111,
+      61
+    ],
+    "quality": "meh",
+    "name": "Papilio ulysses joesa",
+    "id": "inat-111699379",
+    "file": "cut/inat-111699379.webp",
+    "category": "wings"
+  },
+  "inat-34980868": {
+    "w": 321,
+    "h": 377,
+    "area": 0.144,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      125,
+      146,
+      58
+    ],
+    "quality": "good",
+    "name": "North American Luna Moth",
+    "id": "inat-34980868",
+    "file": "cut/inat-34980868.webp",
+    "category": "wings"
+  },
+  "inat-362378659": {
+    "w": 413,
+    "h": 600,
+    "area": 0.405,
+    "edge": 0.255,
+    "compact": 0.89,
+    "color": [
+      64,
+      94,
+      43
+    ],
+    "quality": "meh",
+    "name": "North American Luna Moth",
+    "id": "inat-362378659",
+    "file": "cut/inat-362378659.webp",
+    "category": "wings"
+  },
+  "inat-383801649": {
+    "w": 474,
+    "h": 352,
+    "area": 0.149,
+    "edge": 0,
+    "compact": 0.492,
+    "color": [
+      57,
+      112,
+      131
+    ],
+    "quality": "good",
+    "name": "North American Luna Moth",
+    "id": "inat-383801649",
+    "file": "cut/inat-383801649.webp",
+    "category": "wings"
+  },
+  "inat-508068360": {
+    "w": 555,
+    "h": 536,
+    "area": 0.252,
+    "edge": 0.012,
+    "compact": 0.779,
+    "color": [
+      140,
+      141,
+      112
+    ],
+    "quality": "good",
+    "name": "North American Luna Moth",
+    "id": "inat-508068360",
+    "file": "cut/inat-508068360.webp",
+    "category": "wings"
+  },
+  "inat-457683761": {
+    "w": 292,
+    "h": 258,
+    "area": 0.058,
+    "edge": 0,
+    "compact": 0.922,
+    "color": [
+      51,
+      55,
+      62
+    ],
+    "quality": "good",
+    "name": "Purple Spotted Swallowtail",
+    "id": "inat-457683761",
+    "file": "cut/inat-457683761.webp",
+    "category": "wings"
+  },
+  "inat-332883183": {
+    "w": 309,
+    "h": 300,
+    "area": 0.103,
+    "edge": 0,
+    "compact": 0.998,
+    "color": [
+      74,
+      70,
+      69
+    ],
+    "quality": "good",
+    "name": "Purple Spotted Swallowtail",
+    "id": "inat-332883183",
+    "file": "cut/inat-332883183.webp",
+    "category": "wings"
+  },
+  "inat-453183604": {
+    "w": 431,
+    "h": 589,
+    "area": 0.236,
+    "edge": 0.179,
+    "compact": 0.644,
+    "color": [
+      104,
+      95,
+      67
+    ],
+    "quality": "meh",
+    "name": "Purple Spotted Swallowtail",
+    "id": "inat-453183604",
+    "file": "cut/inat-453183604.webp",
+    "category": "wings"
+  },
+  "inat-457683753": {
+    "w": 441,
+    "h": 305,
+    "area": 0.137,
+    "edge": 0,
+    "compact": 0.671,
+    "color": [
+      108,
+      99,
+      72
+    ],
+    "quality": "good",
+    "name": "Purple Spotted Swallowtail",
+    "id": "inat-457683753",
+    "file": "cut/inat-457683753.webp",
+    "category": "wings"
+  },
+  "inat-60643931": {
+    "w": 578,
+    "h": 516,
+    "area": 0.35,
+    "edge": 0.05,
+    "compact": 0.52,
+    "color": [
+      125,
+      99,
+      81
+    ],
+    "quality": "good",
+    "name": "Atlas Moth",
+    "id": "inat-60643931",
+    "file": "cut/inat-60643931.webp",
+    "category": "wings"
+  },
+  "inat-139156344": {
+    "w": 600,
+    "h": 366,
+    "area": 0.464,
+    "edge": 0.001,
+    "compact": 0.624,
+    "color": [
+      98,
+      62,
+      46
+    ],
+    "quality": "good",
+    "name": "Atlas Moth",
+    "id": "inat-139156344",
+    "file": "cut/inat-139156344.webp",
+    "category": "wings"
+  },
+  "inat-4466444": {
+    "w": 585,
+    "h": 294,
+    "area": 0.206,
+    "edge": 0,
+    "compact": 0.797,
+    "color": [
+      163,
+      117,
+      112
+    ],
+    "quality": "good",
+    "name": "Atlas Moth",
+    "id": "inat-4466444",
+    "file": "cut/inat-4466444.webp",
+    "category": "wings"
+  },
+  "wm-139849785": {
+    "w": 580,
+    "h": 371,
+    "area": 0.328,
+    "edge": 0,
+    "compact": 0.756,
+    "color": [
+      128,
+      100,
+      80
+    ],
+    "quality": "good",
+    "name": "Aricia agestis (53141079157)",
+    "id": "wm-139849785",
+    "file": "cut/wm-139849785.webp",
+    "category": "wings"
+  },
+  "wm-19450194": {
+    "w": 600,
+    "h": 477,
+    "area": 0.578,
+    "edge": 0.226,
+    "compact": 0.973,
+    "color": [
+      125,
+      97,
+      113
+    ],
+    "quality": "meh",
+    "name": "Glyphodes bivitralis wing closeup",
+    "id": "wm-19450194",
+    "file": "cut/wm-19450194.webp",
+    "category": "wings"
+  },
+  "wm-196242835": {
+    "w": 564,
+    "h": 525,
+    "area": 0.433,
+    "edge": 0.008,
+    "compact": 0.745,
+    "color": [
+      123,
+      136,
+      178
+    ],
+    "quality": "good",
+    "name": "Hauhechel-Bläuling (Polyommatus icarus), Fagne de la Petite Roer, Sourbrodt, Ostbelgien, male (cropped)",
+    "id": "wm-196242835",
+    "file": "cut/wm-196242835.webp",
+    "category": "wings"
+  },
+  "wm-41782667": {
+    "w": 584,
+    "h": 344,
+    "area": 0.293,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      107,
+      80,
+      69
+    ],
+    "quality": "good",
+    "name": "Kleiner Sonnenröschen-Bläuling Aricia agestis 1514",
+    "id": "wm-41782667",
+    "file": "cut/wm-41782667.webp",
+    "category": "wings"
+  },
+  "inat-142767971": {
+    "w": 600,
+    "h": 496,
+    "area": 0.155,
+    "edge": 0.054,
+    "compact": 0.03,
+    "color": [
+      134,
+      117,
+      45
+    ],
+    "quality": "good",
+    "name": "Green-banded Urania",
+    "id": "inat-142767971",
+    "file": "cut/inat-142767971.webp",
+    "category": "wings"
+  },
+  "inat-2982156": {
+    "w": 280,
+    "h": 513,
+    "area": 0.179,
+    "edge": 0.005,
+    "compact": 1,
+    "color": [
+      45,
+      55,
+      39
+    ],
+    "quality": "good",
+    "name": "Green-banded Urania",
+    "id": "inat-2982156",
+    "file": "cut/inat-2982156.webp",
+    "category": "wings"
+  },
+  "inat-2960049": {
+    "w": 379,
+    "h": 302,
+    "area": 0.141,
+    "edge": 0,
+    "compact": 0.861,
+    "color": [
+      61,
+      86,
+      91
+    ],
+    "quality": "good",
+    "name": "Green-banded Urania",
+    "id": "inat-2960049",
+    "file": "cut/inat-2960049.webp",
+    "category": "wings"
+  },
+  "inat-172431528": {
+    "w": 600,
+    "h": 436,
+    "area": 0.248,
+    "edge": 0,
+    "compact": 0.984,
+    "color": [
+      53,
+      73,
+      61
+    ],
+    "quality": "good",
+    "name": "Green-banded Urania",
+    "id": "inat-172431528",
+    "file": "cut/inat-172431528.webp",
+    "category": "wings"
+  },
+  "wm-117726041": {
+    "w": 282,
+    "h": 525,
+    "area": 0.326,
+    "edge": 0.13,
+    "compact": 1,
+    "color": [
+      87,
+      99,
+      78
+    ],
+    "quality": "meh",
+    "name": "Bowfin Cycloid Scale",
+    "id": "wm-117726041",
+    "file": "cut/wm-117726041.webp",
+    "category": "scales"
+  },
+  "wm-117726141": {
+    "w": 506,
+    "h": 537,
+    "area": 0.576,
+    "edge": 0.107,
+    "compact": 1,
+    "color": [
+      164,
+      154,
+      136
+    ],
+    "quality": "good",
+    "name": "Bowfin Scales",
+    "id": "wm-117726141",
+    "file": "cut/wm-117726141.webp",
+    "category": "scales"
+  },
+  "inat-414923786": {
+    "w": 312,
+    "h": 309,
+    "area": 0.178,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      120,
+      120,
+      121
+    ],
+    "quality": "good",
+    "name": "Taiwan Pangolin",
+    "id": "inat-414923786",
+    "file": "cut/inat-414923786.webp",
+    "category": "scales"
+  },
+  "inat-551362571": {
+    "w": 442,
+    "h": 220,
+    "area": 0.139,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      140,
+      130,
+      115
+    ],
+    "quality": "good",
+    "name": "Taiwan Pangolin",
+    "id": "inat-551362571",
+    "file": "cut/inat-551362571.webp",
+    "category": "scales"
+  },
+  "inat-101596": {
+    "w": 525,
+    "h": 367,
+    "area": 0.371,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      72,
+      57,
+      47
+    ],
+    "quality": "good",
+    "name": "Sunda Pangolin",
+    "id": "inat-101596",
+    "file": "cut/inat-101596.webp",
+    "category": "scales"
+  },
+  "inat-150790361": {
+    "w": 426,
+    "h": 276,
+    "area": 0.177,
+    "edge": 0,
+    "compact": 0.499,
+    "color": [
+      129,
+      104,
+      95
+    ],
+    "quality": "good",
+    "name": "Thorny Devil",
+    "id": "inat-150790361",
+    "file": "cut/inat-150790361.webp",
+    "category": "scales"
+  },
+  "inat-108311312": {
+    "w": 600,
+    "h": 350,
+    "area": 0.397,
+    "edge": 0.089,
+    "compact": 0.123,
+    "color": [
+      153,
+      115,
+      77
+    ],
+    "quality": "good",
+    "name": "Thorny Devil",
+    "id": "inat-108311312",
+    "file": "cut/inat-108311312.webp",
+    "category": "scales"
+  },
+  "inat-318418826": {
+    "w": 337,
+    "h": 212,
+    "area": 0.071,
+    "edge": 0,
+    "compact": 0.211,
+    "color": [
+      160,
+      121,
+      91
+    ],
+    "quality": "good",
+    "name": "Thorny Devil",
+    "id": "inat-318418826",
+    "file": "cut/inat-318418826.webp",
+    "category": "scales"
+  },
+  "inat-99960213": {
+    "w": 600,
+    "h": 232,
+    "area": 0.2,
+    "edge": 0,
+    "compact": 0.432,
+    "color": [
+      147,
+      125,
+      103
+    ],
+    "quality": "good",
+    "name": "Thorny Devil",
+    "id": "inat-99960213",
+    "file": "cut/inat-99960213.webp",
+    "category": "scales"
+  },
+  "wm-179732072": {
+    "w": 593,
+    "h": 600,
+    "area": 0.634,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      124,
+      124,
+      124
+    ],
+    "quality": "good",
+    "name": "Ctenoid fish scale",
+    "id": "wm-179732072",
+    "file": "cut/wm-179732072.webp",
+    "category": "scales"
+  },
+  "wm-90774527": {
+    "w": 452,
+    "h": 600,
+    "area": 0.437,
+    "edge": 0,
+    "compact": 0.023,
+    "color": [
+      123,
+      123,
+      123
+    ],
+    "quality": "good",
+    "name": "Чешуя рыбы (кета)",
+    "id": "wm-90774527",
+    "file": "cut/wm-90774527.webp",
+    "category": "scales"
+  },
+  "wm-7850739": {
+    "w": 389,
+    "h": 431,
+    "area": 0.309,
+    "edge": 0.006,
+    "compact": 1,
+    "color": [
+      126,
+      132,
+      127
+    ],
+    "quality": "good",
+    "name": "Arapaima (Arapaima gigas) 5",
+    "id": "wm-7850739",
+    "file": "cut/wm-7850739.webp",
+    "category": "scales"
+  },
+  "wm-3135168": {
+    "w": 417,
+    "h": 176,
+    "area": 0.096,
+    "edge": 0,
+    "compact": 0.988,
+    "color": [
+      123,
+      124,
+      102
+    ],
+    "quality": "good",
+    "name": "Arapaima gigas 5147",
+    "id": "wm-3135168",
+    "file": "cut/wm-3135168.webp",
+    "category": "scales"
+  },
+  "inat-151904401": {
+    "w": 595,
+    "h": 466,
+    "area": 0.529,
+    "edge": 0.252,
+    "compact": 1,
+    "color": [
+      108,
+      104,
+      108
+    ],
+    "quality": "meh",
+    "name": "Atlantic Tarpon",
+    "id": "inat-151904401",
+    "file": "cut/inat-151904401.webp",
+    "category": "scales"
+  },
+  "inat-197824448": {
+    "w": 194,
+    "h": 47,
+    "area": 0.012,
+    "edge": 0,
+    "compact": 0.91,
+    "color": [
+      189,
+      188,
+      194
+    ],
+    "quality": "bad",
+    "name": "Atlantic Tarpon",
+    "id": "inat-197824448",
+    "file": "cut/inat-197824448.webp",
+    "category": "scales"
+  },
+  "inat-356272532": {
+    "w": 291,
+    "h": 131,
+    "area": 0.061,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      147,
+      153,
+      160
+    ],
+    "quality": "good",
+    "name": "Atlantic Tarpon",
+    "id": "inat-356272532",
+    "file": "cut/inat-356272532.webp",
+    "category": "scales"
+  },
+  "inat-308125411": {
+    "w": 600,
+    "h": 301,
+    "area": 0.043,
+    "edge": 0,
+    "compact": 0.244,
+    "color": [
+      100,
+      134,
+      110
+    ],
+    "quality": "good",
+    "name": "Atlantic Tarpon",
+    "id": "inat-308125411",
+    "file": "cut/inat-308125411.webp",
+    "category": "scales"
+  },
+  "inat-288010505": {
+    "w": 317,
+    "h": 45,
+    "area": 0.018,
+    "edge": 0.256,
+    "compact": 0.288,
+    "color": [
+      183,
+      198,
+      196
+    ],
+    "quality": "bad",
+    "name": "Asian Arowana",
+    "id": "inat-288010505",
+    "file": "cut/inat-288010505.webp",
+    "category": "scales"
+  },
+  "inat-310628775": {
+    "w": 75,
+    "h": 70,
+    "area": 0.006,
+    "edge": 0,
+    "compact": 0.591,
+    "color": [
+      178,
+      165,
+      168
+    ],
+    "quality": "bad",
+    "name": "Asian Arowana",
+    "id": "inat-310628775",
+    "file": "cut/inat-310628775.webp",
+    "category": "scales"
+  },
+  "inat-718391540": {
+    "w": 377,
+    "h": 281,
+    "area": 0.157,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      62,
+      73,
+      99
+    ],
+    "quality": "good",
+    "name": "Mandarinfish",
+    "id": "inat-718391540",
+    "file": "cut/inat-718391540.webp",
+    "category": "scales"
+  },
+  "inat-255388324": {
+    "w": 492,
+    "h": 147,
+    "area": 0.082,
+    "edge": 0,
+    "compact": 0.58,
+    "color": [
+      94,
+      61,
+      40
+    ],
+    "quality": "good",
+    "name": "Mandarinfish",
+    "id": "inat-255388324",
+    "file": "cut/inat-255388324.webp",
+    "category": "scales"
+  },
+  "inat-331992166": {
+    "w": 550,
+    "h": 404,
+    "area": 0.27,
+    "edge": 0,
+    "compact": 0.923,
+    "color": [
+      77,
+      66,
+      72
+    ],
+    "quality": "good",
+    "name": "Mandarinfish",
+    "id": "inat-331992166",
+    "file": "cut/inat-331992166.webp",
+    "category": "scales"
+  },
+  "inat-453137776": {
+    "w": 418,
+    "h": 315,
+    "area": 0.095,
+    "edge": 0,
+    "compact": 0.879,
+    "color": [
+      90,
+      98,
+      109
+    ],
+    "quality": "good",
+    "name": "Mandarinfish",
+    "id": "inat-453137776",
+    "file": "cut/inat-453137776.webp",
+    "category": "scales"
+  },
+  "inat-53156259": {
+    "w": 199,
+    "h": 415,
+    "area": 0.05,
+    "edge": 0,
+    "compact": 0.636,
+    "color": [
+      157,
+      120,
+      100
+    ],
+    "quality": "good",
+    "name": "Gila Monster",
+    "id": "inat-53156259",
+    "file": "cut/inat-53156259.webp",
+    "category": "scales"
+  },
+  "inat-1461542": {
+    "w": 579,
+    "h": 234,
+    "area": 0.124,
+    "edge": 0,
+    "compact": 0.327,
+    "color": [
+      86,
+      93,
+      96
+    ],
+    "quality": "good",
+    "name": "Guatemalan Beaded Lizard",
+    "id": "inat-1461542",
+    "file": "cut/inat-1461542.webp",
+    "category": "scales"
+  },
+  "inat-104628976": {
+    "w": 582,
+    "h": 525,
+    "area": 0.264,
+    "edge": 0.165,
+    "compact": 0.138,
+    "color": [
+      119,
+      144,
+      92
+    ],
+    "quality": "meh",
+    "name": "Rio Fuerte Beaded Lizard",
+    "id": "inat-104628976",
+    "file": "cut/inat-104628976.webp",
+    "category": "scales"
+  },
+  "inat-21296626": {
+    "w": 383,
+    "h": 342,
+    "area": 0.101,
+    "edge": 0,
+    "compact": 0.359,
+    "color": [
+      108,
+      97,
+      82
+    ],
+    "quality": "good",
+    "name": "Texas Horned Lizard",
+    "id": "inat-21296626",
+    "file": "cut/inat-21296626.webp",
+    "category": "scales"
+  },
+  "inat-47666818": {
+    "w": 395,
+    "h": 409,
+    "area": 0.201,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      146,
+      121,
+      104
+    ],
+    "quality": "good",
+    "name": "Rock Horned Lizard",
+    "id": "inat-47666818",
+    "file": "cut/inat-47666818.webp",
+    "category": "scales"
+  },
+  "inat-91516418": {
+    "w": 479,
+    "h": 255,
+    "area": 0.147,
+    "edge": 0,
+    "compact": 0.448,
+    "color": [
+      88,
+      77,
+      83
+    ],
+    "quality": "good",
+    "name": "Greater Short-horned Lizard",
+    "id": "inat-91516418",
+    "file": "cut/inat-91516418.webp",
+    "category": "scales"
+  },
+  "inat-343608007": {
+    "w": 436,
+    "h": 419,
+    "area": 0.218,
+    "edge": 0,
+    "compact": 0.986,
+    "color": [
+      149,
+      132,
+      122
+    ],
+    "quality": "good",
+    "name": "Textile Cone",
+    "id": "inat-343608007",
+    "file": "cut/inat-343608007.webp",
+    "category": "shells"
+  },
+  "inat-474273435": {
+    "w": 370,
+    "h": 226,
+    "area": 0.205,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      141,
+      131,
+      121
+    ],
+    "quality": "good",
+    "name": "Textile Cone",
+    "id": "inat-474273435",
+    "file": "cut/inat-474273435.webp",
+    "category": "shells"
+  },
+  "inat-448355137": {
+    "w": 588,
+    "h": 339,
+    "area": 0.395,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      139,
+      123,
+      118
+    ],
+    "quality": "good",
+    "name": "Textile Cone",
+    "id": "inat-448355137",
+    "file": "cut/inat-448355137.webp",
+    "category": "shells"
+  },
+  "inat-470639183": {
+    "w": 341,
+    "h": 313,
+    "area": 0.172,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      155,
+      129,
+      112
+    ],
+    "quality": "good",
+    "name": "Emperor Nautilus",
+    "id": "inat-470639183",
+    "file": "cut/inat-470639183.webp",
+    "category": "shells"
+  },
+  "inat-237114360": {
+    "w": 548,
+    "h": 440,
+    "area": 0.436,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      161,
+      149,
+      140
+    ],
+    "quality": "good",
+    "name": "Emperor Nautilus",
+    "id": "inat-237114360",
+    "file": "cut/inat-237114360.webp",
+    "category": "shells"
+  },
+  "inat-401108419": {
+    "w": 317,
+    "h": 462,
+    "area": 0.144,
+    "edge": 0,
+    "compact": 0.602,
+    "color": [
+      176,
+      182,
+      138
+    ],
+    "quality": "good",
+    "name": "Emperor Nautilus",
+    "id": "inat-401108419",
+    "file": "cut/inat-401108419.webp",
+    "category": "shells"
+  },
+  "inat-200970795": {
+    "w": 585,
+    "h": 489,
+    "area": 0.499,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      134,
+      131,
+      135
+    ],
+    "quality": "good",
+    "name": "Emperor Nautilus",
+    "id": "inat-200970795",
+    "file": "cut/inat-200970795.webp",
+    "category": "shells"
+  },
+  "inat-557002438": {
+    "w": 298,
+    "h": 447,
+    "area": 0.148,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      173,
+      176,
+      174
+    ],
+    "quality": "good",
+    "name": "Virgin Murex",
+    "id": "inat-557002438",
+    "file": "cut/inat-557002438.webp",
+    "category": "shells"
+  },
+  "inat-586692755": {
+    "w": 226,
+    "h": 189,
+    "area": 0.053,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      100,
+      99,
+      96
+    ],
+    "quality": "good",
+    "name": "Mangrove Murex",
+    "id": "inat-586692755",
+    "file": "cut/inat-586692755.webp",
+    "category": "shells"
+  },
+  "inat-170440233": {
+    "w": 600,
+    "h": 454,
+    "area": 0.328,
+    "edge": 0.047,
+    "compact": 0.457,
+    "color": [
+      114,
+      115,
+      118
+    ],
+    "quality": "good",
+    "name": "Ramose Murex",
+    "id": "inat-170440233",
+    "file": "cut/inat-170440233.webp",
+    "category": "shells"
+  },
+  "inat-26810256": {
+    "w": 526,
+    "h": 356,
+    "area": 0.288,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      110,
+      68,
+      51
+    ],
+    "quality": "good",
+    "name": "Giant thorny oyster",
+    "id": "inat-26810256",
+    "file": "cut/inat-26810256.webp",
+    "category": "shells"
+  },
+  "inat-182756392": {
+    "w": 589,
+    "h": 367,
+    "area": 0.247,
+    "edge": 0,
+    "compact": 0.641,
+    "color": [
+      184,
+      117,
+      119
+    ],
+    "quality": "good",
+    "name": "Cliff Oyster",
+    "id": "inat-182756392",
+    "file": "cut/inat-182756392.webp",
+    "category": "shells"
+  },
+  "inat-185657952": {
+    "w": 243,
+    "h": 384,
+    "area": 0.126,
+    "edge": 0,
+    "compact": 0.71,
+    "color": [
+      132,
+      165,
+      133
+    ],
+    "quality": "good",
+    "name": "Giant thorny oyster",
+    "id": "inat-185657952",
+    "file": "cut/inat-185657952.webp",
+    "category": "shells"
+  },
+  "wm-114190397": {
+    "w": 600,
+    "h": 204,
+    "area": 0.571,
+    "edge": 0,
+    "compact": 0.887,
+    "color": [
+      134,
+      114,
+      112
+    ],
+    "quality": "good",
+    "name": "074-decussata-MNHN-1",
+    "id": "wm-114190397",
+    "file": "cut/wm-114190397.webp",
+    "category": "shells"
+  },
+  "wm-88853527": {
+    "w": 46,
+    "h": 55,
+    "area": 0.004,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      63,
+      72,
+      87
+    ],
+    "quality": "bad",
+    "name": "2 Sea Shells",
+    "id": "wm-88853527",
+    "file": "cut/wm-88853527.webp",
+    "category": "shells"
+  },
+  "inat-6251325": {
+    "w": 410,
+    "h": 528,
+    "area": 0.378,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      170,
+      162,
+      158
+    ],
+    "quality": "good",
+    "name": "Greater Argonaut",
+    "id": "inat-6251325",
+    "file": "cut/inat-6251325.webp",
+    "category": "shells"
+  },
+  "inat-102249138": {
+    "w": 460,
+    "h": 372,
+    "area": 0.267,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      170,
+      172,
+      163
+    ],
+    "quality": "good",
+    "name": "Greater Argonaut",
+    "id": "inat-102249138",
+    "file": "cut/inat-102249138.webp",
+    "category": "shells"
+  },
+  "wm-133169066": {
+    "w": 415,
+    "h": 600,
+    "area": 0.427,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      236,
+      146,
+      152
+    ],
+    "quality": "good",
+    "name": "- conch pearl",
+    "id": "wm-133169066",
+    "file": "cut/wm-133169066.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-106534236": {
+    "w": 600,
+    "h": 371,
+    "area": 0.451,
+    "edge": 0,
+    "compact": 0.317,
+    "color": [
+      101,
+      92,
+      75
+    ],
+    "quality": "good",
+    "name": "2006 – Preservation of the Textile Collection in the Shalva Amiranashvili Art Museum, National Museum of Georgi - 14063083555",
+    "id": "wm-106534236",
+    "file": "cut/wm-106534236.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-17579893": {
+    "w": 538,
+    "h": 525,
+    "area": 0.57,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      146,
+      158,
+      141
+    ],
+    "quality": "good",
+    "name": "Abalone blister pearl",
+    "id": "wm-17579893",
+    "file": "cut/wm-17579893.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-17579773": {
+    "w": 600,
+    "h": 571,
+    "area": 0.326,
+    "edge": 0,
+    "compact": 0.079,
+    "color": [
+      180,
+      198,
+      173
+    ],
+    "quality": "good",
+    "name": "Abalone free form pearls",
+    "id": "wm-17579773",
+    "file": "cut/wm-17579773.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-17579839": {
+    "w": 439,
+    "h": 339,
+    "area": 0.307,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      152,
+      174,
+      177
+    ],
+    "quality": "good",
+    "name": "Abalone with conical pearl",
+    "id": "wm-17579839",
+    "file": "cut/wm-17579839.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-2604772": {
+    "w": 354,
+    "h": 419,
+    "area": 0.255,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      145,
+      143,
+      138
+    ],
+    "quality": "good",
+    "name": "A black pearl and a shell",
+    "id": "wm-2604772",
+    "file": "cut/wm-2604772.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-50908152": {
+    "w": 437,
+    "h": 472,
+    "area": 0.388,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      133,
+      111,
+      108
+    ],
+    "quality": "good",
+    "name": "A Nautilus macromphalus shell inside",
+    "id": "wm-50908152",
+    "file": "cut/wm-50908152.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-17981888": {
+    "w": 357,
+    "h": 600,
+    "area": 0.05,
+    "edge": 0,
+    "compact": 0.054,
+    "color": [
+      177,
+      174,
+      181
+    ],
+    "quality": "good",
+    "name": "Abalone nacre",
+    "id": "wm-17981888",
+    "file": "cut/wm-17981888.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-27515108": {
+    "w": 600,
+    "h": 424,
+    "area": 0.292,
+    "edge": 0,
+    "compact": 0.749,
+    "color": [
+      98,
+      100,
+      81
+    ],
+    "quality": "good",
+    "name": "Abalone shell pieces",
+    "id": "wm-27515108",
+    "file": "cut/wm-27515108.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-203557": {
+    "w": 527,
+    "h": 433,
+    "area": 0.244,
+    "edge": 0,
+    "compact": 0.58,
+    "color": [
+      103,
+      88,
+      87
+    ],
+    "quality": "good",
+    "name": "Abalone",
+    "id": "wm-203557",
+    "file": "cut/wm-203557.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-52801912": {
+    "w": 600,
+    "h": 426,
+    "area": 0.594,
+    "edge": 0.135,
+    "compact": 1,
+    "color": [
+      85,
+      94,
+      112
+    ],
+    "quality": "meh",
+    "name": "- panoramio - Diego Viveros (12)",
+    "id": "wm-52801912",
+    "file": "cut/wm-52801912.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-52801931": {
+    "w": 600,
+    "h": 489,
+    "area": 0.527,
+    "edge": 0.263,
+    "compact": 1,
+    "color": [
+      107,
+      42,
+      50
+    ],
+    "quality": "meh",
+    "name": "- panoramio - Diego Viveros (13)",
+    "id": "wm-52801931",
+    "file": "cut/wm-52801931.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-52801753": {
+    "w": 577,
+    "h": 349,
+    "area": 0.367,
+    "edge": 0.165,
+    "compact": 1,
+    "color": [
+      137,
+      45,
+      13
+    ],
+    "quality": "meh",
+    "name": "- panoramio - Diego Viveros (6)",
+    "id": "wm-52801753",
+    "file": "cut/wm-52801753.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-52411719": {
+    "w": 560,
+    "h": 506,
+    "area": 0.536,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      142,
+      151,
+      102
+    ],
+    "quality": "good",
+    "name": "10 malahit sa Urala (rеtоuchеd)",
+    "id": "wm-52411719",
+    "file": "cut/wm-52411719.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-11173667": {
+    "w": 561,
+    "h": 507,
+    "area": 0.533,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      136,
+      145,
+      94
+    ],
+    "quality": "good",
+    "name": "10 malahit sa Urala",
+    "id": "wm-11173667",
+    "file": "cut/wm-11173667.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-126014266": {
+    "w": 599,
+    "h": 314,
+    "area": 0.366,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      68,
+      88,
+      68
+    ],
+    "quality": "good",
+    "name": "1014 Malachit a olivenit - Richtárová",
+    "id": "wm-126014266",
+    "file": "cut/wm-126014266.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-126299122": {
+    "w": 600,
+    "h": 316,
+    "area": 0.549,
+    "edge": 0.207,
+    "compact": 1,
+    "color": [
+      128,
+      160,
+      161
+    ],
+    "quality": "meh",
+    "name": "1016 Malachit - Piesky",
+    "id": "wm-126299122",
+    "file": "cut/wm-126299122.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-574673": {
+    "w": 600,
+    "h": 482,
+    "area": 0.645,
+    "edge": 0.03,
+    "compact": 1,
+    "color": [
+      100,
+      52,
+      25
+    ],
+    "quality": "good",
+    "name": "Artificial crystals",
+    "id": "wm-574673",
+    "file": "cut/wm-574673.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-32130664": {
+    "w": 600,
+    "h": 352,
+    "area": 0.357,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      125,
+      104,
+      72
+    ],
+    "quality": "good",
+    "name": "Bi Bismuth 20140412184039",
+    "id": "wm-32130664",
+    "file": "cut/wm-32130664.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-32130673": {
+    "w": 577,
+    "h": 352,
+    "area": 0.283,
+    "edge": 0,
+    "compact": 0.779,
+    "color": [
+      117,
+      104,
+      85
+    ],
+    "quality": "good",
+    "name": "Bi Bismuth 20140412184111",
+    "id": "wm-32130673",
+    "file": "cut/wm-32130673.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-63241152": {
+    "w": 579,
+    "h": 456,
+    "area": 0.266,
+    "edge": 0.08,
+    "compact": 0.712,
+    "color": [
+      106,
+      110,
+      111
+    ],
+    "quality": "good",
+    "name": "Anorthite labradorite et opale, galerie de minéralogie du Muséum national d'histoire naturelle",
+    "id": "wm-63241152",
+    "file": "cut/wm-63241152.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-42244959": {
+    "w": 600,
+    "h": 469,
+    "area": 0.346,
+    "edge": 0.121,
+    "compact": 0.831,
+    "color": [
+      99,
+      94,
+      94
+    ],
+    "quality": "meh",
+    "name": "Anorthite labradorite et opale",
+    "id": "wm-42244959",
+    "file": "cut/wm-42244959.webp",
+    "category": "pearls_minerals"
+  },
+  "wm-6242281": {
+    "w": 600,
+    "h": 345,
+    "area": 0.381,
+    "edge": 0.143,
+    "compact": 0.706,
+    "color": [
+      183,
+      79,
+      37
+    ],
+    "quality": "meh",
+    "name": "Feueropal mineralogisches museum bonn",
+    "id": "wm-6242281",
+    "file": "cut/wm-6242281.webp",
+    "category": "pearls_minerals"
+  },
+  "inat-413359789": {
+    "w": 465,
+    "h": 600,
+    "area": 0.493,
+    "edge": 0.141,
+    "compact": 0.005,
+    "color": [
+      184,
+      179,
+      188
+    ],
+    "quality": "meh",
+    "name": "Purple Sea Fan",
+    "id": "inat-413359789",
+    "file": "cut/inat-413359789.webp",
+    "category": "coral_sea"
+  },
+  "inat-612947199": {
+    "w": 330,
+    "h": 355,
+    "area": 0.117,
+    "edge": 0,
+    "compact": 0.4,
+    "color": [
+      126,
+      116,
+      123
+    ],
+    "quality": "good",
+    "name": "Purple Sea Fan",
+    "id": "inat-612947199",
+    "file": "cut/inat-612947199.webp",
+    "category": "coral_sea"
+  },
+  "inat-376629725": {
+    "w": 591,
+    "h": 467,
+    "area": 0.34,
+    "edge": 0.017,
+    "compact": 1,
+    "color": [
+      126,
+      92,
+      98
+    ],
+    "quality": "good",
+    "name": "Purple Sea Fan",
+    "id": "inat-376629725",
+    "file": "cut/inat-376629725.webp",
+    "category": "coral_sea"
+  },
+  "inat-33168991": {
+    "w": 273,
+    "h": 219,
+    "area": 0.09,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      129,
+      113,
+      47
+    ],
+    "quality": "good",
+    "name": "Grooved Brain Coral",
+    "id": "inat-33168991",
+    "file": "cut/inat-33168991.webp",
+    "category": "coral_sea"
+  },
+  "inat-360794778": {
+    "w": 525,
+    "h": 557,
+    "area": 0.561,
+    "edge": 0.126,
+    "compact": 0.567,
+    "color": [
+      148,
+      120,
+      84
+    ],
+    "quality": "meh",
+    "name": "Northern Basket Star",
+    "id": "inat-360794778",
+    "file": "cut/inat-360794778.webp",
+    "category": "coral_sea"
+  },
+  "inat-437770661": {
+    "w": 577,
+    "h": 361,
+    "area": 0.393,
+    "edge": 0,
+    "compact": 0.875,
+    "color": [
+      157,
+      117,
+      87
+    ],
+    "quality": "good",
+    "name": "Northern Basket Star",
+    "id": "inat-437770661",
+    "file": "cut/inat-437770661.webp",
+    "category": "coral_sea"
+  },
+  "inat-435129710": {
+    "w": 492,
+    "h": 466,
+    "area": 0.22,
+    "edge": 0.004,
+    "compact": 0.06,
+    "color": [
+      208,
+      137,
+      71
+    ],
+    "quality": "good",
+    "name": "Common basket star",
+    "id": "inat-435129710",
+    "file": "cut/inat-435129710.webp",
+    "category": "coral_sea"
+  },
+  "inat-58105709": {
+    "w": 600,
+    "h": 535,
+    "area": 0.306,
+    "edge": 0,
+    "compact": 0.092,
+    "color": [
+      77,
+      83,
+      92
+    ],
+    "quality": "good",
+    "name": "Sea Swallow",
+    "id": "inat-58105709",
+    "file": "cut/inat-58105709.webp",
+    "category": "coral_sea"
+  },
+  "inat-175027232": {
+    "w": 379,
+    "h": 316,
+    "area": 0.102,
+    "edge": 0,
+    "compact": 0.252,
+    "color": [
+      62,
+      84,
+      104
+    ],
+    "quality": "good",
+    "name": "Sea Swallow",
+    "id": "inat-175027232",
+    "file": "cut/inat-175027232.webp",
+    "category": "coral_sea"
+  },
+  "inat-444181937": {
+    "w": 277,
+    "h": 296,
+    "area": 0.158,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      75,
+      79,
+      81
+    ],
+    "quality": "good",
+    "name": "Sea Swallow",
+    "id": "inat-444181937",
+    "file": "cut/inat-444181937.webp",
+    "category": "coral_sea"
+  },
+  "inat-181706941": {
+    "w": 120,
+    "h": 154,
+    "area": 0.018,
+    "edge": 0,
+    "compact": 0.903,
+    "color": [
+      115,
+      134,
+      157
+    ],
+    "quality": "bad",
+    "name": "Sea Swallow",
+    "id": "inat-181706941",
+    "file": "cut/inat-181706941.webp",
+    "category": "coral_sea"
+  },
+  "inat-251677201": {
+    "w": 600,
+    "h": 491,
+    "area": 0.556,
+    "edge": 0.09,
+    "compact": 0.629,
+    "color": [
+      54,
+      94,
+      117
+    ],
+    "quality": "good",
+    "name": "By-the-wind Sailor",
+    "id": "inat-251677201",
+    "file": "cut/inat-251677201.webp",
+    "category": "coral_sea"
+  },
+  "inat-93447593": {
+    "w": 304,
+    "h": 221,
+    "area": 0.083,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      111,
+      124,
+      151
+    ],
+    "quality": "good",
+    "name": "By-the-wind Sailor",
+    "id": "inat-93447593",
+    "file": "cut/inat-93447593.webp",
+    "category": "coral_sea"
+  },
+  "inat-94738913": {
+    "w": 600,
+    "h": 376,
+    "area": 0.501,
+    "edge": 0.214,
+    "compact": 1,
+    "color": [
+      67,
+      101,
+      127
+    ],
+    "quality": "meh",
+    "name": "By-the-wind Sailor",
+    "id": "inat-94738913",
+    "file": "cut/inat-94738913.webp",
+    "category": "coral_sea"
+  },
+  "inat-363847376": {
+    "w": 600,
+    "h": 424,
+    "area": 0.432,
+    "edge": 0.057,
+    "compact": 1,
+    "color": [
+      61,
+      85,
+      106
+    ],
+    "quality": "good",
+    "name": "By-the-wind Sailor",
+    "id": "inat-363847376",
+    "file": "cut/inat-363847376.webp",
+    "category": "coral_sea"
+  },
+  "inat-90424672": {
+    "w": 414,
+    "h": 327,
+    "area": 0.209,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      128,
+      96,
+      69
+    ],
+    "quality": "good",
+    "name": "Anna's Chromodoris",
+    "id": "inat-90424672",
+    "file": "cut/inat-90424672.webp",
+    "category": "coral_sea"
+  },
+  "inat-70668245": {
+    "w": 319,
+    "h": 363,
+    "area": 0.154,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      116,
+      155,
+      203
+    ],
+    "quality": "good",
+    "name": "Willan's Chromodoris",
+    "id": "inat-70668245",
+    "file": "cut/inat-70668245.webp",
+    "category": "coral_sea"
+  },
+  "inat-100517811": {
+    "w": 531,
+    "h": 361,
+    "area": 0.366,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      106,
+      103,
+      100
+    ],
+    "quality": "good",
+    "name": "Chromodoris helium",
+    "id": "inat-100517811",
+    "file": "cut/inat-100517811.webp",
+    "category": "coral_sea"
+  },
+  "inat-367511667": {
+    "w": 331,
+    "h": 320,
+    "area": 0.125,
+    "edge": 0,
+    "compact": 0.886,
+    "color": [
+      150,
+      123,
+      86
+    ],
+    "quality": "good",
+    "name": "Anna's Chromodoris",
+    "id": "inat-367511667",
+    "file": "cut/inat-367511667.webp",
+    "category": "coral_sea"
+  },
+  "inat-345274922": {
+    "w": 396,
+    "h": 412,
+    "area": 0.185,
+    "edge": 0,
+    "compact": 0.322,
+    "color": [
+      171,
+      143,
+      128
+    ],
+    "quality": "good",
+    "name": "Goniocidaris corona",
+    "id": "inat-345274922",
+    "file": "cut/inat-345274922.webp",
+    "category": "coral_sea"
+  },
+  "inat-65472908": {
+    "w": 580,
+    "h": 600,
+    "area": 0.329,
+    "edge": 0,
+    "compact": 0.028,
+    "color": [
+      117,
+      58,
+      71
+    ],
+    "quality": "good",
+    "name": "Red Sea Urchin",
+    "id": "inat-65472908",
+    "file": "cut/inat-65472908.webp",
+    "category": "coral_sea"
+  },
+  "inat-3218": {
+    "w": 600,
+    "h": 502,
+    "area": 0.395,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      67,
+      58,
+      79
+    ],
+    "quality": "good",
+    "name": "Shingle Urchin",
+    "id": "inat-3218",
+    "file": "cut/inat-3218.webp",
+    "category": "coral_sea"
+  },
+  "inat-91216589": {
+    "w": 600,
+    "h": 374,
+    "area": 0.403,
+    "edge": 0.202,
+    "compact": 0.17,
+    "color": [
+      121,
+      113,
+      82
+    ],
+    "quality": "meh",
+    "name": "Western Pacific purple sea urchin",
+    "id": "inat-91216589",
+    "file": "cut/inat-91216589.webp",
+    "category": "coral_sea"
+  },
+  "inat-4978989": {
+    "w": 428,
+    "h": 600,
+    "area": 0.377,
+    "edge": 0,
+    "compact": 0.275,
+    "color": [
+      204,
+      153,
+      137
+    ],
+    "quality": "good",
+    "name": "devil's-fingers",
+    "id": "inat-4978989",
+    "file": "cut/inat-4978989.webp",
+    "category": "fungi_slime"
+  },
+  "inat-601839613": {
+    "w": 416,
+    "h": 409,
+    "area": 0.181,
+    "edge": 0,
+    "compact": 0.902,
+    "color": [
+      134,
+      64,
+      44
+    ],
+    "quality": "good",
+    "name": "devil's-fingers",
+    "id": "inat-601839613",
+    "file": "cut/inat-601839613.webp",
+    "category": "fungi_slime"
+  },
+  "inat-325484700": {
+    "w": 365,
+    "h": 437,
+    "area": 0.171,
+    "edge": 0.023,
+    "compact": 0.439,
+    "color": [
+      145,
+      115,
+      120
+    ],
+    "quality": "good",
+    "name": "devil's-fingers",
+    "id": "inat-325484700",
+    "file": "cut/inat-325484700.webp",
+    "category": "fungi_slime"
+  },
+  "inat-6725658": {
+    "w": 449,
+    "h": 546,
+    "area": 0.174,
+    "edge": 0,
+    "compact": 0.173,
+    "color": [
+      192,
+      115,
+      115
+    ],
+    "quality": "good",
+    "name": "devil's-fingers",
+    "id": "inat-6725658",
+    "file": "cut/inat-6725658.webp",
+    "category": "fungi_slime"
+  },
+  "inat-319527876": {
+    "w": 340,
+    "h": 459,
+    "area": 0.133,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      167,
+      141,
+      151
+    ],
+    "quality": "good",
+    "name": "Red-juice Tooth",
+    "id": "inat-319527876",
+    "file": "cut/inat-319527876.webp",
+    "category": "fungi_slime"
+  },
+  "inat-5763613": {
+    "w": 441,
+    "h": 439,
+    "area": 0.137,
+    "edge": 0.02,
+    "compact": 0.074,
+    "color": [
+      205,
+      143,
+      133
+    ],
+    "quality": "good",
+    "name": "anemone stinkhorn fungus",
+    "id": "inat-5763613",
+    "file": "cut/inat-5763613.webp",
+    "category": "fungi_slime"
+  },
+  "inat-3259244": {
+    "w": 442,
+    "h": 404,
+    "area": 0.108,
+    "edge": 0,
+    "compact": 0.06,
+    "color": [
+      203,
+      128,
+      112
+    ],
+    "quality": "good",
+    "name": "anemone stinkhorn fungus",
+    "id": "inat-3259244",
+    "file": "cut/inat-3259244.webp",
+    "category": "fungi_slime"
+  },
+  "inat-197392126": {
+    "w": 483,
+    "h": 595,
+    "area": 0.421,
+    "edge": 0.121,
+    "compact": 0.233,
+    "color": [
+      204,
+      120,
+      87
+    ],
+    "quality": "meh",
+    "name": "anemone stinkhorn fungus",
+    "id": "inat-197392126",
+    "file": "cut/inat-197392126.webp",
+    "category": "fungi_slime"
+  },
+  "inat-532164373": {
+    "w": 503,
+    "h": 399,
+    "area": 0.146,
+    "edge": 0.048,
+    "compact": 0.062,
+    "color": [
+      180,
+      120,
+      103
+    ],
+    "quality": "good",
+    "name": "anemone stinkhorn fungus",
+    "id": "inat-532164373",
+    "file": "cut/inat-532164373.webp",
+    "category": "fungi_slime"
+  },
+  "inat-27005174": {
+    "w": 501,
+    "h": 551,
+    "area": 0.447,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      166,
+      160,
+      159
+    ],
+    "quality": "good",
+    "name": "turkey-tail",
+    "id": "inat-27005174",
+    "file": "cut/inat-27005174.webp",
+    "category": "fungi_slime"
+  },
+  "inat-19793201": {
+    "w": 367,
+    "h": 489,
+    "area": 0.284,
+    "edge": 0.006,
+    "compact": 1,
+    "color": [
+      72,
+      57,
+      50
+    ],
+    "quality": "good",
+    "name": "chocolate tube slime",
+    "id": "inat-19793201",
+    "file": "cut/inat-19793201.webp",
+    "category": "fungi_slime"
+  },
+  "inat-21375138": {
+    "w": 270,
+    "h": 197,
+    "area": 0.106,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      206,
+      171,
+      198
+    ],
+    "quality": "good",
+    "name": "Dark-brown Wood-hair",
+    "id": "inat-21375138",
+    "file": "cut/inat-21375138.webp",
+    "category": "fungi_slime"
+  },
+  "inat-171524941": {
+    "w": 600,
+    "h": 406,
+    "area": 0.473,
+    "edge": 0,
+    "compact": 0.494,
+    "color": [
+      124,
+      87,
+      71
+    ],
+    "quality": "good",
+    "name": "Chocolate Tube Slimes",
+    "id": "inat-171524941",
+    "file": "cut/inat-171524941.webp",
+    "category": "fungi_slime"
+  },
+  "inat-15068239": {
+    "w": 600,
+    "h": 349,
+    "area": 0.494,
+    "edge": 0.177,
+    "compact": 0.664,
+    "color": [
+      86,
+      70,
+      64
+    ],
+    "quality": "meh",
+    "name": "Chocolate Tube Slimes",
+    "id": "inat-15068239",
+    "file": "cut/inat-15068239.webp",
+    "category": "fungi_slime"
+  },
+  "inat-723100774": {
+    "w": 374,
+    "h": 572,
+    "area": 0.095,
+    "edge": 0,
+    "compact": 0.172,
+    "color": [
+      201,
+      172,
+      154
+    ],
+    "quality": "good",
+    "name": "Wolf's Milk",
+    "id": "inat-723100774",
+    "file": "cut/inat-723100774.webp",
+    "category": "fungi_slime"
+  },
+  "inat-753468050": {
+    "w": 452,
+    "h": 413,
+    "area": 0.364,
+    "edge": 0.025,
+    "compact": 1,
+    "color": [
+      195,
+      185,
+      178
+    ],
+    "quality": "good",
+    "name": "Wolf's Milk",
+    "id": "inat-753468050",
+    "file": "cut/inat-753468050.webp",
+    "category": "fungi_slime"
+  },
+  "inat-6064058": {
+    "w": 576,
+    "h": 600,
+    "area": 0.518,
+    "edge": 0.086,
+    "compact": 1,
+    "color": [
+      186,
+      135,
+      16
+    ],
+    "quality": "good",
+    "name": "witch's butter",
+    "id": "inat-6064058",
+    "file": "cut/inat-6064058.webp",
+    "category": "fungi_slime"
+  },
+  "inat-181030407": {
+    "w": 388,
+    "h": 311,
+    "area": 0.197,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      118,
+      75,
+      6
+    ],
+    "quality": "good",
+    "name": "witch's butter",
+    "id": "inat-181030407",
+    "file": "cut/inat-181030407.webp",
+    "category": "fungi_slime"
+  },
+  "inat-55147349": {
+    "w": 243,
+    "h": 600,
+    "area": 0.476,
+    "edge": 0.232,
+    "compact": 0.918,
+    "color": [
+      166,
+      147,
+      110
+    ],
+    "quality": "meh",
+    "name": "Rainbow Gum",
+    "id": "inat-55147349",
+    "file": "cut/inat-55147349.webp",
+    "category": "bark_lichen"
+  },
+  "inat-249759961": {
+    "w": 400,
+    "h": 600,
+    "area": 0.088,
+    "edge": 0.037,
+    "compact": 0.116,
+    "color": [
+      88,
+      81,
+      80
+    ],
+    "quality": "good",
+    "name": "Rainbow Gum",
+    "id": "inat-249759961",
+    "file": "cut/inat-249759961.webp",
+    "category": "bark_lichen"
+  },
+  "inat-459595327": {
+    "w": 46,
+    "h": 552,
+    "area": 0.032,
+    "edge": 0.013,
+    "compact": 0.423,
+    "color": [
+      117,
+      106,
+      76
+    ],
+    "quality": "good",
+    "name": "Rainbow Gum",
+    "id": "inat-459595327",
+    "file": "cut/inat-459595327.webp",
+    "category": "bark_lichen"
+  },
+  "inat-231974984": {
+    "w": 600,
+    "h": 481,
+    "area": 0.229,
+    "edge": 0.211,
+    "compact": 0.011,
+    "color": [
+      187,
+      166,
+      94
+    ],
+    "quality": "meh",
+    "name": "Cladonia imperialis",
+    "id": "inat-231974984",
+    "file": "cut/inat-231974984.webp",
+    "category": "bark_lichen"
+  },
+  "inat-23704304": {
+    "w": 325,
+    "h": 357,
+    "area": 0.025,
+    "edge": 0,
+    "compact": 0.089,
+    "color": [
+      164,
+      176,
+      148
+    ],
+    "quality": "good",
+    "name": "Greater Sulphur-cup Lichen",
+    "id": "inat-23704304",
+    "file": "cut/inat-23704304.webp",
+    "category": "bark_lichen"
+  },
+  "inat-263037512": {
+    "w": 313,
+    "h": 554,
+    "area": 0.155,
+    "edge": 0.01,
+    "compact": 0.059,
+    "color": [
+      176,
+      168,
+      103
+    ],
+    "quality": "good",
+    "name": "Cladonia imperialis",
+    "id": "inat-263037512",
+    "file": "cut/inat-263037512.webp",
+    "category": "bark_lichen"
+  },
+  "inat-557308820": {
+    "w": 435,
+    "h": 309,
+    "area": 0.038,
+    "edge": 0,
+    "compact": 0.009,
+    "color": [
+      215,
+      206,
+      182
+    ],
+    "quality": "good",
+    "name": "Usnea lambii",
+    "id": "inat-557308820",
+    "file": "cut/inat-557308820.webp",
+    "category": "bark_lichen"
+  },
+  "inat-247344952": {
+    "w": 600,
+    "h": 468,
+    "area": 0.305,
+    "edge": 0.036,
+    "compact": 0.005,
+    "color": [
+      139,
+      148,
+      114
+    ],
+    "quality": "good",
+    "name": "Inflated Beard",
+    "id": "inat-247344952",
+    "file": "cut/inat-247344952.webp",
+    "category": "bark_lichen"
+  },
+  "inat-338654408": {
+    "w": 524,
+    "h": 426,
+    "area": 0.145,
+    "edge": 0,
+    "compact": 0.003,
+    "color": [
+      134,
+      171,
+      119
+    ],
+    "quality": "good",
+    "name": "Bushy beard lichen",
+    "id": "inat-338654408",
+    "file": "cut/inat-338654408.webp",
+    "category": "bark_lichen"
+  },
+  "inat-40009588": {
+    "w": 203,
+    "h": 395,
+    "area": 0.018,
+    "edge": 0,
+    "compact": 0.186,
+    "color": [
+      122,
+      141,
+      130
+    ],
+    "quality": "bad",
+    "name": "Methuselah's Beard Lichen",
+    "id": "inat-40009588",
+    "file": "cut/inat-40009588.webp",
+    "category": "bark_lichen"
+  },
+  "inat-463374486": {
+    "w": 600,
+    "h": 475,
+    "area": 0.29,
+    "edge": 0,
+    "compact": 0.763,
+    "color": [
+      91,
+      66,
+      12
+    ],
+    "quality": "good",
+    "name": "Common Sunburst Lichen",
+    "id": "inat-463374486",
+    "file": "cut/inat-463374486.webp",
+    "category": "bark_lichen"
+  },
+  "inat-735286708": {
+    "w": 188,
+    "h": 420,
+    "area": 0.088,
+    "edge": 0.219,
+    "compact": 1,
+    "color": [
+      215,
+      146,
+      116
+    ],
+    "quality": "meh",
+    "name": "Common Sunburst Lichen",
+    "id": "inat-735286708",
+    "file": "cut/inat-735286708.webp",
+    "category": "bark_lichen"
+  },
+  "inat-248665230": {
+    "w": 260,
+    "h": 385,
+    "area": 0.124,
+    "edge": 0,
+    "compact": 0.445,
+    "color": [
+      81,
+      82,
+      77
+    ],
+    "quality": "good",
+    "name": "western sycamore",
+    "id": "inat-248665230",
+    "file": "cut/inat-248665230.webp",
+    "category": "bark_lichen"
+  },
+  "inat-179887217": {
+    "w": 450,
+    "h": 600,
+    "area": 0.239,
+    "edge": 0.009,
+    "compact": 0.077,
+    "color": [
+      197,
+      157,
+      106
+    ],
+    "quality": "good",
+    "name": "American sycamore",
+    "id": "inat-179887217",
+    "file": "cut/inat-179887217.webp",
+    "category": "bark_lichen"
+  },
+  "inat-319633065": {
+    "w": 565,
+    "h": 525,
+    "area": 0.321,
+    "edge": 0.11,
+    "compact": 0.182,
+    "color": [
+      112,
+      111,
+      96
+    ],
+    "quality": "good",
+    "name": "American sycamore",
+    "id": "inat-319633065",
+    "file": "cut/inat-319633065.webp",
+    "category": "bark_lichen"
+  },
+  "wm-160947388": {
+    "w": 342,
+    "h": 590,
+    "area": 0.293,
+    "edge": 0,
+    "compact": 0.086,
+    "color": [
+      218,
+      219,
+      222
+    ],
+    "quality": "good",
+    "name": "1000x600-800-fill-power-goose-down",
+    "id": "wm-160947388",
+    "file": "cut/wm-160947388.webp",
+    "category": "feathers"
+  },
+  "wm-131973324": {
+    "w": 213,
+    "h": 323,
+    "area": 0.092,
+    "edge": 0,
+    "compact": 0.842,
+    "color": [
+      140,
+      106,
+      81
+    ],
+    "quality": "good",
+    "name": "2007070801 Haushahn",
+    "id": "wm-131973324",
+    "file": "cut/wm-131973324.webp",
+    "category": "feathers"
+  },
+  "wm-132139741": {
+    "w": 437,
+    "h": 377,
+    "area": 0.154,
+    "edge": 0.06,
+    "compact": 0.331,
+    "color": [
+      125,
+      112,
+      112
+    ],
+    "quality": "good",
+    "name": "2011100601 Durch Blatt gespiesste Vogelfeder 2011",
+    "id": "wm-132139741",
+    "file": "cut/wm-132139741.webp",
+    "category": "feathers"
+  },
+  "wm-131973413": {
+    "w": 600,
+    "h": 160,
+    "area": 0.173,
+    "edge": 0.008,
+    "compact": 0.8,
+    "color": [
+      113,
+      127,
+      136
+    ],
+    "quality": "good",
+    "name": "2020080501 Eichelhaeherfeder 2020",
+    "id": "wm-131973413",
+    "file": "cut/wm-131973413.webp",
+    "category": "feathers"
+  },
+  "inat-307026691": {
+    "w": 423,
+    "h": 600,
+    "area": 0.268,
+    "edge": 0.121,
+    "compact": 1,
+    "color": [
+      31,
+      91,
+      141
+    ],
+    "quality": "meh",
+    "name": "Indian Peafowl",
+    "id": "inat-307026691",
+    "file": "cut/inat-307026691.webp",
+    "category": "feathers"
+  },
+  "inat-81532360": {
+    "w": 492,
+    "h": 315,
+    "area": 0.123,
+    "edge": 0,
+    "compact": 0.718,
+    "color": [
+      51,
+      78,
+      92
+    ],
+    "quality": "good",
+    "name": "Indian Peafowl",
+    "id": "inat-81532360",
+    "file": "cut/inat-81532360.webp",
+    "category": "feathers"
+  },
+  "inat-317280189": {
+    "w": 445,
+    "h": 453,
+    "area": 0.137,
+    "edge": 0,
+    "compact": 0.489,
+    "color": [
+      70,
+      65,
+      66
+    ],
+    "quality": "good",
+    "name": "Indian Peafowl",
+    "id": "inat-317280189",
+    "file": "cut/inat-317280189.webp",
+    "category": "feathers"
+  },
+  "inat-344972179": {
+    "w": 572,
+    "h": 362,
+    "area": 0.415,
+    "edge": 0.108,
+    "compact": 0.906,
+    "color": [
+      105,
+      124,
+      138
+    ],
+    "quality": "good",
+    "name": "Indian Peafowl",
+    "id": "inat-344972179",
+    "file": "cut/inat-344972179.webp",
+    "category": "feathers"
+  },
+  "inat-341060250": {
+    "w": 271,
+    "h": 202,
+    "area": 0.102,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      11,
+      18,
+      15
+    ],
+    "quality": "good",
+    "name": "Vogelkop Lophorina",
+    "id": "inat-341060250",
+    "file": "cut/inat-341060250.webp",
+    "category": "feathers"
+  },
+  "inat-336734570": {
+    "w": 143,
+    "h": 142,
+    "area": 0.027,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      71,
+      78,
+      70
+    ],
+    "quality": "good",
+    "name": "Greater Lophorina",
+    "id": "inat-336734570",
+    "file": "cut/inat-336734570.webp",
+    "category": "feathers"
+  },
+  "inat-336006460": {
+    "w": 127,
+    "h": 209,
+    "area": 0.04,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      82,
+      85,
+      89
+    ],
+    "quality": "good",
+    "name": "Greater Lophorina",
+    "id": "inat-336006460",
+    "file": "cut/inat-336006460.webp",
+    "category": "feathers"
+  },
+  "inat-406673799": {
+    "w": 206,
+    "h": 118,
+    "area": 0.009,
+    "edge": 0,
+    "compact": 0.639,
+    "color": [
+      104,
+      103,
+      105
+    ],
+    "quality": "bad",
+    "name": "Greater Lophorina",
+    "id": "inat-406673799",
+    "file": "cut/inat-406673799.webp",
+    "category": "feathers"
+  },
+  "inat-10615416": {
+    "w": 513,
+    "h": 384,
+    "area": 0.149,
+    "edge": 0,
+    "compact": 0.303,
+    "color": [
+      107,
+      122,
+      58
+    ],
+    "quality": "good",
+    "name": "Glorious Jewel Scarab",
+    "id": "inat-10615416",
+    "file": "cut/inat-10615416.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-165638621": {
+    "w": 460,
+    "h": 337,
+    "area": 0.181,
+    "edge": 0,
+    "compact": 0.383,
+    "color": [
+      142,
+      130,
+      94
+    ],
+    "quality": "good",
+    "name": "Chrysina argenteola",
+    "id": "inat-165638621",
+    "file": "cut/inat-165638621.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-9521341": {
+    "w": 465,
+    "h": 269,
+    "area": 0.181,
+    "edge": 0,
+    "compact": 0.917,
+    "color": [
+      106,
+      115,
+      91
+    ],
+    "quality": "good",
+    "name": "Chrysina adelaida",
+    "id": "inat-9521341",
+    "file": "cut/inat-9521341.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-10211721": {
+    "w": 337,
+    "h": 360,
+    "area": 0.118,
+    "edge": 0,
+    "compact": 0.634,
+    "color": [
+      100,
+      131,
+      59
+    ],
+    "quality": "good",
+    "name": "Glorious Jewel Scarab",
+    "id": "inat-10211721",
+    "file": "cut/inat-10211721.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-444205780": {
+    "w": 470,
+    "h": 600,
+    "area": 0.519,
+    "edge": 0.177,
+    "compact": 1,
+    "color": [
+      147,
+      120,
+      111
+    ],
+    "quality": "meh",
+    "name": "Sternocera chrysis",
+    "id": "inat-444205780",
+    "file": "cut/inat-444205780.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-115409917": {
+    "w": 563,
+    "h": 267,
+    "area": 0.277,
+    "edge": 0.089,
+    "compact": 0.761,
+    "color": [
+      109,
+      114,
+      82
+    ],
+    "quality": "good",
+    "name": "Sternocera pulchra",
+    "id": "inat-115409917",
+    "file": "cut/inat-115409917.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-112989279": {
+    "w": 376,
+    "h": 367,
+    "area": 0.117,
+    "edge": 0,
+    "compact": 0.475,
+    "color": [
+      62,
+      84,
+      33
+    ],
+    "quality": "good",
+    "name": "Sternocera laevigata",
+    "id": "inat-112989279",
+    "file": "cut/inat-112989279.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-257418185": {
+    "w": 389,
+    "h": 545,
+    "area": 0.279,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      33,
+      82,
+      120
+    ],
+    "quality": "good",
+    "name": "Sternocera aequisignata",
+    "id": "inat-257418185",
+    "file": "cut/inat-257418185.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-183613": {
+    "w": 385,
+    "h": 281,
+    "area": 0.095,
+    "edge": 0,
+    "compact": 0.215,
+    "color": [
+      84,
+      65,
+      56
+    ],
+    "quality": "good",
+    "name": "Globe-bearing Treehopper",
+    "id": "inat-183613",
+    "file": "cut/inat-183613.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-28876499": {
+    "w": 460,
+    "h": 401,
+    "area": 0.148,
+    "edge": 0,
+    "compact": 0.366,
+    "color": [
+      82,
+      77,
+      30
+    ],
+    "quality": "good",
+    "name": "Globe-bearing Treehopper",
+    "id": "inat-28876499",
+    "file": "cut/inat-28876499.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-234336662": {
+    "w": 496,
+    "h": 390,
+    "area": 0.134,
+    "edge": 0,
+    "compact": 0.242,
+    "color": [
+      95,
+      74,
+      51
+    ],
+    "quality": "good",
+    "name": "Globe-bearing Treehopper",
+    "id": "inat-234336662",
+    "file": "cut/inat-234336662.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-679761103": {
+    "w": 454,
+    "h": 349,
+    "area": 0.107,
+    "edge": 0,
+    "compact": 0.196,
+    "color": [
+      97,
+      66,
+      42
+    ],
+    "quality": "good",
+    "name": "Bocydium germarii",
+    "id": "inat-679761103",
+    "file": "cut/inat-679761103.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-24690947": {
+    "w": 493,
+    "h": 563,
+    "area": 0.289,
+    "edge": 0.115,
+    "compact": 0.926,
+    "color": [
+      86,
+      82,
+      69
+    ],
+    "quality": "good",
+    "name": "Hag Moth",
+    "id": "inat-24690947",
+    "file": "cut/inat-24690947.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-92746992": {
+    "w": 200,
+    "h": 600,
+    "area": 0.267,
+    "edge": 0.142,
+    "compact": 1,
+    "color": [
+      198,
+      182,
+      146
+    ],
+    "quality": "meh",
+    "name": "Hag Moth",
+    "id": "inat-92746992",
+    "file": "cut/inat-92746992.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-121005811": {
+    "w": 600,
+    "h": 198,
+    "area": 0.212,
+    "edge": 0,
+    "compact": 0.889,
+    "color": [
+      108,
+      84,
+      67
+    ],
+    "quality": "good",
+    "name": "Hag Moth",
+    "id": "inat-121005811",
+    "file": "cut/inat-121005811.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-226306189": {
+    "w": 600,
+    "h": 235,
+    "area": 0.176,
+    "edge": 0.041,
+    "compact": 0.332,
+    "color": [
+      94,
+      93,
+      107
+    ],
+    "quality": "good",
+    "name": "Peripatoides aurorbis",
+    "id": "inat-226306189",
+    "file": "cut/inat-226306189.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-79386934": {
+    "w": 571,
+    "h": 335,
+    "area": 0.397,
+    "edge": 0.156,
+    "compact": 1,
+    "color": [
+      145,
+      83,
+      56
+    ],
+    "quality": "meh",
+    "name": "Peripatoides indigo",
+    "id": "inat-79386934",
+    "file": "cut/inat-79386934.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-45218773": {
+    "w": 274,
+    "h": 313,
+    "area": 0.136,
+    "edge": 0.16,
+    "compact": 1,
+    "color": [
+      165,
+      121,
+      137
+    ],
+    "quality": "meh",
+    "name": "Overberg velvet worm",
+    "id": "inat-45218773",
+    "file": "cut/inat-45218773.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-177307444": {
+    "w": 316,
+    "h": 394,
+    "area": 0.147,
+    "edge": 0.098,
+    "compact": 0.407,
+    "color": [
+      78,
+      77,
+      46
+    ],
+    "quality": "good",
+    "name": "Ooperipatellus viridimaculatus",
+    "id": "inat-177307444",
+    "file": "cut/inat-177307444.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-107911446": {
+    "w": 600,
+    "h": 551,
+    "area": 0.455,
+    "edge": 0.053,
+    "compact": 1,
+    "color": [
+      131,
+      87,
+      52
+    ],
+    "quality": "good",
+    "name": "Emerald Cuckoo Wasp",
+    "id": "inat-107911446",
+    "file": "cut/inat-107911446.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-156798278": {
+    "w": 576,
+    "h": 470,
+    "area": 0.073,
+    "edge": 0,
+    "compact": 0.171,
+    "color": [
+      137,
+      91,
+      62
+    ],
+    "quality": "good",
+    "name": "Amisega bella",
+    "id": "inat-156798278",
+    "file": "cut/inat-156798278.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-9412524": {
+    "w": 600,
+    "h": 387,
+    "area": 0.302,
+    "edge": 0,
+    "compact": 0.377,
+    "color": [
+      80,
+      88,
+      98
+    ],
+    "quality": "good",
+    "name": "Chrysis fuscipennis",
+    "id": "inat-9412524",
+    "file": "cut/inat-9412524.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-159178106": {
+    "w": 508,
+    "h": 289,
+    "area": 0.19,
+    "edge": 0,
+    "compact": 0.915,
+    "color": [
+      52,
+      86,
+      78
+    ],
+    "quality": "good",
+    "name": "Chrysis fuscipennis",
+    "id": "inat-159178106",
+    "file": "cut/inat-159178106.webp",
+    "category": "beetles_bugs"
+  },
+  "inat-196952973": {
+    "w": 600,
+    "h": 262,
+    "area": 0.301,
+    "edge": 0.169,
+    "compact": 0.232,
+    "color": [
+      89,
+      96,
+      71
+    ],
+    "quality": "meh",
+    "name": "Welwitschia",
+    "id": "inat-196952973",
+    "file": "cut/inat-196952973.webp",
+    "category": "plants_odd"
+  },
+  "inat-245331450": {
+    "w": 557,
+    "h": 413,
+    "area": 0.351,
+    "edge": 0.001,
+    "compact": 0.289,
+    "color": [
+      79,
+      81,
+      71
+    ],
+    "quality": "good",
+    "name": "Welwitschia",
+    "id": "inat-245331450",
+    "file": "cut/inat-245331450.webp",
+    "category": "plants_odd"
+  },
+  "inat-225864759": {
+    "w": 580,
+    "h": 301,
+    "area": 0.202,
+    "edge": 0.007,
+    "compact": 0.268,
+    "color": [
+      122,
+      116,
+      86
+    ],
+    "quality": "good",
+    "name": "Welwitschia",
+    "id": "inat-225864759",
+    "file": "cut/inat-225864759.webp",
+    "category": "plants_odd"
+  },
+  "inat-111803110": {
+    "w": 520,
+    "h": 427,
+    "area": 0.251,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      70,
+      57,
+      33
+    ],
+    "quality": "good",
+    "name": "dragon blood tree",
+    "id": "inat-111803110",
+    "file": "cut/inat-111803110.webp",
+    "category": "plants_odd"
+  },
+  "inat-181436443": {
+    "w": 600,
+    "h": 369,
+    "area": 0.618,
+    "edge": 0.219,
+    "compact": 0.433,
+    "color": [
+      94,
+      95,
+      80
+    ],
+    "quality": "meh",
+    "name": "dragon blood tree",
+    "id": "inat-181436443",
+    "file": "cut/inat-181436443.webp",
+    "category": "plants_odd"
+  },
+  "inat-177678724": {
+    "w": 481,
+    "h": 326,
+    "area": 0.097,
+    "edge": 0.015,
+    "compact": 0.259,
+    "color": [
+      146,
+      138,
+      125
+    ],
+    "quality": "good",
+    "name": "dragon blood tree",
+    "id": "inat-177678724",
+    "file": "cut/inat-177678724.webp",
+    "category": "plants_odd"
+  },
+  "inat-473000392": {
+    "w": 179,
+    "h": 319,
+    "area": 0.037,
+    "edge": 0.041,
+    "compact": 0.51,
+    "color": [
+      148,
+      131,
+      108
+    ],
+    "quality": "good",
+    "name": "Lithops werneri",
+    "id": "inat-473000392",
+    "file": "cut/inat-473000392.webp",
+    "category": "plants_odd"
+  },
+  "inat-683463965": {
+    "w": 600,
+    "h": 383,
+    "area": 0.07,
+    "edge": 0.024,
+    "compact": 0.133,
+    "color": [
+      142,
+      132,
+      122
+    ],
+    "quality": "good",
+    "name": "Lithops localis",
+    "id": "inat-683463965",
+    "file": "cut/inat-683463965.webp",
+    "category": "plants_odd"
+  },
+  "inat-654675333": {
+    "w": 416,
+    "h": 400,
+    "area": 0.133,
+    "edge": 0,
+    "compact": 0.764,
+    "color": [
+      148,
+      119,
+      105
+    ],
+    "quality": "good",
+    "name": "Lithops pseudotruncatella",
+    "id": "inat-654675333",
+    "file": "cut/inat-654675333.webp",
+    "category": "plants_odd"
+  },
+  "inat-40368015": {
+    "w": 600,
+    "h": 509,
+    "area": 0.596,
+    "edge": 0.248,
+    "compact": 0.701,
+    "color": [
+      189,
+      140,
+      97
+    ],
+    "quality": "meh",
+    "name": "red ink sundew",
+    "id": "inat-40368015",
+    "file": "cut/inat-40368015.webp",
+    "category": "plants_odd"
+  },
+  "inat-2100967": {
+    "w": 456,
+    "h": 362,
+    "area": 0.136,
+    "edge": 0.058,
+    "compact": 0.023,
+    "color": [
+      99,
+      68,
+      70
+    ],
+    "quality": "good",
+    "name": "Madagascar Sundew",
+    "id": "inat-2100967",
+    "file": "cut/inat-2100967.webp",
+    "category": "plants_odd"
+  },
+  "inat-332782640": {
+    "w": 496,
+    "h": 600,
+    "area": 0.17,
+    "edge": 0,
+    "compact": 0.032,
+    "color": [
+      113,
+      101,
+      62
+    ],
+    "quality": "good",
+    "name": "Tall sundew",
+    "id": "inat-332782640",
+    "file": "cut/inat-332782640.webp",
+    "category": "plants_odd"
+  },
+  "inat-347686813": {
+    "w": 590,
+    "h": 466,
+    "area": 0.172,
+    "edge": 0.064,
+    "compact": 0.043,
+    "color": [
+      168,
+      115,
+      85
+    ],
+    "quality": "good",
+    "name": "Drosera arcturi",
+    "id": "inat-347686813",
+    "file": "cut/inat-347686813.webp",
+    "category": "plants_odd"
+  },
+  "inat-207582055": {
+    "w": 600,
+    "h": 392,
+    "area": 0.049,
+    "edge": 0.006,
+    "compact": 0.019,
+    "color": [
+      177,
+      143,
+      80
+    ],
+    "quality": "good",
+    "name": "Cape Sundew",
+    "id": "inat-207582055",
+    "file": "cut/inat-207582055.webp",
+    "category": "sticky_traps"
+  },
+  "inat-33273663": {
+    "w": 555,
+    "h": 393,
+    "area": 0.046,
+    "edge": 0.033,
+    "compact": 0.01,
+    "color": [
+      196,
+      203,
+      172
+    ],
+    "quality": "good",
+    "name": "Cape Sundew",
+    "id": "inat-33273663",
+    "file": "cut/inat-33273663.webp",
+    "category": "sticky_traps"
+  },
+  "inat-299969344": {
+    "w": 600,
+    "h": 452,
+    "area": 0.482,
+    "edge": 0.237,
+    "compact": 1,
+    "color": [
+      188,
+      84,
+      123
+    ],
+    "quality": "meh",
+    "name": "Cape Sundew",
+    "id": "inat-299969344",
+    "file": "cut/inat-299969344.webp",
+    "category": "sticky_traps"
+  },
+  "inat-176699806": {
+    "w": 339,
+    "h": 600,
+    "area": 0.123,
+    "edge": 0.025,
+    "compact": 0.202,
+    "color": [
+      172,
+      116,
+      148
+    ],
+    "quality": "good",
+    "name": "Cape Sundew",
+    "id": "inat-176699806",
+    "file": "cut/inat-176699806.webp",
+    "category": "sticky_traps"
+  },
+  "inat-21934660": {
+    "w": 600,
+    "h": 450,
+    "area": 0.171,
+    "edge": 0.046,
+    "compact": 0.062,
+    "color": [
+      206,
+      140,
+      129
+    ],
+    "quality": "good",
+    "name": "Rosy Sundew",
+    "id": "inat-21934660",
+    "file": "cut/inat-21934660.webp",
+    "category": "sticky_traps"
+  },
+  "inat-19370677": {
+    "w": 600,
+    "h": 463,
+    "area": 0.03,
+    "edge": 0.025,
+    "compact": 0.055,
+    "color": [
+      172,
+      167,
+      164
+    ],
+    "quality": "good",
+    "name": "Rosy Sundew",
+    "id": "inat-19370677",
+    "file": "cut/inat-19370677.webp",
+    "category": "sticky_traps"
+  },
+  "inat-306390493": {
+    "w": 600,
+    "h": 442,
+    "area": 0.165,
+    "edge": 0.008,
+    "compact": 0.027,
+    "color": [
+      178,
+      96,
+      40
+    ],
+    "quality": "good",
+    "name": "round-leaved sundew",
+    "id": "inat-306390493",
+    "file": "cut/inat-306390493.webp",
+    "category": "sticky_traps"
+  },
+  "inat-357375957": {
+    "w": 291,
+    "h": 411,
+    "area": 0.145,
+    "edge": 0.025,
+    "compact": 0.262,
+    "color": [
+      112,
+      100,
+      46
+    ],
+    "quality": "good",
+    "name": "round-leaved sundew",
+    "id": "inat-357375957",
+    "file": "cut/inat-357375957.webp",
+    "category": "sticky_traps"
+  },
+  "inat-156090775": {
+    "w": 369,
+    "h": 600,
+    "area": 0.105,
+    "edge": 0.008,
+    "compact": 0.017,
+    "color": [
+      159,
+      144,
+      99
+    ],
+    "quality": "good",
+    "name": "Portuguese sundew",
+    "id": "inat-156090775",
+    "file": "cut/inat-156090775.webp",
+    "category": "sticky_traps"
+  },
+  "inat-593062057": {
+    "w": 283,
+    "h": 600,
+    "area": 0.083,
+    "edge": 0.013,
+    "compact": 0.119,
+    "color": [
+      182,
+      189,
+      64
+    ],
+    "quality": "good",
+    "name": "Portuguese sundew",
+    "id": "inat-593062057",
+    "file": "cut/inat-593062057.webp",
+    "category": "sticky_traps"
+  },
+  "inat-331531111": {
+    "w": 450,
+    "h": 600,
+    "area": 0.265,
+    "edge": 0.076,
+    "compact": 0.026,
+    "color": [
+      144,
+      150,
+      111
+    ],
+    "quality": "good",
+    "name": "Portuguese sundew",
+    "id": "inat-331531111",
+    "file": "cut/inat-331531111.webp",
+    "category": "sticky_traps"
+  },
+  "inat-466784151": {
+    "w": 96,
+    "h": 174,
+    "area": 0.016,
+    "edge": 0,
+    "compact": 0.234,
+    "color": [
+      152,
+      116,
+      57
+    ],
+    "quality": "bad",
+    "name": "Portuguese sundew",
+    "id": "inat-466784151",
+    "file": "cut/inat-466784151.webp",
+    "category": "sticky_traps"
+  },
+  "inat-432274864": {
+    "w": 429,
+    "h": 324,
+    "area": 0.169,
+    "edge": 0,
+    "compact": 0.36,
+    "color": [
+      215,
+      218,
+      192
+    ],
+    "quality": "good",
+    "name": "Venus flytrap",
+    "id": "inat-432274864",
+    "file": "cut/inat-432274864.webp",
+    "category": "sticky_traps"
+  },
+  "inat-484662717": {
+    "w": 147,
+    "h": 256,
+    "area": 0.034,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      95,
+      107,
+      27
+    ],
+    "quality": "good",
+    "name": "Venus flytrap",
+    "id": "inat-484662717",
+    "file": "cut/inat-484662717.webp",
+    "category": "sticky_traps"
+  },
+  "wm-2229815": {
+    "w": 600,
+    "h": 372,
+    "area": 0.249,
+    "edge": 0.017,
+    "compact": 0.03,
+    "color": [
+      140,
+      114,
+      63
+    ],
+    "quality": "good",
+    "name": "Drosera rotundifolia leaf1",
+    "id": "wm-2229815",
+    "file": "cut/wm-2229815.webp",
+    "category": "sticky_traps"
+  },
+  "wm-724039": {
+    "w": 472,
+    "h": 335,
+    "area": 0.078,
+    "edge": 0,
+    "compact": 0.076,
+    "color": [
+      129,
+      113,
+      101
+    ],
+    "quality": "good",
+    "name": "Drosera anglica ne2",
+    "id": "wm-724039",
+    "file": "cut/wm-724039.webp",
+    "category": "sticky_traps"
+  },
+  "wm-64108104": {
+    "w": 376,
+    "h": 345,
+    "area": 0.074,
+    "edge": 0,
+    "compact": 0.122,
+    "color": [
+      182,
+      180,
+      180
+    ],
+    "quality": "good",
+    "name": "Drosera Tentacles (12283185204)",
+    "id": "wm-64108104",
+    "file": "cut/wm-64108104.webp",
+    "category": "sticky_traps"
+  },
+  "wm-64108097": {
+    "w": 600,
+    "h": 399,
+    "area": 0.579,
+    "edge": 0.145,
+    "compact": 0.105,
+    "color": [
+      177,
+      177,
+      148
+    ],
+    "quality": "meh",
+    "name": "Drosera Tentacles (12282762415)",
+    "id": "wm-64108097",
+    "file": "cut/wm-64108097.webp",
+    "category": "sticky_traps"
+  },
+  "wm-64107936": {
+    "w": 477,
+    "h": 244,
+    "area": 0.257,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      189,
+      185,
+      103
+    ],
+    "quality": "good",
+    "name": "Drosera Tentacles (12283186674)",
+    "id": "wm-64107936",
+    "file": "cut/wm-64107936.webp",
+    "category": "sticky_traps"
+  },
+  "wm-116471619": {
+    "w": 381,
+    "h": 479,
+    "area": 0.02,
+    "edge": 0.037,
+    "compact": 0.009,
+    "color": [
+      183,
+      183,
+      134
+    ],
+    "quality": "good",
+    "name": "Great Sundew (Drosera anglica) - Eidfjord, Norway 2021-07-25",
+    "id": "wm-116471619",
+    "file": "cut/wm-116471619.webp",
+    "category": "sticky_traps"
+  },
+  "wm-118507948": {
+    "w": 375,
+    "h": 419,
+    "area": 0.008,
+    "edge": 0.005,
+    "compact": 0.1,
+    "color": [
+      146,
+      128,
+      112
+    ],
+    "quality": "bad",
+    "name": "Round-leaved Sundew (Drosera rotundifolia) - Utsira, Norway 2021-08-06 (01)",
+    "id": "wm-118507948",
+    "file": "cut/wm-118507948.webp",
+    "category": "sticky_traps"
+  },
+  "wm-118496726": {
+    "w": 212,
+    "h": 364,
+    "area": 0.01,
+    "edge": 0,
+    "compact": 0.151,
+    "color": [
+      159,
+      129,
+      99
+    ],
+    "quality": "bad",
+    "name": "Round-leaved Sundew (Drosera rotundifolia) - Utsira, Norway 2021-08-05",
+    "id": "wm-118496726",
+    "file": "cut/wm-118496726.webp",
+    "category": "sticky_traps"
+  },
+  "wm-138092934": {
+    "w": 426,
+    "h": 560,
+    "area": 0.073,
+    "edge": 0.045,
+    "compact": 0.065,
+    "color": [
+      172,
+      156,
+      132
+    ],
+    "quality": "good",
+    "name": "Round-leaved Sundew (Drosera rotundifolia) - Giske, Norway 2022-07-02",
+    "id": "wm-138092934",
+    "file": "cut/wm-138092934.webp",
+    "category": "sticky_traps"
+  },
+  "wm-118303868": {
+    "w": 410,
+    "h": 600,
+    "area": 0.123,
+    "edge": 0.003,
+    "compact": 0.042,
+    "color": [
+      161,
+      94,
+      68
+    ],
+    "quality": "good",
+    "name": "Round-leaved Sundew (Drosera rotundifolia) - Haugesund, Norway 2021-08-04",
+    "id": "wm-118303868",
+    "file": "cut/wm-118303868.webp",
+    "category": "sticky_traps"
+  },
+  "wm-131424518": {
+    "w": 276,
+    "h": 587,
+    "area": 0.09,
+    "edge": 0.01,
+    "compact": 0.209,
+    "color": [
+      100,
+      67,
+      25
+    ],
+    "quality": "good",
+    "name": "Rundblättriger Sonnentau (Drosera rotundifolia) Blüte",
+    "id": "wm-131424518",
+    "file": "cut/wm-131424518.webp",
+    "category": "sticky_traps"
+  },
+  "wm-153722375": {
+    "w": 458,
+    "h": 450,
+    "area": 0.065,
+    "edge": 0.004,
+    "compact": 0.016,
+    "color": [
+      157,
+      134,
+      111
+    ],
+    "quality": "good",
+    "name": "Ortobotanico - Drosera binata 01",
+    "id": "wm-153722375",
+    "file": "cut/wm-153722375.webp",
+    "category": "sticky_traps"
+  },
+  "wm-134136752": {
+    "w": 83,
+    "h": 548,
+    "area": 0.01,
+    "edge": 0,
+    "compact": 0.069,
+    "color": [
+      120,
+      114,
+      54
+    ],
+    "quality": "bad",
+    "name": "Drosera rotundifolia TK 2023-07-08 9",
+    "id": "wm-134136752",
+    "file": "cut/wm-134136752.webp",
+    "category": "sticky_traps"
+  },
+  "wm-131424520": {
+    "w": 109,
+    "h": 432,
+    "area": 0.017,
+    "edge": 0,
+    "compact": 0.189,
+    "color": [
+      160,
+      107,
+      54
+    ],
+    "quality": "bad",
+    "name": "Blühender rundblättriger Sonnentau (Drosera rotundifolia)",
+    "id": "wm-131424520",
+    "file": "cut/wm-131424520.webp",
+    "category": "sticky_traps"
+  },
+  "wm-134136754": {
+    "w": 176,
+    "h": 321,
+    "area": 0.073,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      151,
+      148,
+      110
+    ],
+    "quality": "good",
+    "name": "Drosera rotundifolia TK 2023-07-08 10",
+    "id": "wm-134136754",
+    "file": "cut/wm-134136754.webp",
+    "category": "sticky_traps"
+  },
+  "wm-50360984": {
+    "w": 585,
+    "h": 501,
+    "area": 0.366,
+    "edge": 0.122,
+    "compact": 0.533,
+    "color": [
+      90,
+      81,
+      17
+    ],
+    "quality": "meh",
+    "name": "001 2010 04 26 Blattadern",
+    "id": "wm-50360984",
+    "file": "cut/wm-50360984.webp",
+    "category": "leaf_edges"
+  },
+  "wm-50360997": {
+    "w": 600,
+    "h": 556,
+    "area": 0.419,
+    "edge": 0.036,
+    "compact": 0.746,
+    "color": [
+      156,
+      93,
+      15
+    ],
+    "quality": "good",
+    "name": "003 2011 04 18 Blattadern",
+    "id": "wm-50360997",
+    "file": "cut/wm-50360997.webp",
+    "category": "leaf_edges"
+  },
+  "wm-68409946": {
+    "w": 268,
+    "h": 600,
+    "area": 0.26,
+    "edge": 0.026,
+    "compact": 0.294,
+    "color": [
+      114,
+      158,
+      62
+    ],
+    "quality": "good",
+    "name": "04. Passiflora ligularis seedling leaf",
+    "id": "wm-68409946",
+    "file": "cut/wm-68409946.webp",
+    "category": "leaf_edges"
+  },
+  "wm-51551458": {
+    "w": 573,
+    "h": 502,
+    "area": 0.477,
+    "edge": 0.213,
+    "compact": 1,
+    "color": [
+      145,
+      126,
+      108
+    ],
+    "quality": "meh",
+    "name": "... a beautiful leaf (7260452750)",
+    "id": "wm-51551458",
+    "file": "cut/wm-51551458.webp",
+    "category": "leaf_edges"
+  },
+  "wm-61753764": {
+    "w": 559,
+    "h": 455,
+    "area": 0.269,
+    "edge": 0.09,
+    "compact": 0.222,
+    "color": [
+      135,
+      91,
+      33
+    ],
+    "quality": "good",
+    "name": "Autumn in iran پاییز در ایران- استان قم 10",
+    "id": "wm-61753764",
+    "file": "cut/wm-61753764.webp",
+    "category": "leaf_edges"
+  },
+  "wm-61753765": {
+    "w": 600,
+    "h": 433,
+    "area": 0.343,
+    "edge": 0.112,
+    "compact": 0.253,
+    "color": [
+      117,
+      81,
+      29
+    ],
+    "quality": "good",
+    "name": "Autumn in iran پاییز در ایران- استان قم 12",
+    "id": "wm-61753765",
+    "file": "cut/wm-61753765.webp",
+    "category": "leaf_edges"
+  },
+  "wm-3151028": {
+    "w": 600,
+    "h": 436,
+    "area": 0.487,
+    "edge": 0.3,
+    "compact": 0.003,
+    "color": [
+      182,
+      172,
+      113
+    ],
+    "quality": "meh",
+    "name": "Blattgerippe",
+    "id": "wm-3151028",
+    "file": "cut/wm-3151028.webp",
+    "category": "leaf_edges"
+  },
+  "wm-22949237": {
+    "w": 600,
+    "h": 450,
+    "area": 0.378,
+    "edge": 0.22,
+    "compact": 0.004,
+    "color": [
+      210,
+      189,
+      146
+    ],
+    "quality": "meh",
+    "name": "Cirsium sp. (Thistle) leaf vein sceleton, Westenschouwen, the Netherlands",
+    "id": "wm-22949237",
+    "file": "cut/wm-22949237.webp",
+    "category": "leaf_edges"
+  },
+  "wm-36277290": {
+    "w": 600,
+    "h": 508,
+    "area": 0.054,
+    "edge": 0,
+    "compact": 0.016,
+    "color": [
+      172,
+      166,
+      127
+    ],
+    "quality": "good",
+    "name": "Alcea biennis sl13",
+    "id": "wm-36277290",
+    "file": "cut/wm-36277290.webp",
+    "category": "leaf_edges"
+  },
+  "wm-47208944": {
+    "w": 600,
+    "h": 403,
+    "area": 0.302,
+    "edge": 0.157,
+    "compact": 0.085,
+    "color": [
+      147,
+      145,
+      128
+    ],
+    "quality": "meh",
+    "name": "Alyssum montanum subsp. gmelinii sl9",
+    "id": "wm-47208944",
+    "file": "cut/wm-47208944.webp",
+    "category": "leaf_edges"
+  },
+  "wm-74758": {
+    "w": 444,
+    "h": 509,
+    "area": 0.171,
+    "edge": 0.125,
+    "compact": 0.578,
+    "color": [
+      73,
+      108,
+      45
+    ],
+    "quality": "meh",
+    "name": "Anchusa azurea tallo",
+    "id": "wm-74758",
+    "file": "cut/wm-74758.webp",
+    "category": "leaf_edges"
+  },
+  "wm-39785812": {
+    "w": 450,
+    "h": 586,
+    "area": 0.228,
+    "edge": 0,
+    "compact": 0.616,
+    "color": [
+      148,
+      169,
+      45
+    ],
+    "quality": "good",
+    "name": "Anthriscus caucalis sl5",
+    "id": "wm-39785812",
+    "file": "cut/wm-39785812.webp",
+    "category": "leaf_edges"
+  },
+  "wm-39785813": {
+    "w": 600,
+    "h": 522,
+    "area": 0.346,
+    "edge": 0,
+    "compact": 0.339,
+    "color": [
+      152,
+      172,
+      49
+    ],
+    "quality": "good",
+    "name": "Anthriscus caucalis sl6",
+    "id": "wm-39785813",
+    "file": "cut/wm-39785813.webp",
+    "category": "leaf_edges"
+  },
+  "wm-66499843": {
+    "w": 544,
+    "h": 600,
+    "area": 0.08,
+    "edge": 0,
+    "compact": 0.056,
+    "color": [
+      163,
+      180,
+      118
+    ],
+    "quality": "good",
+    "name": "Alyssum alyssoides sl18",
+    "id": "wm-66499843",
+    "file": "cut/wm-66499843.webp",
+    "category": "leaf_edges"
+  },
+  "wm-66499844": {
+    "w": 498,
+    "h": 600,
+    "area": 0.135,
+    "edge": 0.069,
+    "compact": 0.03,
+    "color": [
+      138,
+      148,
+      135
+    ],
+    "quality": "good",
+    "name": "Alyssum alyssoides sl19",
+    "id": "wm-66499844",
+    "file": "cut/wm-66499844.webp",
+    "category": "leaf_edges"
+  },
+  "wm-66499846": {
+    "w": 447,
+    "h": 600,
+    "area": 0.11,
+    "edge": 0,
+    "compact": 0.046,
+    "color": [
+      145,
+      162,
+      127
+    ],
+    "quality": "good",
+    "name": "Alyssum alyssoides sl20",
+    "id": "wm-66499846",
+    "file": "cut/wm-66499846.webp",
+    "category": "leaf_edges"
+  },
+  "wm-144809367": {
+    "w": 226,
+    "h": 600,
+    "area": 0.281,
+    "edge": 0.222,
+    "compact": 1,
+    "color": [
+      154,
+      109,
+      96
+    ],
+    "quality": "meh",
+    "name": "Alcea digitata in Antalya by David Merrick 31",
+    "id": "wm-144809367",
+    "file": "cut/wm-144809367.webp",
+    "category": "leaf_edges"
+  },
+  "wm-144687528": {
+    "w": 600,
+    "h": 162,
+    "area": 0.372,
+    "edge": 0.175,
+    "compact": 1,
+    "color": [
+      141,
+      112,
+      106
+    ],
+    "quality": "meh",
+    "name": "Althaea cannabina in Antalya by David Merrick 06",
+    "id": "wm-144687528",
+    "file": "cut/wm-144687528.webp",
+    "category": "leaf_edges"
+  },
+  "inat-24863945": {
+    "w": 600,
+    "h": 374,
+    "area": 0.457,
+    "edge": 0.205,
+    "compact": 0.273,
+    "color": [
+      122,
+      120,
+      113
+    ],
+    "quality": "meh",
+    "name": "Haworthia cooperi pilifera",
+    "id": "inat-24863945",
+    "file": "cut/inat-24863945.webp",
+    "category": "leaf_edges"
+  },
+  "inat-99527169": {
+    "w": 189,
+    "h": 346,
+    "area": 0.021,
+    "edge": 0,
+    "compact": 0.046,
+    "color": [
+      125,
+      115,
+      106
+    ],
+    "quality": "good",
+    "name": "Haworthia cooperi pilifera",
+    "id": "inat-99527169",
+    "file": "cut/inat-99527169.webp",
+    "category": "leaf_edges"
+  },
+  "inat-15289502": {
+    "w": 80,
+    "h": 199,
+    "area": 0.02,
+    "edge": 0.065,
+    "compact": 1,
+    "color": [
+      149,
+      135,
+      138
+    ],
+    "quality": "good",
+    "name": "Haworthia cooperi isabellae",
+    "id": "inat-15289502",
+    "file": "cut/inat-15289502.webp",
+    "category": "leaf_edges"
+  },
+  "inat-475652573": {
+    "w": 385,
+    "h": 376,
+    "area": 0.115,
+    "edge": 0.034,
+    "compact": 0.361,
+    "color": [
+      87,
+      93,
+      76
+    ],
+    "quality": "good",
+    "name": "Queen Victoria Agave",
+    "id": "inat-475652573",
+    "file": "cut/inat-475652573.webp",
+    "category": "leaf_edges"
+  },
+  "inat-563919478": {
+    "w": 141,
+    "h": 86,
+    "area": 0.009,
+    "edge": 0,
+    "compact": 0.224,
+    "color": [
+      75,
+      77,
+      65
+    ],
+    "quality": "bad",
+    "name": "Queen Victoria Agave",
+    "id": "inat-563919478",
+    "file": "cut/inat-563919478.webp",
+    "category": "leaf_edges"
+  },
+  "inat-450700972": {
+    "w": 487,
+    "h": 553,
+    "area": 0.079,
+    "edge": 0.007,
+    "compact": 0.088,
+    "color": [
+      81,
+      78,
+      59
+    ],
+    "quality": "good",
+    "name": "Queen Victoria Agave",
+    "id": "inat-450700972",
+    "file": "cut/inat-450700972.webp",
+    "category": "leaf_edges"
+  },
+  "inat-114797418": {
+    "w": 593,
+    "h": 369,
+    "area": 0.436,
+    "edge": 0.201,
+    "compact": 1,
+    "color": [
+      81,
+      89,
+      73
+    ],
+    "quality": "meh",
+    "name": "Queen Victoria Agave",
+    "id": "inat-114797418",
+    "file": "cut/inat-114797418.webp",
+    "category": "leaf_edges"
+  },
+  "inat-83277674": {
+    "w": 402,
+    "h": 600,
+    "area": 0.293,
+    "edge": 0.013,
+    "compact": 0.035,
+    "color": [
+      131,
+      138,
+      133
+    ],
+    "quality": "good",
+    "name": "woolly hedgenettle",
+    "id": "inat-83277674",
+    "file": "cut/inat-83277674.webp",
+    "category": "leaf_edges"
+  },
+  "inat-333061451": {
+    "w": 357,
+    "h": 569,
+    "area": 0.181,
+    "edge": 0.003,
+    "compact": 0.192,
+    "color": [
+      138,
+      142,
+      125
+    ],
+    "quality": "good",
+    "name": "woolly hedgenettle",
+    "id": "inat-333061451",
+    "file": "cut/inat-333061451.webp",
+    "category": "leaf_edges"
+  },
+  "inat-277989365": {
+    "w": 343,
+    "h": 376,
+    "area": 0.029,
+    "edge": 0.042,
+    "compact": 0.5,
+    "color": [
+      119,
+      158,
+      124
+    ],
+    "quality": "good",
+    "name": "woolly hedgenettle",
+    "id": "inat-277989365",
+    "file": "cut/inat-277989365.webp",
+    "category": "leaf_edges"
+  },
+  "inat-312942617": {
+    "w": 351,
+    "h": 283,
+    "area": 0.123,
+    "edge": 0,
+    "compact": 0.977,
+    "color": [
+      146,
+      131,
+      103
+    ],
+    "quality": "good",
+    "name": "Panda Plant",
+    "id": "inat-312942617",
+    "file": "cut/inat-312942617.webp",
+    "category": "leaf_edges"
+  },
+  "inat-746643620": {
+    "w": 600,
+    "h": 400,
+    "area": 0.466,
+    "edge": 0.12,
+    "compact": 0.032,
+    "color": [
+      110,
+      103,
+      98
+    ],
+    "quality": "good",
+    "name": "Panda Plant",
+    "id": "inat-746643620",
+    "file": "cut/inat-746643620.webp",
+    "category": "leaf_edges"
+  },
+  "inat-749549619": {
+    "w": 417,
+    "h": 525,
+    "area": 0.165,
+    "edge": 0.06,
+    "compact": 0.151,
+    "color": [
+      138,
+      126,
+      104
+    ],
+    "quality": "good",
+    "name": "Panda Plant",
+    "id": "inat-749549619",
+    "file": "cut/inat-749549619.webp",
+    "category": "leaf_edges"
+  },
+  "inat-438168373": {
+    "w": 446,
+    "h": 599,
+    "area": 0.283,
+    "edge": 0.11,
+    "compact": 0.396,
+    "color": [
+      114,
+      107,
+      96
+    ],
+    "quality": "good",
+    "name": "Panda Plant",
+    "id": "inat-438168373",
+    "file": "cut/inat-438168373.webp",
+    "category": "leaf_edges"
+  },
+  "inat-87610395": {
+    "w": 600,
+    "h": 396,
+    "area": 0.325,
+    "edge": 0.057,
+    "compact": 0.403,
+    "color": [
+      209,
+      141,
+      75
+    ],
+    "quality": "good",
+    "name": "Mediterranean clubmoss",
+    "id": "inat-87610395",
+    "file": "cut/inat-87610395.webp",
+    "category": "leaf_edges"
+  },
+  "wm-132147858": {
+    "w": 600,
+    "h": 450,
+    "area": 0.193,
+    "edge": 0.127,
+    "compact": 0.006,
+    "color": [
+      157,
+      155,
+      159
+    ],
+    "quality": "meh",
+    "name": "051002-7 PPL GRNST skeletal pel 20x",
+    "id": "wm-132147858",
+    "file": "cut/wm-132147858.webp",
+    "category": "micro"
+  },
+  "wm-143637747": {
+    "w": 560,
+    "h": 498,
+    "area": 0.547,
+    "edge": 0.014,
+    "compact": 1,
+    "color": [
+      132,
+      130,
+      128
+    ],
+    "quality": "good",
+    "name": "1979-rem 03 hg",
+    "id": "wm-143637747",
+    "file": "cut/wm-143637747.webp",
+    "category": "micro"
+  },
+  "wm-143637757": {
+    "w": 545,
+    "h": 600,
+    "area": 0.303,
+    "edge": 0,
+    "compact": 0.016,
+    "color": [
+      172,
+      169,
+      168
+    ],
+    "quality": "good",
+    "name": "1979-rem 05 hg",
+    "id": "wm-143637757",
+    "file": "cut/wm-143637757.webp",
+    "category": "micro"
+  },
+  "wm-143637748": {
+    "w": 514,
+    "h": 415,
+    "area": 0.253,
+    "edge": 0,
+    "compact": 0.246,
+    "color": [
+      143,
+      140,
+      140
+    ],
+    "quality": "good",
+    "name": "1979-rem 06 hg",
+    "id": "wm-143637748",
+    "file": "cut/wm-143637748.webp",
+    "category": "micro"
+  },
+  "wm-143637764": {
+    "w": 600,
+    "h": 495,
+    "area": 0.638,
+    "edge": 0.04,
+    "compact": 1,
+    "color": [
+      124,
+      122,
+      121
+    ],
+    "quality": "good",
+    "name": "1979-rem 09 hg",
+    "id": "wm-143637764",
+    "file": "cut/wm-143637764.webp",
+    "category": "micro"
+  },
+  "wm-132147849": {
+    "w": 564,
+    "h": 501,
+    "area": 0.394,
+    "edge": 0.174,
+    "compact": 0.044,
+    "color": [
+      85,
+      84,
+      84
+    ],
+    "quality": "meh",
+    "name": "220406-1 PPL GRNST Forams 20x",
+    "id": "wm-132147849",
+    "file": "cut/wm-132147849.webp",
+    "category": "micro"
+  },
+  "wm-70143157": {
+    "w": 390,
+    "h": 600,
+    "area": 0.511,
+    "edge": 0.045,
+    "compact": 1,
+    "color": [
+      136,
+      136,
+      136
+    ],
+    "quality": "good",
+    "name": "Allophylastrum frutescens pollen 2",
+    "id": "wm-70143157",
+    "file": "cut/wm-70143157.webp",
+    "category": "micro"
+  },
+  "wm-70143158": {
+    "w": 548,
+    "h": 600,
+    "area": 0.552,
+    "edge": 0.069,
+    "compact": 0.208,
+    "color": [
+      125,
+      125,
+      125
+    ],
+    "quality": "good",
+    "name": "Allophylastrum frutescens pollen",
+    "id": "wm-70143158",
+    "file": "cut/wm-70143158.webp",
+    "category": "micro"
+  },
+  "wm-34345475": {
+    "w": 600,
+    "h": 524,
+    "area": 0.388,
+    "edge": 0,
+    "compact": 0.805,
+    "color": [
+      130,
+      130,
+      130
+    ],
+    "quality": "good",
+    "name": "Aquilapollenites Attenuatus Funkhouser(1961)",
+    "id": "wm-34345475",
+    "file": "cut/wm-34345475.webp",
+    "category": "micro"
+  },
+  "wm-3105533": {
+    "w": 540,
+    "h": 446,
+    "area": 0.474,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      102,
+      102,
+      102
+    ],
+    "quality": "good",
+    "name": "Carex1-1",
+    "id": "wm-3105533",
+    "file": "cut/wm-3105533.webp",
+    "category": "micro"
+  },
+  "wm-27586969": {
+    "w": 600,
+    "h": 450,
+    "area": 0.463,
+    "edge": 0.273,
+    "compact": 0.263,
+    "color": [
+      107,
+      94,
+      28
+    ],
+    "quality": "meh",
+    "name": "2013-08-04 14-12-10-fougeres-20f",
+    "id": "wm-27586969",
+    "file": "cut/wm-27586969.webp",
+    "category": "micro"
+  },
+  "wm-1514619": {
+    "w": 500,
+    "h": 600,
+    "area": 0.493,
+    "edge": 0.256,
+    "compact": 0.345,
+    "color": [
+      123,
+      149,
+      96
+    ],
+    "quality": "meh",
+    "name": "Adiantum cunninghamii",
+    "id": "wm-1514619",
+    "file": "cut/wm-1514619.webp",
+    "category": "micro"
+  },
+  "wm-47503684": {
+    "w": 600,
+    "h": 446,
+    "area": 0.135,
+    "edge": 0.048,
+    "compact": 0.095,
+    "color": [
+      170,
+      148,
+      42
+    ],
+    "quality": "good",
+    "name": "Bryophytes citadelle murs 2016-03-11a3",
+    "id": "wm-47503684",
+    "file": "cut/wm-47503684.webp",
+    "category": "micro"
+  },
+  "wm-47503686": {
+    "w": 428,
+    "h": 222,
+    "area": 0.032,
+    "edge": 0,
+    "compact": 0.185,
+    "color": [
+      205,
+      133,
+      59
+    ],
+    "quality": "good",
+    "name": "Bryophytes citadelle murs 2016-03-11a5",
+    "id": "wm-47503686",
+    "file": "cut/wm-47503686.webp",
+    "category": "micro"
+  },
+  "wm-47503685": {
+    "w": 290,
+    "h": 257,
+    "area": 0.017,
+    "edge": 0.005,
+    "compact": 0.273,
+    "color": [
+      152,
+      120,
+      21
+    ],
+    "quality": "bad",
+    "name": "Bryophytes citadelle murs Tortula muralis 2016-03-11a4",
+    "id": "wm-47503685",
+    "file": "cut/wm-47503685.webp",
+    "category": "micro"
+  },
+  "inat-480910138": {
+    "w": 520,
+    "h": 519,
+    "area": 0.424,
+    "edge": 0,
+    "compact": 0.576,
+    "color": [
+      184,
+      169,
+      40
+    ],
+    "quality": "good",
+    "name": "Micrasterias floridensis",
+    "id": "inat-480910138",
+    "file": "cut/inat-480910138.webp",
+    "category": "micro"
+  },
+  "inat-190325328": {
+    "w": 568,
+    "h": 393,
+    "area": 0.23,
+    "edge": 0,
+    "compact": 0.138,
+    "color": [
+      91,
+      131,
+      73
+    ],
+    "quality": "good",
+    "name": "Micrasterias muricata",
+    "id": "inat-190325328",
+    "file": "cut/inat-190325328.webp",
+    "category": "micro"
+  },
+  "inat-164703020": {
+    "w": 389,
+    "h": 504,
+    "area": 0.199,
+    "edge": 0,
+    "compact": 0.142,
+    "color": [
+      113,
+      118,
+      54
+    ],
+    "quality": "good",
+    "name": "Micrasterias truncata",
+    "id": "inat-164703020",
+    "file": "cut/inat-164703020.webp",
+    "category": "micro"
+  },
+  "inat-707310146": {
+    "w": 486,
+    "h": 493,
+    "area": 0.424,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      166,
+      177,
+      144
+    ],
+    "quality": "good",
+    "name": "Micrasterias truncata",
+    "id": "inat-707310146",
+    "file": "cut/inat-707310146.webp",
+    "category": "micro"
+  },
+  "inat-540796595": {
+    "w": 600,
+    "h": 397,
+    "area": 0.253,
+    "edge": 0.002,
+    "compact": 0.86,
+    "color": [
+      132,
+      117,
+      93
+    ],
+    "quality": "good",
+    "name": "Milnesium",
+    "id": "inat-540796595",
+    "file": "cut/inat-540796595.webp",
+    "category": "micro"
+  },
+  "inat-457452570": {
+    "w": 415,
+    "h": 416,
+    "area": 0.356,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      213,
+      205,
+      189
+    ],
+    "quality": "good",
+    "name": "Hypsibius dujardini",
+    "id": "inat-457452570",
+    "file": "cut/inat-457452570.webp",
+    "category": "micro"
+  },
+  "inat-485718880": {
+    "w": 288,
+    "h": 297,
+    "area": 0.112,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      126,
+      104,
+      82
+    ],
+    "quality": "good",
+    "name": "Ramazzottius conifer",
+    "id": "inat-485718880",
+    "file": "cut/inat-485718880.webp",
+    "category": "micro"
+  },
+  "inat-108220411": {
+    "w": 527,
+    "h": 465,
+    "area": 0.117,
+    "edge": 0.047,
+    "compact": 0.617,
+    "color": [
+      179,
+      146,
+      100
+    ],
+    "quality": "good",
+    "name": "Echiniscus testudo",
+    "id": "inat-108220411",
+    "file": "cut/inat-108220411.webp",
+    "category": "micro"
+  },
+  "inat-20330870": {
+    "w": 386,
+    "h": 431,
+    "area": 0.094,
+    "edge": 0.076,
+    "compact": 0.202,
+    "color": [
+      193,
+      199,
+      145
+    ],
+    "quality": "good",
+    "name": "Common Haircap Moss",
+    "id": "inat-20330870",
+    "file": "cut/inat-20330870.webp",
+    "category": "micro"
+  },
+  "inat-109519514": {
+    "w": 162,
+    "h": 217,
+    "area": 0.01,
+    "edge": 0,
+    "compact": 0.237,
+    "color": [
+      120,
+      146,
+      50
+    ],
+    "quality": "bad",
+    "name": "Common Haircap Moss",
+    "id": "inat-109519514",
+    "file": "cut/inat-109519514.webp",
+    "category": "micro"
+  },
+  "inat-27366441": {
+    "w": 600,
+    "h": 479,
+    "area": 0.144,
+    "edge": 0.269,
+    "compact": 0.084,
+    "color": [
+      139,
+      110,
+      89
+    ],
+    "quality": "meh",
+    "name": "bristly haircap moss",
+    "id": "inat-27366441",
+    "file": "cut/inat-27366441.webp",
+    "category": "micro"
+  },
+  "wm-119898195": {
+    "w": 504,
+    "h": 390,
+    "area": 0.101,
+    "edge": 0.015,
+    "compact": 0.02,
+    "color": [
+      62,
+      66,
+      68
+    ],
+    "quality": "good",
+    "name": "A leaf of thuthi (Abutilan indicum)",
+    "id": "wm-119898195",
+    "file": "cut/wm-119898195.webp",
+    "category": "translucent"
+  },
+  "wm-132112848": {
+    "w": 468,
+    "h": 409,
+    "area": 0.338,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      152,
+      108,
+      97
+    ],
+    "quality": "good",
+    "name": "Fiore e foglia secchi",
+    "id": "wm-132112848",
+    "file": "cut/wm-132112848.webp",
+    "category": "translucent"
+  },
+  "wm-143597230": {
+    "w": 248,
+    "h": 600,
+    "area": 0.624,
+    "edge": 0,
+    "compact": 1,
+    "color": [
+      173,
+      169,
+      167
+    ],
+    "quality": "good",
+    "name": "Dried leaf skeleton",
+    "id": "wm-143597230",
+    "file": "cut/wm-143597230.webp",
+    "category": "translucent"
+  },
+  "wm-146418369": {
+    "w": 600,
+    "h": 379,
+    "area": 0.158,
+    "edge": 0.13,
+    "compact": 0.036,
+    "color": [
+      106,
+      102,
+      102
+    ],
+    "quality": "meh",
+    "name": "Butterfly wing scales",
+    "id": "wm-146418369",
+    "file": "cut/wm-146418369.webp",
+    "category": "translucent"
+  },
+  "wm-14723570": {
+    "w": 600,
+    "h": 405,
+    "area": 0.119,
+    "edge": 0.011,
+    "compact": 0.002,
+    "color": [
+      134,
+      129,
+      109
+    ],
+    "quality": "good",
+    "name": "Damselfly wing structure",
+    "id": "wm-14723570",
+    "file": "cut/wm-14723570.webp",
+    "category": "translucent"
+  },
+  "wm-1670715": {
+    "w": 600,
+    "h": 396,
+    "area": 0.38,
+    "edge": 0.017,
+    "compact": 0.078,
+    "color": [
+      143,
+      179,
+      95
+    ],
+    "quality": "good",
+    "name": "Aeshna.cyanea.wing.detail",
+    "id": "wm-1670715",
+    "file": "cut/wm-1670715.webp",
+    "category": "translucent"
+  },
+  "wm-176863941": {
+    "w": 379,
+    "h": 413,
+    "area": 0.184,
+    "edge": 0,
+    "compact": 0.194,
+    "color": [
+      123,
+      125,
+      134
+    ],
+    "quality": "good",
+    "name": "2025 (challenge No. 2 - Week 40 (Leaves) - Day 5 - leaf in pond water - Flickr - ambabheg",
+    "id": "wm-176863941",
+    "file": "cut/wm-176863941.webp",
+    "category": "translucent"
+  },
+  "wm-178300855": {
+    "w": 428,
+    "h": 409,
+    "area": 0.377,
+    "edge": 0.062,
+    "compact": 1,
+    "color": [
+      148,
+      131,
+      113
+    ],
+    "quality": "good",
+    "name": "Crane Fly Wing under a Microscope",
+    "id": "wm-178300855",
+    "file": "cut/wm-178300855.webp",
+    "category": "translucent"
+  },
+  "wm-18236878": {
+    "w": 216,
+    "h": 293,
+    "area": 0.006,
+    "edge": 0,
+    "compact": 0.076,
+    "color": [
+      181,
+      33,
+      25
+    ],
+    "quality": "bad",
+    "name": "Aeshnidae Four Wing Pads",
+    "id": "wm-18236878",
+    "file": "cut/wm-18236878.webp",
+    "category": "translucent"
+  },
+  "wm-189902967": {
+    "w": 600,
+    "h": 311,
+    "area": 0.203,
+    "edge": 0,
+    "compact": 0.01,
+    "color": [
+      182,
+      173,
+      167
+    ],
+    "quality": "good",
+    "name": "Dragonfly wings (9430416219)",
+    "id": "wm-189902967",
+    "file": "cut/wm-189902967.webp",
+    "category": "translucent"
+  },
+  "wm-19833484": {
+    "w": 480,
+    "h": 302,
+    "area": 0.009,
+    "edge": 0.002,
+    "compact": 0.023,
+    "color": [
+      90,
+      62,
+      47
+    ],
+    "quality": "bad",
+    "name": "Acheta domesticus, Rechter Vorderflügel.",
+    "id": "wm-19833484",
+    "file": "cut/wm-19833484.webp",
+    "category": "translucent"
+  },
+  "wm-29122306": {
+    "w": 398,
+    "h": 404,
+    "area": 0.171,
+    "edge": 0,
+    "compact": 0.024,
+    "color": [
+      113,
+      122,
+      119
+    ],
+    "quality": "good",
+    "name": "Lisbon (10206201175)",
+    "id": "wm-29122306",
+    "file": "cut/wm-29122306.webp",
+    "category": "translucent"
+  },
+  "wm-3131934": {
+    "w": 600,
+    "h": 429,
+    "area": 0.165,
+    "edge": 0,
+    "compact": 0.002,
+    "color": [
+      93,
+      93,
+      93
+    ],
+    "quality": "good",
+    "name": "OdonataWings",
+    "id": "wm-3131934",
+    "file": "cut/wm-3131934.webp",
+    "category": "translucent"
+  },
+  "wm-3262946": {
+    "w": 600,
+    "h": 160,
+    "area": 0.339,
+    "edge": 0,
+    "compact": 0.062,
+    "color": [
+      145,
+      145,
+      145
+    ],
+    "quality": "good",
+    "name": "AnisopteridWing",
+    "id": "wm-3262946",
+    "file": "cut/wm-3262946.webp",
+    "category": "translucent"
+  },
+  "wm-38227263": {
+    "w": 214,
+    "h": 149,
+    "area": 0.049,
+    "edge": 0,
+    "compact": 0.659,
+    "color": [
+      235,
+      234,
+      232
+    ],
+    "quality": "good",
+    "name": "Archiargiolestes pusillissimus female wings (13006984174)",
+    "id": "wm-38227263",
+    "file": "cut/wm-38227263.webp",
+    "category": "translucent"
+  },
+  "wm-38227265": {
+    "w": 207,
+    "h": 141,
+    "area": 0.043,
+    "edge": 0,
+    "compact": 0.641,
+    "color": [
+      234,
+      233,
+      231
+    ],
+    "quality": "good",
+    "name": "Archiargiolestes pusillissimus male wings (13006742463)",
+    "id": "wm-38227265",
+    "file": "cut/wm-38227265.webp",
+    "category": "translucent"
+  },
+  "wm-38227266": {
+    "w": 214,
+    "h": 149,
+    "area": 0.049,
+    "edge": 0,
+    "compact": 0.663,
+    "color": [
+      216,
+      216,
+      216
+    ],
+    "quality": "good",
+    "name": "Archiargiolestes pusillissimus female wings (13006602475)",
+    "id": "wm-38227266",
+    "file": "cut/wm-38227266.webp",
+    "category": "translucent"
+  },
+  "wm-38227267": {
+    "w": 243,
+    "h": 155,
+    "area": 0.062,
+    "edge": 0,
+    "compact": 0.658,
+    "color": [
+      216,
+      216,
+      216
+    ],
+    "quality": "good",
+    "name": "Archiargiolestes pusillus female wings (13006999844)",
+    "id": "wm-38227267",
+    "file": "cut/wm-38227267.webp",
+    "category": "translucent"
+  },
+  "wm-38227268": {
+    "w": 207,
+    "h": 141,
+    "area": 0.044,
+    "edge": 0,
+    "compact": 0.647,
+    "color": [
+      214,
+      214,
+      214
+    ],
+    "quality": "good",
+    "name": "Archiargiolestes pusillissimus male wings (13006607735)",
+    "id": "wm-38227268",
+    "file": "cut/wm-38227268.webp",
+    "category": "translucent"
+  },
+  "wm-38227272": {
+    "w": 243,
+    "h": 155,
+    "area": 0.061,
+    "edge": 0,
+    "compact": 0.65,
+    "color": [
+      236,
+      234,
+      232
+    ],
+    "quality": "good",
+    "name": "Archiargiolestes pusillus female wings (13006996474)",
+    "id": "wm-38227272",
+    "file": "cut/wm-38227272.webp",
+    "category": "translucent"
+  },
+  "wm-45622045": {
+    "w": 600,
+    "h": 408,
+    "area": 0.143,
+    "edge": 0.125,
+    "compact": 0.002,
+    "color": [
+      101,
+      98,
+      96
+    ],
+    "quality": "meh",
+    "name": "Dragonfly wing structure 2",
+    "id": "wm-45622045",
+    "file": "cut/wm-45622045.webp",
+    "category": "translucent"
+  },
+  "wm-50384649": {
+    "w": 600,
+    "h": 451,
+    "area": 0.064,
+    "edge": 0.065,
+    "compact": 0.004,
+    "color": [
+      29,
+      23,
+      20
+    ],
+    "quality": "good",
+    "name": "Dry leaf veins",
+    "id": "wm-50384649",
+    "file": "cut/wm-50384649.webp",
+    "category": "translucent"
+  },
+  "wm-63770730": {
+    "w": 449,
+    "h": 600,
+    "area": 0.664,
+    "edge": 0.288,
+    "compact": 0.074,
+    "color": [
+      121,
+      139,
+      49
+    ],
+    "quality": "meh",
+    "name": "Flora Parque Nacional Manu 10",
+    "id": "wm-63770730",
+    "file": "cut/wm-63770730.webp",
+    "category": "translucent"
+  },
+  "wm-64235584": {
+    "w": 600,
+    "h": 483,
+    "area": 0.216,
+    "edge": 0.129,
+    "compact": 0.073,
+    "color": [
+      42,
+      8,
+      3
+    ],
+    "quality": "meh",
+    "name": "Dragon fly wing (اليعسوب)",
+    "id": "wm-64235584",
+    "file": "cut/wm-64235584.webp",
+    "category": "translucent"
+  },
+  "wm-64235585": {
+    "w": 600,
+    "h": 517,
+    "area": 0.067,
+    "edge": 0.049,
+    "compact": 0.013,
+    "color": [
+      65,
+      42,
+      18
+    ],
+    "quality": "good",
+    "name": "Dragon fly wing",
+    "id": "wm-64235585",
+    "file": "cut/wm-64235585.webp",
+    "category": "translucent"
+  },
+  "wm-69849411": {
+    "w": 600,
+    "h": 414,
+    "area": 0.097,
+    "edge": 0,
+    "compact": 0.002,
+    "color": [
+      77,
+      76,
+      73
+    ],
+    "quality": "good",
+    "name": "Odonata wing (closeup) v2",
+    "id": "wm-69849411",
+    "file": "cut/wm-69849411.webp",
+    "category": "translucent"
+  },
+  "wm-69849447": {
+    "w": 600,
+    "h": 435,
+    "area": 0.171,
+    "edge": 0.02,
+    "compact": 0.003,
+    "color": [
+      53,
+      50,
+      48
+    ],
+    "quality": "good",
+    "name": "Odonata wing (closeup)",
+    "id": "wm-69849447",
+    "file": "cut/wm-69849447.webp",
+    "category": "translucent"
+  },
+  "wm-77381408": {
+    "w": 600,
+    "h": 294,
+    "area": 0.11,
+    "edge": 0,
+    "compact": 0.002,
+    "color": [
+      160,
+      160,
+      160
+    ],
+    "quality": "good",
+    "name": "Broken Wing (178594907)",
+    "id": "wm-77381408",
+    "file": "cut/wm-77381408.webp",
+    "category": "translucent"
+  },
+  "wm-79132973": {
+    "w": 600,
+    "h": 450,
+    "area": 0.358,
+    "edge": 0.127,
+    "compact": 0.17,
+    "color": [
+      122,
+      138,
+      111
+    ],
+    "quality": "meh",
+    "name": "Dragonfly(стрекоза)",
+    "id": "wm-79132973",
+    "file": "cut/wm-79132973.webp",
+    "category": "translucent"
+  },
+  "wm-80234710": {
+    "w": 532,
+    "h": 143,
+    "area": 0.007,
+    "edge": 0.011,
+    "compact": 0.076,
+    "color": [
+      18,
+      7,
+      4
+    ],
+    "quality": "bad",
+    "name": "Odonata (YPM IZ 098543)",
+    "id": "wm-80234710",
+    "file": "cut/wm-80234710.webp",
+    "category": "translucent"
+  },
+  "wm-80234861": {
+    "w": 600,
+    "h": 470,
+    "area": 0.084,
+    "edge": 0.057,
+    "compact": 0.029,
+    "color": [
+      75,
+      48,
+      28
+    ],
+    "quality": "good",
+    "name": "Diptera (YPM IZ 098030)",
+    "id": "wm-80234861",
+    "file": "cut/wm-80234861.webp",
+    "category": "translucent"
+  },
+  "wm-80235388": {
+    "w": 600,
+    "h": 394,
+    "area": 0.488,
+    "edge": 0.268,
+    "compact": 1,
+    "color": [
+      163,
+      125,
+      86
+    ],
+    "quality": "meh",
+    "name": "Diptera (YPM IZ 091295)",
+    "id": "wm-80235388",
+    "file": "cut/wm-80235388.webp",
+    "category": "translucent"
+  },
+  "wm-9054150": {
+    "w": 494,
+    "h": 273,
+    "area": 0.127,
+    "edge": 0,
+    "compact": 0.002,
+    "color": [
+      126,
+      126,
+      126
+    ],
+    "quality": "good",
+    "name": "EpiophlebiaSuperstesTillyard",
+    "id": "wm-9054150",
+    "file": "cut/wm-9054150.webp",
+    "category": "translucent"
+  },
+  "wm-93022591": {
+    "w": 449,
+    "h": 476,
+    "area": 0.196,
+    "edge": 0,
+    "compact": 0.401,
+    "color": [
+      97,
+      67,
+      39
+    ],
+    "quality": "good",
+    "name": "Gasterophilus intestinalis wing pattern",
+    "id": "wm-93022591",
+    "file": "cut/wm-93022591.webp",
+    "category": "translucent"
+  },
+  "wm-94874367": {
+    "w": 600,
+    "h": 400,
+    "area": 0.383,
+    "edge": 0.275,
+    "compact": 0.077,
+    "color": [
+      206,
+      172,
+      146
+    ],
+    "quality": "meh",
+    "name": "Dry leaf gnawed by caterpillars on another green leaf",
+    "id": "wm-94874367",
+    "file": "cut/wm-94874367.webp",
+    "category": "translucent"
+  },
+  "wm-95636730": {
+    "w": 411,
+    "h": 525,
+    "area": 0.071,
+    "edge": 0.011,
+    "compact": 0.08,
+    "color": [
+      86,
+      69,
+      56
+    ],
+    "quality": "good",
+    "name": "Dragon Fly On Stick 2",
+    "id": "wm-95636730",
+    "file": "cut/wm-95636730.webp",
+    "category": "translucent"
+  },
+  "wm-95636803": {
+    "w": 600,
+    "h": 463,
+    "area": 0.17,
+    "edge": 0.005,
+    "compact": 0.394,
+    "color": [
+      147,
+      125,
+      109
+    ],
+    "quality": "good",
+    "name": "Dragonfly Wings Terrace Garden",
+    "id": "wm-95636803",
+    "file": "cut/wm-95636803.webp",
+    "category": "translucent"
+  },
+  "wm-965622": {
+    "w": 600,
+    "h": 198,
+    "area": 0.698,
+    "edge": 0,
+    "compact": 0.48,
+    "color": [
+      212,
+      207,
+      193
+    ],
+    "quality": "good",
+    "name": "Dragonfly ran-004",
+    "id": "wm-965622",
+    "file": "cut/wm-965622.webp",
+    "category": "translucent"
+  },
+  "wm-97530111": {
+    "w": 600,
+    "h": 152,
+    "area": 0.199,
+    "edge": 0.001,
+    "compact": 0.782,
+    "color": [
+      188,
+      184,
+      138
+    ],
+    "quality": "good",
+    "name": "Skeleton leaf 2 (14107011901)",
+    "id": "wm-97530111",
+    "file": "cut/wm-97530111.webp",
+    "category": "translucent"
+  }
+}

@@ -27,6 +27,44 @@ Notes you write on a pressing come along in the prose, under *Why I kept it*.
 
 ---
 
+## Oxblood aster, inked
+
+Kyra, 2026-11-21. Now the opening of every study: matte, contrast 1.19, two
+tone steps, heavy grain (0.56), no duotone, warm lamp, cream sheet. In the
+flowers study it is one tap away as **Inked**.
+
+```json
+{
+ "seed": 12345, "species": "aster", "petals": 21, "whorls": 2,
+ "petalLen": 1.05, "petalWid": 0.13, "sharp": 0.55, "open": 0.3, "disc": 0.26,
+ "size": 250, "leaves": 0, "relief": 26, "gloss": 0, "scatter": 0.1,
+ "lightSize": 700, "lightHeight": 280, "ease": 0.045, "lampColor": "#fff6ec",
+ "finish": "matte", "grainAmt": 0.56, "contrast": 1.19, "steps": 2,
+ "toneShadow": "#2f2a24", "toneHigh": "#f4efe6", "toneAmt": 0,
+ "cBase": "#8f1d2b", "cTip": "#e8d5c0", "cDisc": "#2f2a1c", "cLeaf": "#556247",
+ "surface": "ink", "emboss": 0.24, "press": "up", "cSheet": "#e9e3d6"
+}
+```
+
+## Oxblood aster, blind
+
+Kyra, 2026-11-21. The same flower struck blind: no ink, deeper relief (32), a
+little gloss, petals scattered loose (0.78), and a smaller, lower lamp that
+follows quickly. **Blind** in the flowers study.
+
+```json
+{
+ "seed": 12345, "species": "aster", "petals": 21, "whorls": 2,
+ "petalLen": 1.05, "petalWid": 0.13, "sharp": 0.55, "open": 0.3, "disc": 0.26,
+ "size": 250, "leaves": 0, "relief": 32, "gloss": 0.24, "scatter": 0.78,
+ "lightSize": 370, "lightHeight": 290, "ease": 0.12, "lampColor": "#fff6ec",
+ "finish": "matte", "grainAmt": 0.56, "contrast": 1.19, "steps": 2,
+ "toneShadow": "#2f2a24", "toneHigh": "#f4efe6", "toneAmt": 0,
+ "cBase": "#8f1d2b", "cTip": "#e8d5c0", "cDisc": "#2f2a1c", "cLeaf": "#556247",
+ "surface": "blind", "emboss": 0.24, "press": "up", "cSheet": "#e9e3d6"
+}
+```
+
 ## Blueprint
 
 Kyra, 2026-09-01. Full-strength duotone — deep blue shadow, pure white

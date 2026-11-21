@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bestiary · all species</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#161616; --muted:#767676; --rule:#ececec; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#fff; color:var(--ink); font:400 14px/1.6 "Instrument Sans", system-ui, sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:72px 24px 96px; }
+  header { display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap; margin-bottom:48px; }
+  h1 { margin:0; font-size:15px; font-weight:500; }
+  header p { margin:0; color:var(--muted); font-size:13px; }
+  a { color:var(--ink); text-decoration:none; }
+  .make { font-weight:500; font-size:13px; text-decoration:underline; text-underline-offset:4px; text-decoration-thickness:1px; }
+  section { margin-top:40px; }
+  h2 { margin:0 0 6px; font-size:12px; font-weight:400; color:var(--muted); }
+  .row { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) 72px; gap:16px; align-items:baseline; padding:12px 0; border-top:1px solid var(--rule); }
+  .row:hover .nm { text-decoration:underline; text-underline-offset:4px; text-decoration-thickness:1px; }
+  .nm { font-style:italic; font-weight:500; font-size:16px; }
+  .common, .plan { color:var(--muted); font-size:13px; } .plan { text-align:right; }
+  @media (max-width:560px) { .row { grid-template-columns:1fr; gap:2px; } .plan { text-align:left; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>Bestiary</h1><p>Every species here was assembled from found specimens of earth, then kept.</p></div>
+    <span><a class="make" href="species.html">Make a species</a><a href="credits.html" style="font-size:13px;color:#767676;margin-left:20px">Credits</a></span>
+  </header>
+  <div id="list"></div>
+</main>
+<script>
+// Kept species grouped by where they live. Names come from the saved files; nothing here is fetched from outside.
+const WHERE = { bird: "Air", bat: "Air", whale: "Water", fish: "Water", ray: "Water", worm: "Land", bear: "Land", rabbit: "Land", frog: "Land", lizard: "Land", elephant: "Land", bull: "Land", stag: "Land", tortoise: "Land", automaton: "Land" };
+fetch("library/kept/index.json").then(r => r.json()).then(kept => {
+  const list = document.getElementById("list"), groups = new Map([["Air", []], ["Water", []], ["Land", []], ["Elsewhere", []]]);
+  for (const k of kept) groups.get(WHERE[k.meta?.kind] || "Elsewhere").push(k);
+  for (const [where, items] of groups) { if (!items.length) continue;
+    const sec = document.createElement("section"), h = document.createElement("h2"); h.textContent = where; sec.append(h);
+    for (const k of items) { const a = document.createElement("a"); a.className = "row"; a.href = `./?kept=${encodeURIComponent(k.slug)}&portfolio=1`;
+      const nm = document.createElement("span"), cm = document.createElement("span"), pl = document.createElement("span");
+      nm.className = "nm"; nm.textContent = k.name; cm.className = "common"; cm.textContent = k.meta?.common ? k.meta.common.replace(/^the /, "The ") : ""; pl.className = "plan"; pl.textContent = k.meta?.kind || "";
+      a.append(nm, cm, pl); sec.append(a); }
+    list.append(sec); } });
+</script>
+</body>
+</html>

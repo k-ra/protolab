@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sigil Pressure — Wax Seals</title>
 <script src="../vendor/p5.min.js"></script>
+<script src="../lib/relief.js"></script>
 <script src="../lib/dies.js"></script>
+<script src="../lib/flora.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
@@ -60,15 +62,24 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
 #canvas-container canvas{display:block;width:100%!important;height:auto!important}
 .loading{display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--anthropic-mid-gray);padding:120px 0}
 @media(max-width:600px){.container{flex-direction:column}.sidebar{width:100%;max-height:none}}
+
+/* visitors get a few controls; ?tweak in the URL brings back the whole workshop */
+body:not(.tweak) .tweak-only{display:none!important}
+/* quiet buttons: ink and hairline, no brand colours */
+.button,.button.secondary,.button.tertiary{background:transparent;color:#2f2a24;border:1px solid #d9d4ca;font-weight:400;transform:none!important}
+.button:hover,.button.secondary:hover,.button.tertiary:hover{background:#f3f0ea;border-color:#2f2a24}
+.button-row .button:first-child{background:#2f2a24;color:#f4efe6;border-color:#2f2a24}
+.button-row .button:first-child:hover{background:#4a433a}
 </style>
+<script>document.addEventListener('DOMContentLoaded', () => { if(/[?&]tweak/.test(location.search)) document.body.classList.add('tweak'); });</script>
 </head>
 <body>
 <div class="container">
   <div class="sidebar">
     <h1>Sigil Pressure</h1>
-    <div class="subtitle">Wax modelled as a height field, then lit. Drag on the seal to move the candle. Click to press a fresh one.</div>
+    <div class="subtitle">Wax as a height field, lit by a candle you carry. Click to press a fresh one.</div>
 
-    <div class="control-section">
+    <div class="control-section tweak-only">
       <h3>Seed</h3>
       <input type="number" id="seed-input" class="seed-input" value="12345" onchange="updateSeed()">
       <div class="seed-controls">
@@ -81,24 +92,24 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
     <div class="control-section">
       <h3>Die</h3>
       <div class="control-group">
-        <label>Name or initials <span style="color:var(--anthropic-mid-gray);font-weight:400">(blank = figure)</span></label>
-        <input type="text" id="initials" class="text-input" maxlength="24" value="M" oninput="updateInitials(this.value)">
+        <label>Initials <span style="color:var(--anthropic-mid-gray);font-weight:400">(blank = aster)</span></label>
+        <input type="text" id="initials" class="text-input" maxlength="24" value="" oninput="updateInitials(this.value)">
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Engraving detail</label>
         <div class="slider-container">
           <input type="range" id="detail" min="5" max="22" step="1" value="10" oninput="updateParam('detail',this.value)">
           <span class="value-display" id="detail-value">10</span>
         </div>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Emboss depth</label>
         <div class="slider-container">
           <input type="range" id="depth" min="0.2" max="2" step="0.05" value="1" oninput="updateParam('depth',this.value)">
           <span class="value-display" id="depth-value">1</span>
         </div>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Squeeze rim</label>
         <div class="slider-container">
           <input type="range" id="rim" min="0" max="2" step="0.05" value="1" oninput="updateParam('rim',this.value)">
@@ -107,7 +118,7 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
       </div>
     </div>
 
-    <div class="control-section">
+    <div class="control-section tweak-only">
       <h3>Pour</h3>
       <div class="control-group">
         <label>Spread</label>
@@ -132,7 +143,7 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
       </div>
     </div>
 
-    <div class="control-section">
+    <div class="control-section tweak-only">
       <h3>Light &amp; surface</h3>
       <div class="control-group">
         <label>Gloss</label>
@@ -161,15 +172,15 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
       <h3>Colours</h3>
       <div class="color-group">
         <label>Wax</label>
-        <div class="color-picker-container">
+        <div class="tweak-only color-picker-container">
           <input type="color" id="wax" value="#8f1d2b" oninput="updateColor('wax',this.value)">
           <span class="color-value" id="wax-value">#8f1d2b</span>
         </div>
         <div class="swatches" id="wax-swatches"></div>
       </div>
-      <div class="color-group">
+      <div class="color-group tweak-only">
         <label>Paper</label>
-        <div class="color-picker-container">
+        <div class="tweak-only color-picker-container">
           <input type="color" id="paper" value="#ece5d8" oninput="updateColor('paper',this.value)">
           <span class="color-value" id="paper-value">#ece5d8</span>
         </div>
@@ -180,7 +191,7 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
       <h3>Actions</h3>
       <div class="button-row">
         <button class="button" onclick="regenerate()">Regenerate</button>
-        <button class="button secondary" onclick="resetParameters()">Reset</button>
+        <button class="button secondary tweak-only" onclick="resetParameters()">Reset</button>
       </div>
       <button class="button tertiary" onclick="downloadPNG()">↓ Download PNG</button>
     </div>
@@ -209,15 +220,17 @@ const N = 900, CX = N/2, CY = N/2, TWOPI = Math.PI*2;
 
 let params = {
   seed: 12345,
-  spread: 300, irregularity: 0.20, drips: 3,
-  detail: 10, depth: 1.0, rim: 1.0,
-  gloss: 0.38, relief: 18, grain: 0.4,
-  initials: 'M',
+  spread: 300, irregularity: 0.14, drips: 1,
+  detail: 10, depth: 1.3, rim: 1.0,
+  gloss: 0.08, relief: 26, grain: 0.4,
+  initials: '',
   wax: '#8f1d2b', paper: '#ece5d8'
 };
 const defaultParams = {...params};
 
-const WAX_SWATCHES = ['#8f1d2b','#5d1420','#c0392b','#d97757','#1f3b57','#20402f','#3b2f4a','#141413','#b08d3f','#7a6a5a'];
+// the aster from Specimen, struck as a die (Kyra's oxblood aster, 2026-11-21)
+const ASTER = {species:'aster', petals:21, whorls:2, petalLen:1.05, petalWid:0.13, sharp:0.55, open:0.3, disc:0.26, leaves:0};
+const WAX_SWATCHES = ['#8f1d2b','#5d1420','#2f2a24','#556247','#3b4a5a','#b08d3f'];
 
 let rnd, rc, rctx, sealCv, sealCtx, shadowCv, shadowCtx, bgCv, bgCtx;
 let cov, hgt, nX, nY, nZ, hMax = 1;
@@ -383,35 +396,10 @@ function laurel(ctx,R){
 function drawDie(ctx, dieR, kind){
   ctx.save();
   ctx.translate(CX,CY);
-  ctx.lineWidth = dieR*0.030; ring(ctx, dieR*0.955);
-  ctx.lineWidth = dieR*0.015; ring(ctx, dieR*0.795);
-  const nb = Math.round(params.detail*2.4) + 16;
-  for(let i=0;i<nb;i++){
-    const a = i/nb*TWOPI;
-    ctx.beginPath();
-    ctx.arc(Math.cos(a)*dieR*0.877, Math.sin(a)*dieR*0.877, dieR*0.021, 0, TWOPI);
-    ctx.fill();
-  }
-  const inner = dieR*0.70;
+  ctx.lineWidth = dieR*0.012; ring(ctx, dieR*0.95);           // one hairline, no bead ring, no laurel
   const txt = params.initials.trim().toUpperCase();
-  if(txt){
-    if(txt.length <= 3){
-      laurel(ctx, inner);
-    } else {
-      ctx.lineWidth = inner*0.020;
-      [-1,1].forEach(sd => {
-        ctx.beginPath();
-        ctx.moveTo(-inner*0.52, sd*inner*0.62); ctx.lineTo(inner*0.52, sd*inner*0.62);
-        ctx.stroke();
-        ctx.beginPath(); ctx.arc(0, sd*inner*0.62, inner*0.045, 0, TWOPI); ctx.fill();
-      });
-    }
-    Dies.monogram(ctx, inner*(txt.length > 3 ? 0.96 : 1), txt);
-  } else {
-    if(kind===0) rosette(ctx, inner);
-    else if(kind===1) starburst(ctx, inner);
-    else compass(ctx, inner);
-  }
+  if(txt) Dies.monogram(ctx, dieR*0.70*(txt.length > 3 ? 0.96 : 1), txt);
+  else { const sp = Object.assign({}, ASTER, {size: dieR*0.80, seed: params.seed}); Flora.render(ctx, Flora.grow(sp), sp, 'h'); }
   ctx.restore();
 }
 
@@ -518,7 +506,7 @@ function shade(){
       sp = sp/(1 + sp*0.8);
 
       const ao = 0.44 + 0.56*Math.min(1, hgt[i]*invH*1.3);
-      const base = 0.24*ao, key = 0.76*diff*ao*1.55;
+      const base = 0.30*ao, key = 0.70*diff*ao*1.25;   // matte, oxblood stays oxblood
       const sc = Math.pow(1 - nz, 2.4)*0.20*(0.35 + 0.65*atten);
 
       let r = wr*(base + key + sc)      + sp*236;

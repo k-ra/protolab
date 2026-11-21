@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Press — wax, clay, paper, metal</title>
+<title>Platemark — wax, clay, paper, metal</title>
 <script src="../vendor/p5.min.js"></script>
 <script src="../lib/relief.js"></script>
 <script src="../lib/dies.js"></script>
@@ -61,15 +61,24 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
 #canvas-container canvas{display:block;width:100%!important;height:auto!important}
 .loading{display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--anthropic-mid-gray);padding:120px 0}
 @media(max-width:600px){.container{flex-direction:column}.sidebar{width:100%;max-height:none}}
+
+/* visitors get a few controls; ?tweak in the URL brings back the whole workshop */
+body:not(.tweak) .tweak-only{display:none!important}
+/* quiet buttons: ink and hairline, no brand colours */
+.button,.button.secondary,.button.tertiary{background:transparent;color:#2f2a24;border:1px solid #d9d4ca;font-weight:400;transform:none!important}
+.button:hover,.button.secondary:hover,.button.tertiary:hover{background:#f3f0ea;border-color:#2f2a24}
+.button-row .button:first-child{background:#2f2a24;color:#f4efe6;border-color:#2f2a24}
+.button-row .button:first-child:hover{background:#4a433a}
 </style>
+<script>document.addEventListener('DOMContentLoaded', () => { if(/[?&]tweak/.test(location.search)) document.body.classList.add('tweak'); });</script>
 </head>
 <body>
 <div class="container">
   <div class="sidebar">
-    <h1>The Press</h1>
-    <div class="subtitle">One die, four materials. Move the mouse to carry the lamp across the surface — the light trails behind you. Click to press again.</div>
+    <h1>Platemark</h1>
+    <div class="subtitle">One die, four materials. Move to carry the lamp; click to press again.</div>
 
-    <div class="control-section">
+    <div class="control-section tweak-only">
       <h3>Finish</h3>
       <div class="seg" id="seg-finish">
         <button data-v="matte">Matte</button>
@@ -107,46 +116,47 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
         <button data-v="paper">Paper</button>
         <button data-v="metal">Metal</button>
       </div>
-      <div class="color-picker-container">
-        <input type="color" id="color" value="#c3877f" oninput="updateColor(this.value)">
-        <span class="color-value" id="color-value">#c3877f</span>
+      <div class="tweak-only color-picker-container">
+        <input type="color" id="color" value="#8f1d2b" oninput="updateColor(this.value)">
+        <span class="color-value" id="color-value">#8f1d2b</span>
       </div>
       <div class="swatches" id="swatches"></div>
     </div>
 
     <div class="control-section">
       <h3>Die</h3>
-      <div class="seg" id="seg-die">
+      <div class="seg" id="seg-die" style="grid-template-columns:repeat(3,1fr)">
+        <button data-v="aster">Aster</button>
         <button data-v="monogram">Name</button>
         <button data-v="crest">Emblem</button>
-        <button data-v="figure">Figure</button>
-        <button data-v="plate">Stationery</button>
+        <button data-v="figure" class="tweak-only">Figure</button>
+        <button data-v="plate" class="tweak-only">Stationery</button>
       </div>
       <input type="text" id="text" class="text-input" maxlength="28" value="Kyra Mo" placeholder="name or initials" oninput="updateText('text',this.value)">
-      <input type="text" id="sub" class="text-input" maxlength="28" value="" placeholder="second line (optional)" oninput="updateText('sub',this.value)">
-      <div class="seg" id="seg-relief" style="grid-template-columns:1fr 1fr">
+      <input type="text" id="sub" class="tweak-only text-input" maxlength="28" value="" placeholder="second line (optional)" oninput="updateText('sub',this.value)">
+      <div class="seg tweak-only" id="seg-relief" style="grid-template-columns:1fr 1fr">
         <button data-v="deboss">Debossed</button>
         <button data-v="emboss">Embossed</button>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Detail</label>
         <div class="slider-container"><input type="range" id="detail" min="4" max="22" step="1" value="6" oninput="updateParam('detail',this.value)"><span class="value-display" id="detail-value">6</span></div>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Depth</label>
         <div class="slider-container"><input type="range" id="depth" min="0.1" max="2" step="0.05" value="0.6" oninput="updateParam('depth',this.value)"><span class="value-display" id="depth-value">0.6</span></div>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Bevel</label>
         <div class="slider-container"><input type="range" id="bevel" min="1" max="12" step="1" value="3" oninput="updateParam('bevel',this.value)"><span class="value-display" id="bevel-value">3</span></div>
       </div>
-      <div class="control-group">
+      <div class="tweak-only control-group">
         <label>Displaced lip</label>
         <div class="slider-container"><input type="range" id="lip" min="0" max="1.5" step="0.05" value="0.3" oninput="updateParam('lip',this.value)"><span class="value-display" id="lip-value">0.3</span></div>
       </div>
     </div>
 
-    <div class="control-section">
+    <div class="control-section tweak-only">
       <h3>Body</h3>
       <div class="control-group">
         <label>Size</label>
@@ -166,7 +176,7 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
       </div>
     </div>
 
-    <div class="control-section">
+    <div class="control-section tweak-only">
       <h3>Lamp</h3>
       <div class="control-group">
         <label>Pool size</label>
@@ -197,7 +207,7 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
       </div>
     </div>
 
-    <div class="control-section">
+    <div class="control-section tweak-only">
       <h3>Seed</h3>
       <input type="number" id="seed-input" class="seed-input" value="12345" onchange="updateSeed()">
       <div class="seed-controls">
@@ -219,13 +229,13 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--an
       <h3>Actions</h3>
       <div class="button-row">
         <button class="button" onclick="regenerate()">Re-press</button>
-        <button class="button secondary" onclick="resetParameters()">Reset</button>
+        <button class="button secondary tweak-only" onclick="resetParameters()">Reset</button>
       </div>
       <button class="button tertiary" onclick="downloadPNG()">↓ Download PNG</button>
     </div>
   </div>
 
-  <div class="canvas-area"><div id="canvas-container"><div class="loading">Warming the press…</div></div></div>
+  <div class="canvas-area"><div id="canvas-container"><div class="loading">Warming the platen…</div></div></div>
 </div>
 
 <script>
@@ -234,8 +244,8 @@ const N = 820, CX = N/2, CY = N/2, TWOPI = Math.PI*2;
 // ── material presets: each substrate is a different physics ────
 const MATERIALS = {
   wax:   {color:'#8f1d2b', gloss:0.34, ambient:0.24, scatter:0.20, aoLo:0.44, env:false,
-          domeBlur:0.075, domePow:0.42, thick:1.00, flatten:0.92, lip:0.25, bevel:3,
-          motif:0.34, grain:0.055, rimBead:0.20, relief:18, sign:-1, exposure:1.55,
+          domeBlur:0.075, domePow:0.36, thick:1.00, flatten:0.92, lip:0.25, bevel:3,
+          motif:0.55, grain:0.055, rimBead:0.32, relief:18, sign:-1, exposure:1.55,
           swatches:['#8f1d2b','#5d1420','#c0392b','#d97757','#1f3b57','#20402f','#3b2f4a','#141413']},
   clay:  {color:'#b06a45', gloss:0.10, ambient:0.34, scatter:0.05, aoLo:0.48, env:false,
           domeBlur:0.055, domePow:0.30, thick:0.90, flatten:0.75, lip:0.85, bevel:4,
@@ -255,29 +265,31 @@ MATERIALS.metal.color = '#c9a227';
 // What "matte" actually changes, per material. Not a filter — a different
 // surface, a shallower press, a quieter palette, and flat light.
 const MATTE = {
-  wax:   {color:'#c3877f', gloss:0, ambient:0.42, scatter:0.00, aoLo:0.58, exposure:1.18, depth:0.95, bevel:3, lip:0.30, relief:22, detail:6},
+  wax:   {color:'#8f1d2b', gloss:0, ambient:0.36, scatter:0.00, aoLo:0.50, exposure:1.12, depth:1.40, bevel:2, lip:0.50, relief:34, detail:6},
   clay:  {color:'#c9b3a1', gloss:0, ambient:0.46, scatter:0.00, aoLo:0.60, exposure:1.14, depth:1.00, bevel:3, lip:0.60, relief:24, detail:6},
   paper: {color:'#e6e0d3', gloss:0, ambient:0.52, scatter:0.00, aoLo:0.70, exposure:1.02, depth:1.10, bevel:3, lip:0.30, relief:34, detail:6},
   metal: {color:'#bdb7ab', gloss:0, ambient:0.44, scatter:0.00, aoLo:0.58, exposure:1.12, depth:0.90, bevel:2, lip:0.20, relief:20, detail:6}
 };
 const MATTE_SWATCHES = {
-  wax:   ['#c3877f','#b4695f','#d8b3ac','#8f7a74','#9aa08f','#c7b9a4','#6f6a63','#3a3a38'],
+  wax:   ['#8f1d2b','#5d1420','#2f2a24','#556247','#3b4a5a','#b08d3f'],
   clay:  ['#c9b3a1','#c2a48f','#d8cbb8','#b09a8a','#a89c8c','#8c8073','#6e655c','#463f38'],
   paper: ['#e6e0d3','#efeae0','#ddd6c6','#e3ded4','#d9d4c7','#e8e2d6','#cfc9bb','#c4bdae'],
   metal: ['#bdb7ab','#cfc9bd','#a8a296','#b3a893','#9aa0a2','#8f9699','#7c7a72','#4a4844']
 };
 
+// the aster from Specimen, struck as a die (Kyra's oxblood aster, 2026-11-21)
+const ASTER = {species:'aster', petals:21, whorls:2, petalLen:1.05, petalWid:0.13, sharp:0.55, open:0.3, disc:0.26, leaves:0};
 let params = {
-  seed: 12345, substrate: 'wax', die: 'monogram', mode: 'deboss',
-  finish: 'matte', grainAmt: 0.30, contrast: 0.88, steps: 0,
-  toneShadow: '#2f2a24', toneHigh: '#f4efe6', toneAmt: 0.34,
+  seed: 12345, substrate: 'wax', die: 'aster', mode: 'emboss',
+  finish: 'matte', grainAmt: 0.56, contrast: 1.19, steps: 0,   // the oxblood aster's conditions (Kyra, 2026-11-21); no bands: on one-colour wax they erase the strike
+  toneShadow: '#2f2a24', toneHigh: '#f4efe6', toneAmt: 0,
   lampColor: '#fff6ec',
   text: 'Kyra Mo', sub: '',
-  spread: 280, irregularity: 0.20, drips: 3,
-  detail: 6, depth: 0.95, bevel: 3, lip: 0.30,
-  grain: 0.4, relief: 22, gloss: 0,
+  spread: 280, irregularity: 0.12, drips: 2,
+  detail: 6, depth: 1.40, bevel: 2, lip: 0.50,
+  grain: 0.4, relief: 34, gloss: 0,
   lightSize: 680, lightHeight: 270, ease: 0.045,
-  color: '#c3877f'
+  color: '#8f1d2b'
 };
 const defaultParams = Object.assign({}, params);
 
@@ -347,6 +359,14 @@ function buildSubstrate(nOff, R){
 
 // ── the die ────────────────────────────────────────────────────
 function drawDie(ctx, dieR, kind){
+  if(params.die === 'aster'){
+    ctx.save(); ctx.translate(CX,CY);
+    Dies.ring(ctx, dieR*0.95, dieR*0.010);
+    const sp = Object.assign({}, ASTER, {size: dieR*0.80, seed: params.seed});
+    Flora.render(ctx, Flora.grow(sp), sp, 'h');
+    ctx.restore();
+    return;
+  }
   const D = params.detail;
   ctx.save();
   ctx.translate(CX,CY);
@@ -516,6 +536,8 @@ function setup(){
   bgCv = Relief.makeCanvas(N);     bgCtx     = bgCv.getContext('2d');
   applyTicket(Hub.takeHashPreset());
   syncSegments(); buildSwatches(); buildTonePresets();
+  // sliders show what the study actually opens with
+  Object.keys(params).forEach(k => { const el = document.getElementById(k); if(el && el.type === 'range'){ el.value = params[k]; const v = document.getElementById(k+'-value'); if(v) v.textContent = params[k]; } });
   const boot = () => {
     grainPat = sealCtx.createPattern(Relief.grainTile(256, 4242, 30), 'repeat');
     paintGround();

@@ -59,27 +59,8 @@ iframe{width:100%;height:100%;border:0;display:block;background:var(--sheet)}
 // The newer studies, oldest idea first, each running live: only the one on
 // show is loaded, because several relit height fields at once would crawl.
 const STUDIES = [
-  ['stencil', 'Hands on the Wall', 'c. 40,000 BCE', 'Press and hold to blow pigment around a hand; the torch follows the cursor.'],
-  ['obscura', 'Camera Obscura', 'c. 400 BCE', 'Move the pinhole slider, trace in pencil, then close the shutter.'],
-  ['rosetta', 'Three Hands', '196 BCE', 'Type a line and the stone carves it three ways. Move the cursor to rake the light.'],
-  ['girih', 'Girih', '14th century', 'Drag the angle slider to reshape the stars. The lamp follows the cursor.'],
-  ['gilded', 'Gilded', '15th century', 'Move the cursor to make the gold flare. Type any initial.'],
   ['kintsugi', 'Kintsugi', '15th century', 'Click the bowl to break it; it mends in gold.'],
-  ['quipu', 'Quipu', '15th century', 'Type numbers and they are tied in knotted cord.'],
-  ['ebru', 'Ebru', '16th century', 'Click to drop ink, drag to pull it, then comb or rake.'],
-  ['mezzotint', 'The Black Manner', '1642', 'Drag to burnish light out of the plate, then pull a print.'],
-  ['burin', 'One Line', '1649', 'Move the cursor and the single line re-cuts itself.'],
-  ['sashiko', 'One Stitch', 'Edo period', 'Type two words and their bits set the stitches.'],
-  ['chladni', 'Sound Figures', '1787', 'Drag across the plate to change the note.'],
-  ['jacquard', 'Damask', '1804', 'Move the cursor to the side: the flower appears only in raking light.'],
-  ['daguerreotype', 'Mirror with a Memory', '1839', 'Move the cursor over the plate to turn it negative.'],
-  ['cyanotype', 'Sun Print', '1843', 'Drag the seaweed, expose, then wash.'],
-  ['kymograph', 'Smoked Drum', '1847', 'Move the cursor up and down, or leave it to record a heartbeat.'],
-  ['nature-print', 'Nature Printing', '1853', 'Move the cursor over the lead, then pull a print.'],
-  ['rings', 'Rings', 'c. 1900', 'Hover a ring to read its year.'],
-  ['turing', 'Morphogenesis', '1952', 'Drag to seed new growth; change the feed and kill rates below.'],
-  ['phyllotaxis', 'Golden Angle', '1979', 'Drag sideways to turn the angle by fractions of a degree.'],
-  ['sky-fabric', 'Sky Fabric', '2026', 'Drag sideways to move through the next twelve hours.']
+  ['ebru', 'Ebru', '16th century', 'Click to drop ink, drag to pull it, then comb or rake.']
 ];
 
 const view = document.getElementById('view'), list = document.getElementById('list'), note = document.getElementById('note'), full = document.getElementById('full');
