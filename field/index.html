@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Field</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#161616; --muted:#767676; --rule:#ececec; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#fff; color:var(--ink); font:400 14px/1.6 "Instrument Sans", system-ui, sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:96px 24px; }
+  header { display:flex; justify-content:space-between; align-items:baseline; gap:16px; margin-bottom:56px; }
+  h1 { margin:0; font-size:15px; font-weight:500; }
+  header p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+  a { color:var(--ink); text-decoration:none; }
+  .back { font-size:13px; color:var(--muted); }
+  .back:hover { color:var(--ink); }
+  .row { display:grid; grid-template-columns:minmax(0, 200px) minmax(0, 1fr) 48px; gap:24px; align-items:baseline; padding:18px 0; border-top:1px solid var(--rule); }
+  .row:last-child { border-bottom:1px solid var(--rule); }
+  .row:hover .nm, .row:focus-visible .nm { text-decoration:underline; text-underline-offset:4px; text-decoration-thickness:1px; }
+  .nm { font-weight:500; font-size:16px; }
+  .ds, .yr { color:var(--muted); font-size:13px; } .yr { text-align:right; }
+  @media (max-width:560px) { .row { grid-template-columns:1fr; gap:2px; } .yr { text-align:left; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>Field</h1><p>Living things, made in the browser.</p></div>
+    <a class="back" href="../">Protolab</a>
+  </header>
+  <a class="row" href="../bestiary/"><span class="nm">Bestiary</span><span class="ds">New animals assembled from found specimens of earth, x-rayed and set moving. Hover a part for its real name and history.</span><span class="yr">2026</span></a>
+  <a class="row" href="../sky-fabric/"><span class="nm">Sky Fabric</span><span class="ds">The next twelve hours of weather, worn by a sheet of silk on slack strings.</span><span class="yr">2026</span></a>
+</main>
+</body>
+</html>

@@ -32,11 +32,11 @@ body.holding,body.holding #slips a{cursor:grabbing}
 #slips a:focus-visible{outline:1px dashed var(--soft);outline-offset:11px}
 #slips a.round{border-radius:50%}
 /* the name is pencilled on the sheet beneath the slip, and only when you come close */
-#slips a span{position:absolute;left:50%;top:100%;margin-top:14px;transform:translateX(-50%);
+#slips a span{position:absolute;left:50%;top:100%;margin-top:12px;transform:translateX(-50%);
   font-family:'Lora',serif;font-style:italic;font-size:13px;line-height:1;color:var(--soft);
   white-space:nowrap;opacity:0;transition:opacity .5s ease;pointer-events:none}
 #slips a.near span,#slips a:focus-visible span{opacity:1}
-#slips a.piled span{opacity:0}
+#slips a span{opacity:.92}
 #slips a.piled:hover span,#slips a.piled:focus-visible span{opacity:1}
 @media (hover:none){#slips a span{opacity:.9}#slips a.piled span{opacity:0}}
 @media (prefers-reduced-motion:reduce){#slips a span{transition:none}}
@@ -56,37 +56,11 @@ noscript a{color:var(--soft)}
   <a href="canvas/" data-k="clippings"><span>Clippings</span></a>
   <a href="wax-seal/" data-k="sigil"><span>Sigil Pressure</span></a>
   <a href="twin-peaks/" data-k="map" class="round"><span>San Francisco, Round</span></a>
-  <a href="rosetta/" data-k="rubbing"><span>Three Hands</span></a>
   <a href="ebru/" data-k="marbled"><span>Ebru</span></a>
-  <a href="cyanotype/" data-k="cyan"><span>Sun Print</span></a>
-  <a href="gilded/" data-k="gilded"><span>Gilded</span></a>
-  <a href="burin/" data-k="engraving"><span>One Line</span></a>
   <a href="kintsugi/" data-k="washi"><span>Kintsugi</span></a>
-  <a href="girih/" data-k="girih"><span>Girih</span></a>
-  <a href="kymograph/" data-k="smoked"><span>Smoked Drum</span></a>
-  <a href="jacquard/" data-k="card"><span>Damask</span></a>
-  <a href="daguerreotype/" data-k="cabinet"><span>Mirror with a Memory</span></a>
-  <a href="chladni/" data-k="figures"><span>Sound Figures</span></a>
-  <a href="turing/" data-k="maze"><span>Morphogenesis</span></a>
-  <a href="phyllotaxis/" data-k="seeds"><span>Golden Angle</span></a>
-  <a href="mezzotint/" data-k="velvet"><span>The Black Manner</span></a>
-  <a href="obscura/" data-k="tracing"><span>Camera Obscura</span></a>
-  <a href="nature-print/" data-k="fern"><span>Nature Printing</span></a>
-  <a href="stencil/" data-k="hand"><span>Hands on the Wall</span></a>
-  <a href="quipu/" data-k="quipu"><span>Quipu</span></a>
-  <a href="sashiko/" data-k="template"><span>One Stitch</span></a>
-  <a href="rings/" data-k="skeleton"><span>Rings</span></a>
 </nav>
 <noscript>
-  <a href="protolab/">The sheet</a><a href="canvas/">Clippings</a><a href="flowers/">Specimen</a>
-  <a href="press/">The Press</a><a href="wax-seal/">Sigil Pressure</a>
-  <a href="twin-peaks/">San Francisco, Round</a><a href="rosetta/">Three Hands</a><a href="ebru/">Ebru</a>
-  <a href="cyanotype/">Sun Print</a><a href="gilded/">Gilded</a><a href="burin/">One Line</a>
-  <a href="kintsugi/">Kintsugi</a><a href="girih/">Girih</a><a href="kymograph/">Smoked Drum</a>
-  <a href="jacquard/">Damask</a><a href="daguerreotype/">Mirror with a Memory</a><a href="chladni/">Sound Figures</a>
-  <a href="turing/">Morphogenesis</a><a href="phyllotaxis/">Golden Angle</a>
-  <a href="mezzotint/">The Black Manner</a><a href="obscura/">Camera Obscura</a>
-  <a href="nature-print/">Nature Printing</a><a href="stencil/">Hands on the Wall</a><a href="quipu/">Quipu</a><a href="sashiko/">One Stitch</a><a href="rings/">Rings</a><a href="sky-fabric/">Sky Fabric</a><a href="make-a-species/">Make a Species</a>
+  <a href="protolab/">The sheet</a><a href="flowers/">Specimen</a><a href="press/">The Press</a><a href="canvas/">Clippings</a><a href="wax-seal/">Sigil Pressure</a><a href="twin-peaks/">San Francisco, Round</a><a href="ebru/">Ebru</a><a href="kintsugi/">Kintsugi</a>
 </noscript>
 
 <script>
@@ -116,7 +90,7 @@ MAP.addEventListener('load', () => {
 const STOCK = {cotton:'#fbfaf7', sheet:'#efece4', vellum:'#e4dcc6', amber:'#aa7942'};
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const SEED = Math.floor(Math.random()*99999) + 1;
-const PIXEL_BUDGET = 5e6;
+const PIXEL_BUDGET = 18e6;   // enough for a large retina screen at full resolution
 
 // one lamp for everything — the shading below and the pool on the sheet use
 // the same numbers, so a slip and the paper beneath it always agree
@@ -829,24 +803,46 @@ const PILED = {
 // A new study gets a slip here, a kind above, and a place in both layouts.
 const ORDER = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'rubbing', 'marbled', 'cyan', 'gilded', 'engraving', 'washi', 'girih', 'smoked', 'card', 'cabinet', 'figures', 'maze', 'seeds', 'velvet', 'tracing', 'fern', 'hand', 'quipu', 'template', 'skeleton'];
 
+// Which studies rest on the cover, in order. Leave a study out and its slip goes; its folder stays.
+const KEEP = ['sheet', 'specimen', 'press', 'clippings', 'sigil', 'map', 'marbled', 'washi'];   // the rest stay in the repo, unlisted
+
+// A plate in a cabinet: each print laid square on the sheet, in centred rows on a common
+// baseline, each scaled to a similar presence so none crowds another.
+function plate(keys){
+  const wide = DW/DH > 1.05, n = keys.length;
+  const perRow = wide ? (n <= 4 ? n : n <= 10 ? Math.ceil(n/2) : Math.ceil(n/3)) : (DW < 560 ? 2 : 3);
+  const rows = Math.ceil(n/perRow);
+  const x0 = DW*(wide ? 0.07 : 0.06), x1 = DW*(wide ? 0.93 : 0.94);
+  const y0 = DH*(wide ? 0.25 : 0.17), y1 = DH*(wide ? 0.93 : 0.95);
+  const cw = (x1 - x0)/perRow, ch = (y1 - y0)/rows, cap = 30;      // room under each print for its title
+  const size = k => (LAYOUTS.wide.slips[k] || PILED[k]);
+  const f = k => { const p = size(k); return Math.max(0.72, Math.min(1.35, Math.sqrt(0.62/(p.hw*p.hh)))); };
+  const U = Math.min(...keys.map(k => { const p = size(k), q = f(k); return Math.min(0.30*cw/(p.hw*q), 0.33*(ch - cap)/(p.hh*q)); }));
+  return keys.map((k, i) => {
+    const r = Math.floor(i/perRow), inRow = Math.min(perRow, n - r*perRow), c = i - r*perRow;
+    const left = x0 + (x1 - x0 - inRow*cw)/2;                     // a short last row sits centred
+    const p = size(k), u = U*f(k);
+    return {k, x: left + (c + 0.5)*cw, y: y0 + (r + 1)*ch - cap - p.hh*u, u, hw: p.hw, hh: p.hh};
+  });
+}
+
 function compose(){
   const L = DW/DH > 1.05 ? LAYOUTS.wide : LAYOUTS.tall;
-  const U = Math.max(36, Math.min(150, L.U(DW, DH)));
+  const keys = (KEEP || ORDER).filter(k => KINDS[k] && document.querySelector('#slips a[data-k="' + k + '"]'));
+  const P = plate(keys), base = Math.max(...P.map(p => p.u));
   const rng = Relief.makeRng(SEED);
   const old = {};
   slips.forEach((s, z) => { old[s.k] = s; s.z = z; });
-  slips = ORDER.map((k, i) => {
-    // piled slips are dropped loosely on one spot, each a little turned
-    const piled = !L.slips[k];
-    const p = piled ? Object.assign({x: L.pile.x + (rng() - 0.5)*0.07, y: L.pile.y + (rng() - 0.5)*0.08, r: (rng() - 0.5)*44}, PILED[k]) : L.slips[k];
+  document.querySelectorAll('#slips a').forEach(a => { a.hidden = !keys.includes(a.dataset.k); });
+  slips = P.map((p, i) => {
+    const k = p.k, U = p.u;
     const o = old[k] && old[k].placed ? old[k] : null;     // somewhere you put it stays put
     const s = {
       k, U, kind: KINDS[k],
       seed: SEED*7 + i*131,
-      x: (p.x + (rng() - 0.5)*0.03)*DW,
-      y: (p.y + (rng() - 0.5)*0.03)*DH,
-      rot: (p.r + (rng() - 0.5)*5)*Math.PI/180,
-      placed: o ? true : false, z: old[k] ? old[k].z : i, piled: piled && !o,
+      x: p.x, y: p.y,
+      rot: (rng() - 0.5)*1.6*Math.PI/180,                  // laid square, with only the hand's error
+      placed: o ? true : false, z: old[k] ? old[k].z : i, piled: false,
       hw: p.hw*U, hh: p.hh*U, rough: 0.02,
       el: document.querySelector('#slips a[data-k="'+k+'"]'),
       lift: old[k] ? old[k].lift : 60, liftT: 2, order: i
@@ -867,7 +863,7 @@ function compose(){
   });
   slips.sort((a, b) => a.z - b.z);
   markPile();
-  wm = makeWordmark(L.mark.x*DW, L.mark.y*DH, U);
+  wm = makeWordmark(0.5*DW, (DW/DH > 1.05 ? 0.15 : 0.08)*DH, Math.max(36, Math.min(110, base*1.15)));
 }
 
 

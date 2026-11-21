@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Make a Species</title>
+<title>Bestiary</title>
 <script>window.STATIC = true; { const q = new URLSearchParams(location.search); if (!q.get("kept") && !q.get("species")) q.set("kept", "lepus-ossea"); q.set("portfolio", q.get("portfolio") === "2" ? "2" : "1"); window.LAZY_CUTS = !q.get("species"); history.replaceState(null, "", "?" + q); }</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,300&family=IBM+Plex+Mono:wght@400&family=Instrument+Sans:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
@@ -335,7 +335,7 @@ if (!SPEC && KEPT && !guide && keptMeta?.meta?.seed != null && typeof composeSto
 if (SPEC) { // compose this new species' name and story from the real natural history of its parts
   const parts = pieces.map(pc => { const c = cellInfo[pc.cell].c; return { e: manifest.get(c.id) || c, role: (pc.tag || pc.cls || "part").split(" · ")[0], weight: (pc.w || 1) * (pc.h || 1) }; });
   guide = composeStory(parts, keptMeta.meta.kind, rng(+SPEC * 31 + 7), GAIT); keptMeta.name = guide.name;
-  document.getElementById("name").textContent = guide.name; document.title = `${guide.name} · Make a Species`;
+  document.getElementById("name").textContent = guide.name; document.title = `${guide.name} · Bestiary`;
   if (PORT) document.getElementById("caption").innerHTML = `<b>${guide.name}</b><span>${guide.common}  ·  ${new Set(pieces.map(pc => cellInfo[pc.cell].c.id)).size} found specimens of earth</span>`; }
 const tip = document.getElementById("tip"), drawer = document.getElementById("drawer"), ray = new THREE.Raycaster();
 const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };

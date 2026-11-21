@@ -1,4 +1,4 @@
-# make a species
+# bestiary
 
 A new species, assembled from found specimens of earth. Each one is drawn as a flat x-ray plate, then lifted into 3D and set crawling or flying. Every bone and organ is a single photograph of a real organism or mineral, cut along its own edge. Hover any part to see what it really is, where and when it was photographed, and its natural history. Each species also has a mythology composed from what it is made of.
 
